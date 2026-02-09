@@ -1,0 +1,41 @@
+[
+	{
+		"text": "Guide",
+		"link": "/guide/",
+		"activeMatch": "/guide/"
+	},
+	{
+		"text": "API",
+		"link": "/api/",
+		"activeMatch": "/api/"
+	},
+	{
+		"text": "Plugin",
+		"link": "/plugin/system/introduction",
+		"activeMatch": "/plugin/"
+	},
+	{
+		"text": "Examples",
+		"link": "/examples/",
+		"activeMatch": "/examples/"
+	},
+	{
+		"text": "Showcase",
+		"link": "/showcase/",
+		"activeMatch": "/showcase/"
+	},
+	{
+		"text": "Blog",
+		"link": "/blog/",
+		"activeMatch": "/blog/"
+	},
+	{
+		"text": "Versions",
+		"items": [
+			{
+				"text": "Changelog",
+				"link": "https://github.com/addon-stack/addon-bone/blob/main/CHANGELOG.md"
+			}
+		]
+	}
+]

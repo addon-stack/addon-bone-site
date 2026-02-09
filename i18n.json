@@ -1,0 +1,17 @@
+{
+	"getStarted": {
+		"en": "Get started"
+	},
+	"pluginSystem": {
+		"en": "Plugin System"
+	},
+	"pluginList": {
+		"en": "Official Plugins"
+	},
+	"communityPlugins": {
+		"en": "Community Plugins"
+	},
+	"apiOverview": {
+		"en": "API Overview"
+	}
+}

@@ -1,0 +1,31 @@
+{
+	"name": "addon-bone-site",
+	"version": "0.0.1",
+	"type": "module",
+	"scripts": {
+		"build": "rspress build",
+		"dev": "rspress dev",
+		"preview": "rspress preview",
+		"check": "biome check --write",
+		"format": "biome format --write",
+		"prepare": "husky"
+	},
+	"dependencies": {
+		"@rspress/core": "^2.0.1"
+	},
+	"devDependencies": {
+		"@biomejs/biome": "2.3.8",
+		"@commitlint/cli": "^20.4.1",
+		"@commitlint/config-conventional": "^20.4.1",
+		"@types/node": "^22.8.1",
+		"@types/react": "^19.2.10",
+		"@types/react-dom": "^19.2.3",
+		"husky": "^9.1.7",
+		"lint-staged": "^16.2.7",
+		"react": "^19.2.4",
+		"react-dom": "^19.2.4"
+	},
+	"lint-staged": {
+		"*.{js,jsx,ts,tsx,json,cjs,mjs,css,scss,md,html,yml,yaml}": "pnpm run format --"
+	}
+}
