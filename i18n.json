@@ -26,6 +26,9 @@
 	"getStarted": {
 		"en": "Get started"
 	},
+	"entrypoints": {
+		"en": "Entrypoints"
+	},
 	"pluginSystem": {
 		"en": "Plugin System"
 	},

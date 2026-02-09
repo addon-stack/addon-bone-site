@@ -3,5 +3,10 @@
 		"type": "dir-section-header",
 		"name": "start",
 		"label": "getStarted"
+	},
+	{
+		"type": "dir-section-header",
+		"name": "entrypoints",
+		"label": "entrypoints"
 	}
 ]
