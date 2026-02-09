@@ -1,16 +1,38 @@
 [
-	{"type": "section-header", "label": "getStarted"},
-	"introduction",
-	"installation",
-	{"type": "section-header", "label": "essentials"},
-	"structure",
-	{"type": "dir", "name": "entrypoints", "label": "entrypoints"},
-	{"type": "dir", "name": "configuration", "label": "configuration"},
-	"extension-apis",
-	"storage",
-	"messaging",
-	"locales",
-	"icons",
-	"assets",
-	"publishing"
+  {
+    "type": "section-header",
+    "label": "getStarted"
+  },
+  "introduction",
+  "installation",
+  {
+    "type": "section-header",
+    "label": "essentials"
+  },
+  "structure",
+  {
+    "type": "dir",
+    "name": "entrypoints",
+    "label": "entrypoints",
+    "collapsed": false
+  },
+  {
+    "type": "dir",
+    "name": "configuration",
+    "label": "configuration",
+    "collapsed": true
+  },
+  {
+    "type": "dir",
+    "name": "tech",
+    "label": "languagesFrameworks",
+    "collapsed": true
+  },
+  "extension-apis",
+  "storage",
+  "messaging",
+  "locales",
+  "icons",
+  "assets",
+  "publishing"
 ]

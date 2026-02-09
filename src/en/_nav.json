@@ -1,41 +1,41 @@
 [
-	{
-		"text": "navGuide",
-		"link": "/guide/introduction",
-		"activeMatch": "/guide/"
-	},
-	{
-		"text": "navExamples",
-		"link": "/examples/",
-		"activeMatch": "/examples/"
-	},
-	{
-		"text": "navPlugin",
-		"link": "/plugin/system/introduction",
-		"activeMatch": "/plugin/"
-	},
-	{
-		"text": "navAPI",
-		"link": "/api/",
-		"activeMatch": "/api/"
-	},
-	{
-		"text": "navShowcase",
-		"link": "/showcase/",
-		"activeMatch": "/showcase/"
-	},
-	{
-		"text": "navBlog",
-		"link": "/blog/",
-		"activeMatch": "/blog/"
-	},
-	{
-		"text": "navVersions",
-		"items": [
-			{
-				"text": "navChangelog",
-				"link": "https://github.com/addon-stack/addon-bone/blob/main/CHANGELOG.md"
-			}
-		]
-	}
+  {
+    "text": "navGuide",
+    "link": "/guide/introduction",
+    "activeMatch": "/guide/"
+  },
+  {
+    "text": "navExamples",
+    "link": "/examples/",
+    "activeMatch": "/examples/"
+  },
+  {
+    "text": "navPlugin",
+    "link": "/plugin/system/introduction",
+    "activeMatch": "/plugin/"
+  },
+  {
+    "text": "navAPI",
+    "link": "/api/",
+    "activeMatch": "/api/"
+  },
+  {
+    "text": "navShowcase",
+    "link": "/showcase/",
+    "activeMatch": "/showcase/"
+  },
+  {
+    "text": "navBlog",
+    "link": "/blog/",
+    "activeMatch": "/blog/"
+  },
+  {
+    "text": "navVersions",
+    "items": [
+      {
+        "text": "navChangelog",
+        "link": "https://github.com/addon-stack/addon-bone/blob/main/CHANGELOG.md"
+      }
+    ]
+  }
 ]

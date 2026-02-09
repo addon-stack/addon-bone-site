@@ -1,50 +1,53 @@
 {
-	"navGuide": {
-		"en": "Guide"
-	},
-	"navExamples": {
-		"en": "Examples"
-	},
-	"navPlugin": {
-		"en": "Plugin"
-	},
-	"navAPI": {
-		"en": "API"
-	},
-	"navShowcase": {
-		"en": "Showcase"
-	},
-	"navBlog": {
-		"en": "Blog"
-	},
-	"navVersions": {
-		"en": "Versions"
-	},
-	"navChangelog": {
-		"en": "Changelog"
-	},
-	"getStarted": {
-		"en": "Get started"
-	},
-	"entrypoints": {
-		"en": "Entrypoints"
-	},
-	"pluginSystem": {
-		"en": "Plugin System"
-	},
-	"pluginList": {
-		"en": "Official Plugins"
-	},
-	"communityPlugins": {
-		"en": "Community Plugins"
-	},
-	"configuration": {
-		"en": "Configuration"
-	},
-	"essentials": {
-		"en": "Essentials"
-	},
-	"apiOverview": {
-		"en": "API Overview"
-	}
+  "navGuide": {
+    "en": "Guide"
+  },
+  "navExamples": {
+    "en": "Examples"
+  },
+  "navPlugin": {
+    "en": "Plugin"
+  },
+  "navAPI": {
+    "en": "API"
+  },
+  "navShowcase": {
+    "en": "Showcase"
+  },
+  "navBlog": {
+    "en": "Blog"
+  },
+  "navVersions": {
+    "en": "Versions"
+  },
+  "navChangelog": {
+    "en": "Changelog"
+  },
+  "getStarted": {
+    "en": "Get started"
+  },
+  "entrypoints": {
+    "en": "Entrypoints"
+  },
+  "pluginSystem": {
+    "en": "Plugin System"
+  },
+  "pluginList": {
+    "en": "Official Plugins"
+  },
+  "communityPlugins": {
+    "en": "Community Plugins"
+  },
+  "configuration": {
+    "en": "Configuration"
+  },
+  "essentials": {
+    "en": "Essentials"
+  },
+  "languagesFrameworks": {
+    "en": "Languages and Frameworks"
+  },
+  "apiOverview": {
+    "en": "API Overview"
+  }
 }
