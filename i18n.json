@@ -38,6 +38,12 @@
 	"communityPlugins": {
 		"en": "Community Plugins"
 	},
+	"configuration": {
+		"en": "Configuration"
+	},
+	"essentials": {
+		"en": "Essentials"
+	},
 	"apiOverview": {
 		"en": "API Overview"
 	}

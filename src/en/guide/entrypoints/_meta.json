@@ -1,11 +1,18 @@
 [
+	"introduction",
 	"background",
 	"command",
+	"alert",
 	"service",
 	"offscreen",
 	"content-script",
 	"relay",
 	"page",
 	"popup",
-	"sidebar"
+	"sidebar",
+	"sandbox",
+	"devtools",
+	"history",
+	"newtab",
+	"options"
 ]

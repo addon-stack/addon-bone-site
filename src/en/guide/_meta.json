@@ -1,12 +1,16 @@
 [
-	{
-		"type": "dir-section-header",
-		"name": "start",
-		"label": "getStarted"
-	},
-	{
-		"type": "dir-section-header",
-		"name": "entrypoints",
-		"label": "entrypoints"
-	}
+	{"type": "section-header", "label": "getStarted"},
+	"introduction",
+	"installation",
+	{"type": "section-header", "label": "essentials"},
+	"structure",
+	{"type": "dir", "name": "entrypoints", "label": "entrypoints"},
+	{"type": "dir", "name": "configuration", "label": "configuration"},
+	"extension-apis",
+	"storage",
+	"messaging",
+	"locales",
+	"icons",
+	"assets",
+	"publishing"
 ]
