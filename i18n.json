@@ -52,5 +52,23 @@
   },
   "apiOverview": {
     "en": "API Overview"
+  },
+  "resources": {
+    "en": "Resources"
+  },
+  "testing": {
+    "en": "Testing"
+  },
+  "compare": {
+    "en": "Compare"
+  },
+  "faq": {
+    "en": "FAQ"
+  },
+  "community": {
+    "en": "Community"
+  },
+  "migrate": {
+    "en": "Migrate to Addon Bone"
   }
 }

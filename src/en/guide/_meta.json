@@ -1,8 +1,14 @@
 [
-  {"type": "section-header", "label": "getStarted"},
+  {
+    "type": "section-header",
+    "label": "getStarted"
+  },
   "introduction",
   "installation",
-  {"type": "section-header", "label": "essentials"},
+  {
+    "type": "section-header",
+    "label": "essentials"
+  },
   "structure",
   {
     "type": "dir",
@@ -28,5 +34,14 @@
   "locales",
   "icons",
   "assets",
-  "publishing"
+  "publishing",
+  "testing",
+  {
+    "type": "section-header",
+    "label": "resources"
+  },
+  "compare",
+  "faq",
+  "community",
+  "migrate"
 ]
