@@ -1,4 +1,28 @@
 {
+	"navGuide": {
+		"en": "Guide"
+	},
+	"navExamples": {
+		"en": "Examples"
+	},
+	"navPlugin": {
+		"en": "Plugin"
+	},
+	"navAPI": {
+		"en": "API"
+	},
+	"navShowcase": {
+		"en": "Showcase"
+	},
+	"navBlog": {
+		"en": "Blog"
+	},
+	"navVersions": {
+		"en": "Versions"
+	},
+	"navChangelog": {
+		"en": "Changelog"
+	},
 	"getStarted": {
 		"en": "Get started"
 	},
