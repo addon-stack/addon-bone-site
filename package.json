@@ -26,6 +26,6 @@
 		"react-dom": "^19.2.4"
 	},
 	"lint-staged": {
-		"*.{js,jsx,ts,tsx,json,cjs,mjs,css,scss,md,html,yml,yaml}": "pnpm run format --"
+		"*.{js,jsx,ts,tsx,json,cjs,mjs,css,scss}": "pnpm run format --no-errors-on-unmatched --"
 	}
 }
