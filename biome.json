@@ -1,33 +1,39 @@
 {
-	"$schema": "https://biomejs.dev/schemas/2.3.8/schema.json",
-	"linter": {
-		"enabled": true,
-		"rules": {
-			"recommended": true,
-			"complexity": {
-				"noImportantStyles": "off"
-			}
-		}
-	},
-	"formatter": {
-		"enabled": true,
-		"indentStyle": "tab",
-		"bracketSpacing": false
-	},
-	"javascript": {
-		"formatter": {
-			"quoteStyle": "double"
-		}
-	},
-	"overrides": [
-		{
-			"includes": ["dist/**", "node_modules/**", "doc_build/**", ".idea/**"],
-			"linter": {
-				"enabled": false
-			},
-			"formatter": {
-				"enabled": false
-			}
-		}
-	]
+  "$schema": "https://biomejs.dev/schemas/2.3.8/schema.json",
+  "linter": {
+    "enabled": true,
+    "rules": {
+      "recommended": true,
+      "complexity": {
+        "noImportantStyles": "off"
+      }
+    }
+  },
+  "formatter": {
+    "enabled": true,
+    "indentStyle": "tab",
+    "bracketSpacing": false
+  },
+  "javascript": {
+    "formatter": {
+      "quoteStyle": "double"
+    }
+  },
+  "json": {
+    "formatter": {
+      "indentStyle": "space",
+      "indentWidth": 2
+    }
+  },
+  "overrides": [
+    {
+      "includes": ["dist/**", "node_modules/**", "doc_build/**", ".idea/**"],
+      "linter": {
+        "enabled": false
+      },
+      "formatter": {
+        "enabled": false
+      }
+    }
+  ]
 }
