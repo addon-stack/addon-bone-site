@@ -5,6 +5,8 @@
   },
   "introduction",
   "installation",
+  "glossary",
+  "tech-stack",
   {
     "type": "section-header",
     "label": "essentials"
@@ -14,7 +16,7 @@
     "type": "dir",
     "name": "entrypoints",
     "label": "entrypoints",
-    "collapsed": false
+    "collapsed": true
   },
   {
     "type": "dir",

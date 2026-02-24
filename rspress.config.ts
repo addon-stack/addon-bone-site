@@ -19,6 +19,7 @@ export default defineConfig({
 		},
 	],
 	themeConfig: {
+		llmsUI: true,
 		locales: [
 			{
 				lang: "en",
