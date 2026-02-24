@@ -20,12 +20,19 @@ The **Bundler** is the core component responsible for compiling, bundling, and o
 
 In the configuration files and plugin system, the `bundler` keyword serves as a reference or a hook into the underlying build process. It allows developers to customize the build environment, add specific loaders, or integrate additional plugins, while still leveraging the framework's automatic extension-specific optimizations.
 
-
 ## Rspack
 
 [Rspack](https://rspack.rs/) is a high performance JavaScript bundler written in Rust. It offers strong compatibility with the webpack ecosystem, allowing for seamless replacement of webpack, and provides lightning fast build speeds.
 
 Compared to webpack, Rspack has significantly improved build performance, thanks not only to the language advantages brought by Rust, but also to its parallel architecture and incremental compilation features. Benchmarking has shown that Rspack can provide 5-10 times better compilation performance.
+
+## Plugin
+
+A **Plugin** is an extensible module and one of the core pillars of Addon Bone. Through plugins, the framework declaratively configures the extension: it registers **Entrypoints**, connects locales and icons, generates `manifest.json`, and configures the **Rspack** build — all without manual manifest editing or complex configurations.
+
+A single plugin can fully define an extension's composition: declare all necessary entry points, add translations and icon sets, adjust the **Bundler** configuration, and execute actions on startup. Plugins are built on intuitive hooks (such as `background`, `content`, `page`, `popup`, `offscreen`, `locale`, `icon`, `bundler`, `manifest`, `startup`), making them easy to write, reuse, and combine.
+
+[Learn more about Plugins](/plugin/system/introduction)
 
 ## Shared and Apps
 
