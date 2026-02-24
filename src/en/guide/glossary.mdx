@@ -1,32 +1,32 @@
 # Glossary
 
-### Entrypoint
+## Entrypoint
 
 An **Entrypoint** is a primary entry point into your extension's logic, represented as a file or directory in the `src/` directory that the framework automatically recognizes and transforms into an extension component (such as a background/service worker, content script, or popup). Instead of manual `manifest.json` configuration, developers use declarative definition functions directly in the code, allowing permissions, execution conditions, and logic to be managed in a single place.
 
-The framework implements a file-based routing concept: simply creating a file named after its type (e.g., `popup.tsx` or `auth.content.ts`) is enough for Addon Bone to register it and prepare the execution environment. This ensures project cleanliness, provides strict API typing for each execution context, and automates the building of complex interfaces and scripts without extra configuration.
+Addon Bone implements a file-based routing concept: simply creating a file named after its type (e.g., `popup.tsx` or `auth.content.ts`) is enough for Addon Bone to register it and prepare the execution environment. This ensures project cleanliness, provides strict API typing for each execution context, and automates the building of complex interfaces and scripts without extra configuration.
 
 [Learn more about Entrypoint](/guide/entrypoints/introduction)
 
-### Definition
+## Definition
 
 A **Definition** is a declarative description of an **Entrypoint** that defines its settings and logic directly in the code, eliminating the need to manually edit `manifest.json`. It can be represented in various forms: as an object, a special adapter function, or a set of individual constant exports (e.g., `export const matches = [...]`), which the framework automatically gathers into a single configuration.
 
 Each definition contains key properties or functions responsible for the component's lifecycle. Depending on the entry point type, the main one might be the `main`, `render`, or `execute` function. The framework allows you to simply `export default` a function, and it will be automatically interpreted as the main entry point for that component.
 
-### Bundler
+## Bundler
 
 The **Bundler** is the core component responsible for compiling, bundling, and optimizing source code, styles, and other assets into the final browser extension files. Addon Bone utilizes [Rspack](https://rspack.rs/) as its primary bundler, ensuring high-performance builds and modern web development features like Hot Module Replacement (HMR).
 
 In the configuration files and plugin system, the `bundler` keyword serves as a reference or a hook into the underlying build process. It allows developers to customize the build environment, add specific loaders, or integrate additional plugins, while still leveraging the framework's automatic extension-specific optimizations.
 
 
-### Rspack
+## Rspack
 
 [Rspack](https://rspack.rs/) is a high performance JavaScript bundler written in Rust. It offers strong compatibility with the webpack ecosystem, allowing for seamless replacement of webpack, and provides lightning fast build speeds.
 
 Compared to webpack, Rspack has significantly improved build performance, thanks not only to the language advantages brought by Rust, but also to its parallel architecture and incremental compilation features. Benchmarking has shown that Rspack can provide 5-10 times better compilation performance.
 
-### Shared and Apps
+## Shared and Apps
 
 **Shared** and **Apps** are two levels of code organization within a project. By default, Addon Bone is configured to work with a single extension, allowing for the fastest possible start to development. However, the framework's architecture provides the ability to use a monorepo approach: the `Shared` directory stores the common core and resources, while `Apps` contains the logic of specific applications. This enables efficient development of an entire family of extensions on a single codebase, separating common and specific code.

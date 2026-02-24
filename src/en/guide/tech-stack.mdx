@@ -1,1 +1,53 @@
 # Tech Stack
+
+The Addon Bone framework comes with built-in popular libraries and development tools from the community.
+
+In this document, you can learn about the main technology stack involved in the Addon Bone framework, as well as some optional libraries and tools.
+
+## Package Manager
+
+Addon Bone can be used with any community package manager, such as [npm](https://www.npmjs.com/package/npm), [yarn](https://classic.yarnpkg.com/lang/en/), [pnpm](https://pnpm.io/), or [Bun](https://bun.sh/).
+
+We recommend using pnpm for faster installation speed and efficient cache management.
+
+## Bundler
+
+Addon Bone uses [Rspack](https://rspack.rs/) to bundle your browser extension. It provides high-performance builds and a modern development experience.
+
+Any fine-grained adjustments (loaders, plugins, aliases, etc.) can be performed through the `bundler` field in the framework configuration, allowing you to patch the Rspack config while leveraging the framework's automation.
+
+## Transpiler
+
+Addon Bone uses [SWC](https://swc.rs/) (integrated into Rspack) as a JavaScript transpiler to transform TypeScript or JSX into JavaScript code and perform syntax downgrades when necessary.
+
+Babel is not enabled by default. If you need to add [Babel](https://babeljs.io/) plugins, you can configure them through a custom `bundler` configuration, although this may increase compilation time.
+
+## Minimizer
+
+During production builds, Addon Bone uses the [SWC](https://swc.rs/) minimizer provided by Rspack to minify JavaScript code by default.
+
+## CSS and Styles
+
+Basic CSS processing is built on [css-loader](https://www.npmjs.com/package/css-loader) and [mini-css-extract-plugin](https://github.com/webpack-contrib/mini-css-extract-plugin) to extract styles into separate files.
+
+[CSS Modules](https://github.com/css-modules/css-modules) are supported out of the box. You can customize the class name pattern using the `cssIdentName` property in the configuration.
+
+PostCSS and [autoprefixer](https://github.com/postcss/autoprefixer) are not pre-configured by default. If needed, they can be integrated via the custom `bundler` configuration.
+
+## CSS Preprocessors
+
+[Sass](https://sass-lang.com/) is supported out of the box using `sass` and `sass-loader`.
+
+[Less](https://lesscss.org/) and [Stylus](https://stylus-lang.com/) are not pre-installed but can be added manually through the `bundler` configuration by connecting the corresponding loaders.
+
+## CSS-in-JS
+
+There are no built-in integrations for CSS-in-JS. You can use any solution, such as [styled-components](https://styled-components.com/) or [Emotion](https://emotion.sh/), by adding the required plugins or loaders through the `bundler` configuration.
+
+## React
+
+Addon Bone supports [React](https://react.dev/) for UI views and content scripts through specialized adapters. React is not forced upon the project; it is included as a peer dependency and can be used as needed.
+
+## TypeScript
+
+[TypeScript](https://www.typescriptlang.org/) is supported out of the box. The framework automatically configures the `@/` global alias to point to your source directory (`srcDir`), simplifying module imports within your project.
