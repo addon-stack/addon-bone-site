@@ -7,7 +7,7 @@ import fileTree from "rspress-plugin-file-tree";
 export default defineConfig({
 	root: path.join(__dirname, "src"),
 	route: {
-		exclude: ["components/**"],
+		exclude: ["components/**", "en/components/**"],
 	},
 	outDir: "dist",
 	title: "Addon Bone",

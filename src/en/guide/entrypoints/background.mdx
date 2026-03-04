@@ -1,7 +1,6 @@
 # Background
 
-import PropertySpec from "@components/PropertySpec";
-import Details from "@components/Details";
+import {EntrypointOptions, BackgroundOptions} from "../../components/entrypoints";
 
 Background is the core backend entrypoint of a browser extension in Addon Bone.
 
@@ -36,59 +35,13 @@ Supported background patterns:
 
 Background options include common entrypoint filters and background-specific fields.
 
-### Common Entrypoint Options
+### Entrypoint Options
 
-<Details title="Common Entrypoint Options">
-    <PropertySpec name="includeBrowser" type="Browser[]" required>
-        Includes this background only for selected target browsers.
-        If current build browser is not listed, the entrypoint is excluded from the build output.
-    </PropertySpec>
-    <PropertySpec name="excludeBrowser" type="Browser[]">
-        Excludes this background for selected target browsers.
-        If current build browser is listed, the entrypoint is excluded from the build output.
-    </PropertySpec>
-    <PropertySpec name="includeApp" type="string[]">
-        Includes this background only for selected app names (<code>config.app</code>).
-        If current app is not listed, the entrypoint is excluded from the build output.
-    </PropertySpec>
-    <PropertySpec name="excludeApp" type="string[]">
-        Excludes this background for selected app names (<code>config.app</code>).
-        If current app is listed, the entrypoint is excluded from the build output.
-    </PropertySpec>
-    <PropertySpec name="mode" type={'"development" | "production" | "none"'}>
-        Includes this background only for selected build mode.
-        If it does not match current mode, the entrypoint is excluded from the build output.
-    </PropertySpec>
-    <PropertySpec name="debug" type="boolean">
-        Includes this background only when <code>config.debug</code> matches.
-        If it does not match, the entrypoint is excluded from the build output.
-    </PropertySpec>
-    <PropertySpec name="manifestVersion" type="2 | 3">
-        Includes this background only for selected manifest version.
-        If it does not match current build target, the entrypoint is excluded from the build output.
-    </PropertySpec>
-</Details>
+<EntrypointOptions />
 
 ### Background-Specific Options
 
-<PropertySpec name="persistent" type="boolean">
-    Controls persistent behavior for background context (relevant for MV2 background page mode).
-</PropertySpec>
-<PropertySpec name="permissions" type="chrome.runtime.ManifestPermission[]">
-    Appended to <code>manifest.permissions</code>.
-</PropertySpec>
-<PropertySpec name="optionalPermissions" type="chrome.runtime.ManifestOptionalPermission[]">
-    Appended to <code>manifest.optional_permissions</code>.
-</PropertySpec>
-<PropertySpec name="hostPermissions" type="string[]">
-    Appended to <code>manifest.host_permissions</code>.
-</PropertySpec>
-<PropertySpec name="optionalHostPermissions" type="string[]">
-    Appended to <code>manifest.optional_host_permissions</code>.
-</PropertySpec>
-<PropertySpec name="main" type="(options) => void | Promise<void>">
-    Main background handler executed on startup.
-</PropertySpec>
+<BackgroundOptions />
 
 ## Main Handler
 
