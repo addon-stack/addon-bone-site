@@ -1,6 +1,6 @@
 import * as path from "node:path";
-import {defineConfig} from "@rspress/core";
 import {pluginSass as sass} from "@rsbuild/plugin-sass";
+import {defineConfig} from "@rspress/core";
 
 import fileTree from "rspress-plugin-file-tree";
 

@@ -1,9 +1,7 @@
-import type {ReactNode} from "react";
-
-import {Badge} from "@rspress/core/theme";
-import {useI18n} from "@rspress/core/runtime";
-
 import DocHeading from "@components/DocHeading";
+import {useI18n} from "@rspress/core/runtime";
+import {Badge} from "@rspress/core/theme";
+import type {ReactNode} from "react";
 
 import styles from "./property-spec.scss";
 

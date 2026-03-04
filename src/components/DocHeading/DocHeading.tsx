@@ -1,5 +1,5 @@
-import type {ComponentPropsWithoutRef} from "react";
 import cn from "classnames";
+import type {ComponentPropsWithoutRef} from "react";
 
 type BaseDocHeadingProps = {
 	toc?: boolean;
@@ -51,7 +51,7 @@ export default (props: DocHeadingProps) => {
 	return (
 		<Tag id={id} className={cn(className, {"rp-toc-include": toc})} {...rest}>
 			{id && (
-				<a className="rp-header-anchor" href={`#${id}`} aria-hidden="true">
+				<a className="rp-header-anchor" href={`#${id}`} aria-hidden>
 					#
 				</a>
 			)}

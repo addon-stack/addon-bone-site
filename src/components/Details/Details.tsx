@@ -1,5 +1,5 @@
-import type {ReactNode} from "react";
 import {IconArrowRight, SvgWrapper} from "@rspress/core/theme";
+import type {ReactNode} from "react";
 
 import styles from "./details.scss";
 

@@ -1,5 +1,5 @@
-import type {ComponentProps} from "react";
 import PropertySpec from "@components/PropertySpec";
+import type {ComponentProps} from "react";
 
 type HostPermissionsProps = Pick<
 	ComponentProps<typeof PropertySpec>,
