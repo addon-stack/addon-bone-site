@@ -33,7 +33,7 @@ export default function PropertySpec({
 				<Badge text={type} type="tip" outline />
 				{required && <Badge type="danger" text={t("required_badge")} outline />}
 			</div>
-			{children}
+			<p className={styles["rp-doc-option-item__content"]}>{children}</p>
 		</div>
 	);
 }

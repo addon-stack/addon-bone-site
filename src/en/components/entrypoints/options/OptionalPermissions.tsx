@@ -1,4 +1,4 @@
-import {OptionalPermissions as BaseOptionalPermissions} from "@components/docs/entrypoints";
+import {OptionalPermissions as BaseOptionalPermissions} from "@components/docs/entrypoints/options";
 
 export default function OptionalPermissions() {
 	return (

@@ -1,6 +1,8 @@
 # Background
 
-import {EntrypointOptions, BackgroundOptions} from "../../components/entrypoints";
+
+import {Background, Entrypoint} from "@en/components/entrypoints";
+import Details from "@components/Details";
 
 Background is the core backend entrypoint of a browser extension in Addon Bone.
 
@@ -37,11 +39,14 @@ Background options include common entrypoint filters and background-specific fie
 
 ### Entrypoint Options
 
-<EntrypointOptions />
+
+<Details title="Common Options">
+    <Entrypoint/>
+</Details>
 
 ### Background-Specific Options
 
-<BackgroundOptions />
+<Background/>
 
 ## Main Handler
 

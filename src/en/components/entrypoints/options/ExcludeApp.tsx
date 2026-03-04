@@ -1,4 +1,4 @@
-import {ExcludeApp as BaseExcludeApp} from "@components/docs/entrypoints";
+import {ExcludeApp as BaseExcludeApp} from "@components/docs/entrypoints/options";
 
 export default function ExcludeApp() {
 	return (

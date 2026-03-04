@@ -1,4 +1,4 @@
-import {Mode as BaseMode} from "@components/docs/entrypoints";
+import {Mode as BaseMode} from "@components/docs/entrypoints/options";
 
 export default function Mode() {
 	return (

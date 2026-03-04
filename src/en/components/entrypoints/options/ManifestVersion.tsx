@@ -1,4 +1,4 @@
-import {ManifestVersion as BaseManifestVersion} from "@components/docs/entrypoints";
+import {ManifestVersion as BaseManifestVersion} from "@components/docs/entrypoints/options";
 
 export default function ManifestVersion() {
 	return (

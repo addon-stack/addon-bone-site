@@ -1,4 +1,4 @@
-import {IncludeBrowser as BaseIncludeBrowser} from "@components/docs/entrypoints";
+import {IncludeBrowser as BaseIncludeBrowser} from "@components/docs/entrypoints/options";
 
 export default function IncludeBrowser() {
 	return (

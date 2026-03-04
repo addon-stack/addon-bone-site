@@ -1,4 +1,4 @@
-import {HostPermissions as BaseHostPermissions} from "@components/docs/entrypoints";
+import {HostPermissions as BaseHostPermissions} from "@components/docs/entrypoints/options";
 
 export default function HostPermissions() {
 	return (

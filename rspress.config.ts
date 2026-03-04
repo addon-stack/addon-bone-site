@@ -56,6 +56,7 @@ export default defineConfig({
 		resolve: {
 			alias: {
 				"@components": path.join(__dirname, "src/components"),
+				"@en": path.join(__dirname, "src/en"),
 			},
 		},
 	},

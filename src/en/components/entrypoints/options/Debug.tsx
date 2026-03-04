@@ -1,4 +1,4 @@
-import {Debug as BaseDebug} from "@components/docs/entrypoints";
+import {Debug as BaseDebug} from "@components/docs/entrypoints/options";
 
 export default function Debug() {
 	return (

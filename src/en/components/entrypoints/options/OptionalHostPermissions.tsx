@@ -1,4 +1,4 @@
-import {OptionalHostPermissions as BaseOptionalHostPermissions} from "@components/docs/entrypoints";
+import {OptionalHostPermissions as BaseOptionalHostPermissions} from "@components/docs/entrypoints/options";
 
 export default function OptionalHostPermissions() {
 	return (

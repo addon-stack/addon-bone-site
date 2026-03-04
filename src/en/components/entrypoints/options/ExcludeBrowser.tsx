@@ -1,4 +1,4 @@
-import {ExcludeBrowser as BaseExcludeBrowser} from "@components/docs/entrypoints";
+import {ExcludeBrowser as BaseExcludeBrowser} from "@components/docs/entrypoints/options";
 
 export default function ExcludeBrowser() {
 	return (

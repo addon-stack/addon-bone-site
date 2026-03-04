@@ -1,4 +1,4 @@
-import {Persistent as BasePersistent} from "@components/docs/entrypoints";
+import {Persistent as BasePersistent} from "@components/docs/entrypoints/options";
 
 export default function Persistent() {
 	return (

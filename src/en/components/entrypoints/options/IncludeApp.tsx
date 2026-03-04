@@ -1,4 +1,4 @@
-import {IncludeApp as BaseIncludeApp} from "@components/docs/entrypoints";
+import {IncludeApp as BaseIncludeApp} from "@components/docs/entrypoints/options";
 
 export default function IncludeApp() {
 	return (
