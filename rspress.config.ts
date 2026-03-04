@@ -1,8 +1,14 @@
 import * as path from "node:path";
 import {defineConfig} from "@rspress/core";
+import {pluginSass as sass} from "@rsbuild/plugin-sass";
+
+import fileTree from "rspress-plugin-file-tree";
 
 export default defineConfig({
 	root: path.join(__dirname, "src"),
+	route: {
+		exclude: ["components/**"],
+	},
 	outDir: "dist",
 	title: "Addon Bone",
 	icon: "/favicon.png",
@@ -38,5 +44,19 @@ export default defineConfig({
 				content: "https://www.npmjs.com/~addon-stack",
 			},
 		],
+	},
+	plugins: [fileTree()],
+	builderConfig: {
+		plugins: [sass()],
+		output: {
+			cssModules: {
+				auto: /src\/components\/.*\.scss$/i,
+			},
+		},
+		resolve: {
+			alias: {
+				"@components": path.join(__dirname, "src/components"),
+			},
+		},
 	},
 });

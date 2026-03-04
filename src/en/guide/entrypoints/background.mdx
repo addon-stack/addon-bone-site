@@ -1,1 +1,196 @@
 # Background
+
+import PropertySpec from "@components/PropertySpec";
+import Details from "@components/Details";
+
+Background is the core backend entrypoint of a browser extension in Addon Bone.
+
+In browser terms, this entrypoint maps to:
+
+- **Manifest V3**: background **service worker**
+- **Manifest V2**: background **page** (persistent or non-persistent)
+
+Use `background` for startup logic, browser event listeners, command handling, messaging orchestration, and privileged extension APIs.
+
+## Discovery
+
+```tree
+src
+├── background.ts
+├── auth.background.ts
+└── background
+    └── index.ts
+adnbn.config.ts
+package.json
+tsconfig.json
+```
+
+Supported background patterns:
+
+- `background.ts`
+- `*.background.ts`
+- `background/index.ts`
+
+
+## Options
+
+Background options include common entrypoint filters and background-specific fields.
+
+### Common Entrypoint Options
+
+<Details title="Common Entrypoint Options">
+    <PropertySpec name="includeBrowser" type="Browser[]" required>
+        Includes this background only for selected target browsers.
+        If current build browser is not listed, the entrypoint is excluded from the build output.
+    </PropertySpec>
+    <PropertySpec name="excludeBrowser" type="Browser[]">
+        Excludes this background for selected target browsers.
+        If current build browser is listed, the entrypoint is excluded from the build output.
+    </PropertySpec>
+    <PropertySpec name="includeApp" type="string[]">
+        Includes this background only for selected app names (<code>config.app</code>).
+        If current app is not listed, the entrypoint is excluded from the build output.
+    </PropertySpec>
+    <PropertySpec name="excludeApp" type="string[]">
+        Excludes this background for selected app names (<code>config.app</code>).
+        If current app is listed, the entrypoint is excluded from the build output.
+    </PropertySpec>
+    <PropertySpec name="mode" type={'"development" | "production" | "none"'}>
+        Includes this background only for selected build mode.
+        If it does not match current mode, the entrypoint is excluded from the build output.
+    </PropertySpec>
+    <PropertySpec name="debug" type="boolean">
+        Includes this background only when <code>config.debug</code> matches.
+        If it does not match, the entrypoint is excluded from the build output.
+    </PropertySpec>
+    <PropertySpec name="manifestVersion" type="2 | 3">
+        Includes this background only for selected manifest version.
+        If it does not match current build target, the entrypoint is excluded from the build output.
+    </PropertySpec>
+</Details>
+
+### Background-Specific Options
+
+<PropertySpec name="persistent" type="boolean">
+    Controls persistent behavior for background context (relevant for MV2 background page mode).
+</PropertySpec>
+<PropertySpec name="permissions" type="chrome.runtime.ManifestPermission[]">
+    Appended to <code>manifest.permissions</code>.
+</PropertySpec>
+<PropertySpec name="optionalPermissions" type="chrome.runtime.ManifestOptionalPermission[]">
+    Appended to <code>manifest.optional_permissions</code>.
+</PropertySpec>
+<PropertySpec name="hostPermissions" type="string[]">
+    Appended to <code>manifest.host_permissions</code>.
+</PropertySpec>
+<PropertySpec name="optionalHostPermissions" type="string[]">
+    Appended to <code>manifest.optional_host_permissions</code>.
+</PropertySpec>
+<PropertySpec name="main" type="(options) => void | Promise<void>">
+    Main background handler executed on startup.
+</PropertySpec>
+
+## Main Handler
+
+For background entrypoint, the primary handler is `main`.
+
+Default export behavior:
+
+- `export default` **object** -> treated as background definition
+- `export default` **function** -> treated as `main`
+- named exports are also collected and merged
+
+## Authoring Styles
+
+### 1. Definition helper (`defineBackground`)
+
+```ts
+import {defineBackground} from "adnbn";
+
+export default defineBackground({
+  permissions: ["storage"],
+  hostPermissions: ["*://*.example.com/*"],
+  main(options) {
+    console.log("Background started", options.permissions);
+  }
+});
+```
+
+### 2. Plain default object
+
+```ts
+export default {
+  permissions: ["storage"],
+  main() {
+    console.log("Background started");
+  }
+};
+```
+
+### 3. Named exports + default `main`
+
+```ts
+export const permissions = ["storage"];
+export const optionalPermissions = ["tabs"];
+
+export default async function main(options) {
+  console.log(options.permissions);
+}
+```
+
+### 4. Mixed style (named exports + default object)
+
+```ts
+export const permissions = ["storage"];
+
+export default {
+  permissions: ["tabs"],
+  main() {
+    console.log("Merged definition");
+  }
+};
+```
+
+If keys overlap, values from the `default` object override named exports.
+
+## Multi-App Structure (`shared` + `apps`)
+
+```tree
+src
+├── shared
+│   └── background.ts
+└── apps
+    ├── app-a
+    │   └── background.ts
+    └── app-b
+        └── background.ts
+adnbn.config.ts
+```
+
+### `mergeBackground` behavior
+
+If app background exists:
+
+- `mergeBackground: false` -> use app background only
+- `mergeBackground: true` -> combine app + shared backgrounds
+
+If app background does not exist:
+
+- use shared background
+
+Config example:
+
+```ts
+import {defineConfig} from "adnbn";
+
+export default defineConfig({
+  mergeBackground: true
+});
+```
+
+## Best Practices
+
+1. Keep each background file self-sufficient: logic and required manifest-affecting options together.
+2. Declare required permissions/optional permissions/host permissions in each file that depends on them.
+3. Do not rely on another background file to provide required options.
+4. This is critical when filters (`includeBrowser`, `excludeApp`, `mode`, `debug`, `manifestVersion`) may exclude files from build output.

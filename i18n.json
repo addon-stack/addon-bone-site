@@ -70,5 +70,8 @@
   },
   "migrate": {
     "en": "Migrate to Addon Bone"
+  },
+  "required_badge": {
+    "en": "required"
   }
 }

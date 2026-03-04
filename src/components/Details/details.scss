@@ -1,0 +1,40 @@
+.rp-doc-details {
+	$self: &;
+
+	margin: 1rem 0 1.25rem;
+	border-radius: 12px;
+	border: var(--rp-code-block-border, 1px solid rgba(125, 125, 125, 0.2));
+	background: transparent !important;
+	overflow: clip;
+
+	&__summary {
+		list-style: none;
+		cursor: pointer;
+		user-select: none;
+		padding: 0.5rem;
+		display: flex;
+		align-items: center;
+		gap: 0.55rem;
+		color: var(--rp-c-text-1, inherit);
+
+		&::-webkit-details-marker {
+			display: none;
+		}
+	}
+
+	&__icon {
+		width: 20px;
+		height: 20px;
+		color: var(--rp-c-text-2, inherit);
+		transition: transform 0.2s ease;
+		flex: 0 0 auto;
+	}
+
+	&[open] > #{$self}__summary #{$self}__icon {
+		transform: rotate(90deg);
+	}
+
+	&__content {
+		padding: 0 1rem;
+	}
+}
