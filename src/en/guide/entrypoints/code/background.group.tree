@@ -1,0 +1,10 @@
+src
+└── backgrounds // organize all background entrypoints in one place
+    ├── background.ts
+    ├── auth.background.ts
+    ├── background
+    │   └── index.ts
+    └── my.background/
+        └── index.ts
+adnbn.config.ts
+package.json

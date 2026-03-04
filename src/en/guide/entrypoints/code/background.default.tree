@@ -1,0 +1,9 @@
+src
+├── background.ts // default background entrypoint
+├── auth.background.ts // named background entrypoint
+├── background // directory-based entrypoint
+│   └── index.ts
+└── my.background/  // custom directory name is also supported
+    └── index.ts
+adnbn.config.ts
+package.json

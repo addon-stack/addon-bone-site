@@ -1,36 +1,64 @@
 # Background
 
 
+import {Tab, Tabs} from "@rspress/core/theme";
 import {Background, Entrypoint} from "@en/components/entrypoints";
 import Details from "@components/Details";
 
-Background is the core backend entrypoint of a browser extension in Addon Bone.
+`background` is the backend entrypoint of your browser extension in Addon Bone.
 
 In browser terms, this entrypoint maps to:
 
 - **Manifest V3**: background **service worker**
 - **Manifest V2**: background **page** (persistent or non-persistent)
 
-Use `background` for startup logic, browser event listeners, command handling, messaging orchestration, and privileged extension APIs.
+Use background for startup logic, browser event listeners, command handling, messaging orchestration, and privileged extension APIs.
 
-## Discovery
+## Quick Start
 
-```tree
-src
-├── background.ts
-├── auth.background.ts
-└── background
-    └── index.ts
-adnbn.config.ts
-package.json
-tsconfig.json
+Create `background.ts` and write your first extension logic directly at the top level.
+
+This is the fastest way to feel how Addon Bone background works: no boilerplate, no extra setup, just a real background module that starts doing useful work immediately.
+
+```ts title="background.ts"
+console.log("Background started");
+
+export {};
 ```
 
-Supported background patterns:
+:::warning
+Each Entrypoint file is treated as an ES module. If the file does not export Entrypoint options, TypeScript may interpret it as a regular script and show a warning. To explicitly mark the file as a module, add the line `export {}` at the beginning or the end of the file.
+:::
+
+## File Structure
+
+Addon Bone auto-discovers background entrypoints by file naming patterns.
+Use the default flat structure for most projects. If you have many background files, group them in `backgrounds/`.
+
+<Tabs>
+    <Tab label="Default">
+        ```tree file="./code/background.default.tree"
+        ```
+    </Tab>
+    <Tab label="Grouped">
+        ```tree file="./code/background.group.tree"
+        ```
+    </Tab>
+</Tabs>
+
+Supported patterns include:
 
 - `background.ts`
 - `*.background.ts`
 - `background/index.ts`
+- `*.background/index.ts`
+- `backgrounds/background.ts`
+- `backgrounds/*.background.ts`
+- `backgrounds/background/index.ts`
+- `backgrounds/*.background/index.ts`
+
+All discovered background entrypoints are merged into one final background output during build.
+You can split logic into multiple files, and Addon Bone will combine them automatically.
 
 
 ## Options
@@ -66,11 +94,11 @@ Default export behavior:
 import {defineBackground} from "adnbn";
 
 export default defineBackground({
-  permissions: ["storage"],
-  hostPermissions: ["*://*.example.com/*"],
-  main(options) {
-    console.log("Background started", options.permissions);
-  }
+    permissions: ["storage"],
+    hostPermissions: ["*://*.example.com/*"],
+    main(options) {
+      console.log("Background started", options.permissions);
+    }
 });
 ```
 
@@ -78,16 +106,16 @@ export default defineBackground({
 
 ```ts
 export default {
-  permissions: ["storage"],
-  main() {
-    console.log("Background started");
-  }
+    permissions: ["storage"],
+    main() {
+      console.log("Background started");
+    }
 };
 ```
 
 ### 3. Named exports + default `main`
 
-```ts
+```ts title="background.ts"
 export const permissions = ["storage"];
 export const optionalPermissions = ["tabs"];
 

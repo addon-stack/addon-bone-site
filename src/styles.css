@@ -11,3 +11,8 @@
 .rp-tabs__label__item--selected {
 	box-shadow: 0 0 1px 0 var(--rp-c-divider) !important;
 }
+
+.rp-tabs__content__item > div {
+	border: none !important;
+	border-radius: 0 !important;
+}
