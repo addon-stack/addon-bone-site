@@ -51,9 +51,12 @@ export default (props: DocHeadingProps) => {
 	return (
 		<Tag id={id} className={cn(className, {"rp-toc-include": toc})} {...rest}>
 			{id && (
-				<a className="rp-header-anchor" href={`#${id}`} aria-hidden>
-					#
-				</a>
+				<>
+					{/* biome-ignore lint/a11y/useAnchorContent: decorative anchor hidden from assistive technologies */}
+					<a className="rp-header-anchor" href={`#${id}`} aria-hidden>
+						#
+					</a>
+				</>
 			)}
 			{children}
 		</Tag>
