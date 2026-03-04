@@ -12,7 +12,7 @@
   },
   "dependencies": {
     "@rspress/core": "^2.0.1",
-    "rspress-plugin-file-tree": "^1.0.4"
+    "classnames": "^2.5.1"
   },
   "devDependencies": {
     "@biomejs/biome": "2.3.8",
@@ -24,6 +24,7 @@
     "@types/react-dom": "^19.2.3",
     "husky": "^9.1.7",
     "lint-staged": "^16.2.7",
+    "rspress-plugin-file-tree": "^1.0.4",
     "react": "^19.2.4",
     "react-dom": "^19.2.4",
     "sass": "^1.97.3"

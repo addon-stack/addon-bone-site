@@ -1,4 +1,4 @@
-.rp-doc-details {
+.rp-details {
 	$self: &;
 
 	margin: 1rem 0 1.25rem;
@@ -6,6 +6,7 @@
 	border: var(--rp-code-block-border, 1px solid rgba(125, 125, 125, 0.2));
 	background: transparent !important;
 	overflow: clip;
+	cursor: default;
 
 	&__summary {
 		list-style: none;
@@ -35,6 +36,6 @@
 	}
 
 	&__content {
-		padding: 0 1rem;
+		padding: 1rem 1rem 0;
 	}
 }

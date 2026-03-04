@@ -3,12 +3,16 @@ import type {ReactNode} from "react";
 import {Badge} from "@rspress/core/theme";
 import {useI18n} from "@rspress/core/runtime";
 
+import DocHeading from "@components/DocHeading";
+
 import styles from "./property-spec.scss";
 
 interface PropertySpecProps {
 	name: string;
 	type: string;
 	required?: boolean;
+	toc?: boolean;
+	header?: ReactNode;
 	children: ReactNode;
 }
 
@@ -16,24 +20,27 @@ type PropertySpecI18n = {
 	required_badge: string;
 };
 
-export default function PropertySpec({
-	name,
-	type,
-	required = false,
-	children,
-}: PropertySpecProps) {
+export default (props: PropertySpecProps) => {
+	const {name, type, required = false, toc = false, header, children} = props;
+
 	const t = useI18n<PropertySpecI18n>();
 
 	return (
-		<div className={styles["rp-doc-option-item"]}>
-			<div className={styles["rp-doc-option-item__header"]}>
-				<h4 className={styles["rp-doc-option-item__name"]}>
-					<code>{name}</code>
-				</h4>
+		<div className={styles["rp-property-spec"]}>
+			<div className={styles["rp-property-spec__header"]}>
+				<DocHeading
+					className={styles["rp-property-spec__name"]}
+					level={3}
+					toc={toc}
+					id={name}
+				>
+					{name}
+				</DocHeading>
 				<Badge text={type} type="tip" outline />
 				{required && <Badge type="danger" text={t("required_badge")} outline />}
+				{header}
 			</div>
-			<p className={styles["rp-doc-option-item__content"]}>{children}</p>
+			<p className={styles["rp-property-spec__content"]}>{children}</p>
 		</div>
 	);
-}
+};

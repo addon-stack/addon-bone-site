@@ -15,16 +15,16 @@ export default function Details({
 	children,
 }: DetailsProps) {
 	return (
-		<details className={styles["rp-doc-details"]} open={defaultOpen}>
-			<summary className={styles["rp-doc-details__summary"]}>
+		<details className={styles["rp-details"]} open={defaultOpen}>
+			<summary className={styles["rp-details__summary"]}>
 				<SvgWrapper
-					className={styles["rp-doc-details__icon"]}
+					className={styles["rp-details__icon"]}
 					icon={IconArrowRight}
 					aria-hidden
 				/>
 				<span>{title}</span>
 			</summary>
-			<div className={styles["rp-doc-details__content"]}>{children}</div>
+			<div className={styles["rp-details__content"]}>{children}</div>
 		</details>
 	);
 }
