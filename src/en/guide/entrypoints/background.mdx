@@ -164,7 +164,20 @@ This lets you keep one shared baseline and add app-specific behavior without dup
 
 ## Best Practices
 
-1. Keep each background file self-sufficient: logic and required manifest-affecting options together.
-2. Declare required permissions/optional permissions/host permissions in each file that depends on them.
-3. Do not rely on another background file to provide required options.
-4. This is critical when filters (`includeBrowser`, `excludeApp`, `mode`, `debug`, `manifestVersion`) may exclude files from build output.
+- Keep options close to the background logic that uses them.  
+  If a module relies on `tabs`, `storage`, or host access, declare the corresponding options in the same entrypoint.
+
+- Do not rely on another background entrypoint to provide required options.  
+  Each entrypoint should be self-sufficient for critical fields.
+
+- Account for build filters (`includeBrowser`, `excludeBrowser`, `includeApp`, `excludeApp`, `mode`, `debug`, `manifestVersion`).  
+  If an entrypoint can be excluded, critical options should also be declared in fallback entrypoints.
+
+- Use one structure style per scope: root-level or `backgrounds/`.  
+  If `backgrounds/` exists in a scope, only that directory is used, and root-level background files in the same scope are ignored.
+
+- In multi-app mode, treat `shared` as the baseline and `apps/*` as app-specific layers.  
+  Keep shared logic in `shared`, and put differences/overrides in each app.
+
+- Prefer `defineBackground` as the default style for new modules.  
+  It provides stronger TypeScript typing, better autocomplete, and fewer option-related mistakes.

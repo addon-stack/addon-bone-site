@@ -1,10 +1,10 @@
+export {default as BackgroundMain} from "./BackgroundMain";
 export {default as Debug} from "./Debug";
 export {default as ExcludeApp} from "./ExcludeApp";
 export {default as ExcludeBrowser} from "./ExcludeBrowser";
 export {default as HostPermissions} from "./HostPermissions";
 export {default as IncludeApp} from "./IncludeApp";
 export {default as IncludeBrowser} from "./IncludeBrowser";
-export {default as BackgroundMain} from "./BackgroundMain";
 export {default as ManifestVersion} from "./ManifestVersion";
 export {default as Mode} from "./Mode";
 export {default as OptionalHostPermissions} from "./OptionalHostPermissions";

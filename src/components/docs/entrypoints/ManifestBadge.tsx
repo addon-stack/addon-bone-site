@@ -1,5 +1,5 @@
-import {Badge} from "@rspress/core/theme";
 import {useI18n} from "@rspress/core/runtime";
+import {Badge} from "@rspress/core/theme";
 
 type ManifestBadgeI18n = {
 	manifest_badge: string;
