@@ -1,29 +1,23 @@
-import {Badge} from "@rspress/core/theme";
-import {useI18n} from "@rspress/core/runtime";
-
 import PropertySpec, {type PropertySpecProps} from "@components/PropertySpec";
+import ManifestBadge from "./ManifestBadge";
+import TargetBadge from "./TargetBadge";
 
 export interface EntrypointSpecProps extends PropertySpecProps {
+	manifest?: boolean;
 	target?: boolean;
 }
 
-type EntrypointSpecI18n = {
-	target_handler_badge: string;
-};
-
 export default (props: EntrypointSpecProps) => {
-	const {target = false, header, ...rest} = props;
-	const t = useI18n<EntrypointSpecI18n>();
+	const {manifest = false, target = false, header, ...rest} = props;
 
 	return (
 		<PropertySpec
 			{...rest}
 			header={
 				<>
+					{manifest && <ManifestBadge />}
+					{target && <TargetBadge />}
 					{header}
-					{target ? (
-						<Badge text={t("target_handler_badge")} type="info" outline />
-					) : null}
 				</>
 			}
 		/>

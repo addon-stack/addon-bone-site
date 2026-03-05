@@ -9,6 +9,7 @@ export default ({children}: PermissionsProps) => {
 		<EntrypointSpec
 			name="permissions"
 			type="chrome.runtime.ManifestPermission[]"
+			manifest
 		>
 			{children}
 		</EntrypointSpec>

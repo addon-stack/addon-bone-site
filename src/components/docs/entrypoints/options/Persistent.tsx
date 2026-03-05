@@ -6,7 +6,7 @@ type PersistentProps = Pick<ComponentProps<typeof EntrypointSpec>, "children">;
 
 export default ({children}: PersistentProps) => {
 	return (
-		<EntrypointSpec name="persistent" type="boolean">
+		<EntrypointSpec name="persistent" type="boolean" manifest>
 			{children}
 		</EntrypointSpec>
 	);

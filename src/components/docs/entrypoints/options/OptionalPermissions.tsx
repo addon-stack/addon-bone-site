@@ -12,6 +12,7 @@ export default ({children}: OptionalPermissionsProps) => {
 		<EntrypointSpec
 			name="optionalPermissions"
 			type="chrome.runtime.ManifestOptionalPermission[]"
+			manifest
 		>
 			{children}
 		</EntrypointSpec>

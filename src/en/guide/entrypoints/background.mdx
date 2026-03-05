@@ -4,6 +4,7 @@
 import {Tab, Tabs} from "@rspress/core/theme";
 
 import Details from "@components/Details";
+import DocHeading from "@components/DocHeading";
 import {Background, Entrypoint} from "@en/components/entrypoints";
 import EntrypointExportNote from "./fragments/entrypoint-export-note.mdx";
 
@@ -27,8 +28,6 @@ console.log("Background started");
 
 export {};
 ```
-
-
 
 <EntrypointExportNote/>
 
@@ -58,6 +57,8 @@ Supported patterns include:
 - `backgrounds/*.background.ts`
 - `backgrounds/background/index.ts`
 - `backgrounds/*.background/index.ts`
+
+Scope rule: if a `backgrounds/` directory exists, Addon Bone scans only that directory for background entrypoints in the same scope and does not merge it with root-level background files.
 
 All discovered background entrypoints are merged into one final background output during build.
 You can split logic into multiple files, and Addon Bone will combine them automatically.
@@ -98,46 +99,68 @@ They define:
 
 For `background`, this includes fields such as `permissions`, `optionalPermissions`, `hostPermissions`, `persistent`, and others.
 
+<Background/>
+
+Background also inherits common options shared by all entrypoints.
+
 <Details title="Common Entrypoint Options">
     <Entrypoint/>
 </Details>
 
-<Background/>
+## Multi-App Structure
 
-## Multi-App Structure (`shared` + `apps`)
+Use this mode when you build multiple extensions from a single codebase.
 
-```tree
-src
-├── shared
-│   └── background.ts
-└── apps
-    ├── app-a
-    │   └── background.ts
-    └── app-b
-        └── background.ts
-adnbn.config.ts
+Typical scenario:
+- you have shared logic (core modules, API layer, part of background logic);
+- and per-app differences (design, feature set, audience, integrations).
+
+With Addon Bone, you can keep shared logic in one place and extend it per app.
+
+```tree file="./code/background.multi-app.tree"
 ```
 
-### `mergeBackground` behavior
+Background naming patterns in multi-app mode are the same as in the default structure:
+- `background.ts`
+- `*.background.ts`
+- `background/index.ts`
+- `*.background/index.ts`
+- grouped structure via `backgrounds/`
 
-If app background exists:
+This works the same way:
+- inside `shared`;
+- inside each app under `apps/*`.
 
-- `mergeBackground: false` -> use app background only
-- `mergeBackground: true` -> combine app + shared backgrounds
+<DocHeading level={3} id="multi-app-configuration" toc={false}>Configuration</DocHeading>
 
-If app background does not exist:
-
-- use shared background
-
-Config example:
-
-```ts
+```ts title="adnbn.config.ts"
 import {defineConfig} from "adnbn";
 
 export default defineConfig({
-  mergeBackground: true
+  // Enables shared mode:
+  // true -> uses "shared" directory by default
+  // false -> shared mode is disabled
+  // string -> custom directory name for shared layer
+  shared: true,
+
+  // Merges shared background and app background
+  mergeBackground: true,
+
+  // Optional: apps directory can also be renamed
+  // apps: "applications",
 });
 ```
+
+<DocHeading level={3} id="multi-app-merge" toc={false}><code>mergeBackground</code> behavior</DocHeading>
+
+- `mergeBackground: true`  
+  Shared and app backgrounds are merged.
+- `mergeBackground: false`  
+  If an app background exists, only app background is used.
+- If an app background does not exist  
+  Shared background is used.
+
+This lets you keep one shared baseline and add app-specific behavior without duplicating the full structure.
 
 ## Best Practices
 

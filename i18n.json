@@ -74,7 +74,10 @@
   "required_badge": {
     "en": "required"
   },
-  "target_handler_badge": {
-    "en": "target handler"
+  "manifest_badge": {
+    "en": "manifest"
+  },
+  "target_badge": {
+    "en": "target"
   }
 }

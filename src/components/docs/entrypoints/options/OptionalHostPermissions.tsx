@@ -9,7 +9,7 @@ type OptionalHostPermissionsProps = Pick<
 
 export default ({children}: OptionalHostPermissionsProps) => {
 	return (
-		<EntrypointSpec name="optionalHostPermissions" type="string[]">
+		<EntrypointSpec name="optionalHostPermissions" type="string[]" manifest>
 			{children}
 		</EntrypointSpec>
 	);

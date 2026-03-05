@@ -1,0 +1,13 @@
+src
+├── shared // shared logic for all apps (including shared background entrypoints)
+│   ├── auth.background.ts
+│   └── background
+│       └── index.ts
+└── apps
+    ├── app-a
+    │   └── backgrounds // app-specific background files for app-a
+    │       └── background/
+    │           └── index.ts
+    └── app-b
+        └── background.ts // single app-specific background override for app-b
+adnbn.config.ts

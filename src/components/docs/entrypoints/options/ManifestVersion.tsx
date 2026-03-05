@@ -9,7 +9,7 @@ type ManifestVersionProps = Pick<
 
 export default ({children}: ManifestVersionProps) => {
 	return (
-		<EntrypointSpec name="manifestVersion" type="2 | 3">
+		<EntrypointSpec name="manifestVersion" type="2 | 3" manifest>
 			{children}
 		</EntrypointSpec>
 	);
