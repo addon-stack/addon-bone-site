@@ -1,9 +1,11 @@
 # Background
 
+
 import {Tab, Tabs} from "@rspress/core/theme";
 
 import Details from "@components/Details";
 import {Background, Entrypoint} from "@en/components/entrypoints";
+import EntrypointExportNote from "./fragments/entrypoint-export-note.mdx";
 
 `background` is the backend entrypoint of your browser extension in Addon Bone.
 
@@ -26,7 +28,7 @@ console.log("Background started");
 export {};
 ```
 
-import EntrypointExportNote from "./fragments/entrypoint-export-note.mdx";
+
 
 <EntrypointExportNote/>
 
@@ -61,83 +63,46 @@ All discovered background entrypoints are merged into one final background outpu
 You can split logic into multiple files, and Addon Bone will combine them automatically.
 
 
+## Definition
+
+`main` is the target handler for the `background` entrypoint, but it is not required.
+You can define only options (for example `permissions`) and keep top-level logic without declaring `main`.
+
+Use `main` when you want a dedicated async-safe execution point for background startup logic.
+
+Background can be declared in two formats:
+
+- **Recommended (`defineBackground`)**: the default choice for getting started and for day-to-day development.
+  `defineBackground` provides strict TypeScript declarations: autocomplete, full option hints, and inline type validation while you write. This helps you avoid mistakes and understand the framework API faster.
+- **Advanced (explicit exports)**: for cases where you already know the available fields and their types.
+  Options are declared via named exports, and the target handler is declared via `export default`. This style is useful when you want a more manual and fast setup without importing a helper.
+
+<Tabs>
+    <Tab label="Recommended">
+        ```ts file="../../../code/background.recommended.ts" title="background.ts"
+        ```
+    </Tab>
+    <Tab label="Advanced">
+        ```ts file="../../../code/background.advanced.ts" title="background.ts"
+        ```
+    </Tab>
+</Tabs>
+
 ## Options
 
-Background options include common entrypoint filters and background-specific fields.
+Options are declarative settings for an entrypoint file.
+They define:
 
-### Entrypoint Options
+- which entrypoints are included in the build and which are excluded;
+- which fields are added to `manifest.json`.
 
+For `background`, this includes fields such as `permissions`, `optionalPermissions`, `hostPermissions`, `persistent`, and others.
 
-<Details title="Common Options">
+<Details title="Common Entrypoint Options">
     <Entrypoint/>
 </Details>
 
-### Background-Specific Options
-
 <Background/>
-
-## Main Handler
-
-For background entrypoint, the primary handler is `main`.
-
-Default export behavior:
-
-- `export default` **object** -> treated as background definition
-- `export default` **function** -> treated as `main`
-- named exports are also collected and merged
-
-## Authoring Styles
-
-### 1. Definition helper (`defineBackground`)
-
-```ts
-import {defineBackground} from "adnbn";
-
-export default defineBackground({
-    permissions: ["storage"],
-    hostPermissions: ["*://*.example.com/*"],
-    main(options) {
-      console.log("Background started", options.permissions);
-    }
-});
-```
-
-### 2. Plain default object
-
-```ts
-export default {
-    permissions: ["storage"],
-    main() {
-      console.log("Background started");
-    }
-};
-```
-
-### 3. Named exports + default `main`
-
-```ts title="background.ts"
-export const permissions = ["storage"];
-export const optionalPermissions = ["tabs"];
-
-export default async function main(options) {
-  console.log(options.permissions);
-}
-```
-
-### 4. Mixed style (named exports + default object)
-
-```ts
-export const permissions = ["storage"];
-
-export default {
-  permissions: ["tabs"],
-  main() {
-    console.log("Merged definition");
-  }
-};
-```
-
-If keys overlap, values from the `default` object override named exports.
 
 ## Multi-App Structure (`shared` + `apps`)
 

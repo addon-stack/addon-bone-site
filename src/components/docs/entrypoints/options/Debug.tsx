@@ -1,12 +1,13 @@
-import PropertySpec from "@components/PropertySpec";
 import type {ComponentProps} from "react";
 
-type DebugProps = Pick<ComponentProps<typeof PropertySpec>, "children">;
+import EntrypointSpec from "../EntrypointSpec";
 
-export default function Debug({children}: DebugProps) {
+type DebugProps = Pick<ComponentProps<typeof EntrypointSpec>, "children">;
+
+export default ({children}: DebugProps) => {
 	return (
-		<PropertySpec name="debug" type="boolean">
+		<EntrypointSpec name="debug" type="boolean">
 			{children}
-		</PropertySpec>
+		</EntrypointSpec>
 	);
-}
+};

@@ -1,20 +1,19 @@
-import PropertySpec from "@components/PropertySpec";
 import type {ComponentProps} from "react";
 
+import EntrypointSpec from "../EntrypointSpec";
+
 type OptionalPermissionsProps = Pick<
-	ComponentProps<typeof PropertySpec>,
+	ComponentProps<typeof EntrypointSpec>,
 	"children"
 >;
 
-export default function OptionalPermissions({
-	children,
-}: OptionalPermissionsProps) {
+export default ({children}: OptionalPermissionsProps) => {
 	return (
-		<PropertySpec
+		<EntrypointSpec
 			name="optionalPermissions"
 			type="chrome.runtime.ManifestOptionalPermission[]"
 		>
 			{children}
-		</PropertySpec>
+		</EntrypointSpec>
 	);
-}
+};

@@ -1,13 +1,13 @@
 import {
+	BackgroundMain,
 	HostPermissions,
-	Main,
 	OptionalHostPermissions,
 	OptionalPermissions,
 	Permissions,
 	Persistent,
 } from "./options";
 
-export default function Background() {
+export default () => {
 	return (
 		<>
 			<Persistent />
@@ -15,7 +15,7 @@ export default function Background() {
 			<OptionalPermissions />
 			<HostPermissions />
 			<OptionalHostPermissions />
-			<Main />
+			<BackgroundMain />
 		</>
 	);
-}
+};

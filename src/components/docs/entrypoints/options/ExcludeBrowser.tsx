@@ -1,15 +1,16 @@
-import PropertySpec from "@components/PropertySpec";
 import type {ComponentProps} from "react";
 
+import EntrypointSpec from "../EntrypointSpec";
+
 type ExcludeBrowserProps = Pick<
-	ComponentProps<typeof PropertySpec>,
+	ComponentProps<typeof EntrypointSpec>,
 	"children"
 >;
 
-export default function ExcludeBrowser({children}: ExcludeBrowserProps) {
+export default ({children}: ExcludeBrowserProps) => {
 	return (
-		<PropertySpec name="excludeBrowser" type="Browser[]">
+		<EntrypointSpec name="excludeBrowser" type="Browser[]">
 			{children}
-		</PropertySpec>
+		</EntrypointSpec>
 	);
-}
+};

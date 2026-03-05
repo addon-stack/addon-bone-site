@@ -8,6 +8,7 @@
     "preview": "rspress preview",
     "check": "biome check --write",
     "format": "biome format --write",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
     "prepare": "husky"
   },
   "dependencies": {

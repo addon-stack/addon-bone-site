@@ -9,11 +9,7 @@ interface DetailsProps {
 	children: ReactNode;
 }
 
-export default function Details({
-	title,
-	defaultOpen = false,
-	children,
-}: DetailsProps) {
+export default ({title, defaultOpen = false, children}: DetailsProps) => {
 	return (
 		<details className={styles["rp-details"]} open={defaultOpen}>
 			<summary className={styles["rp-details__summary"]}>
@@ -27,4 +23,4 @@ export default function Details({
 			<div className={styles["rp-details__content"]}>{children}</div>
 		</details>
 	);
-}
+};

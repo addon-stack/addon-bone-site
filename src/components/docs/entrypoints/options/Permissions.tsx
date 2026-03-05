@@ -1,12 +1,16 @@
-import PropertySpec from "@components/PropertySpec";
 import type {ComponentProps} from "react";
 
-type PermissionsProps = Pick<ComponentProps<typeof PropertySpec>, "children">;
+import EntrypointSpec from "../EntrypointSpec";
 
-export default function Permissions({children}: PermissionsProps) {
+type PermissionsProps = Pick<ComponentProps<typeof EntrypointSpec>, "children">;
+
+export default ({children}: PermissionsProps) => {
 	return (
-		<PropertySpec name="permissions" type="chrome.runtime.ManifestPermission[]">
+		<EntrypointSpec
+			name="permissions"
+			type="chrome.runtime.ManifestPermission[]"
+		>
 			{children}
-		</PropertySpec>
+		</EntrypointSpec>
 	);
-}
+};

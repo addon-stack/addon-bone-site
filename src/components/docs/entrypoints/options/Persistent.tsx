@@ -1,12 +1,13 @@
-import PropertySpec from "@components/PropertySpec";
 import type {ComponentProps} from "react";
 
-type PersistentProps = Pick<ComponentProps<typeof PropertySpec>, "children">;
+import EntrypointSpec from "../EntrypointSpec";
 
-export default function Persistent({children}: PersistentProps) {
+type PersistentProps = Pick<ComponentProps<typeof EntrypointSpec>, "children">;
+
+export default ({children}: PersistentProps) => {
 	return (
-		<PropertySpec name="persistent" type="boolean">
+		<EntrypointSpec name="persistent" type="boolean">
 			{children}
-		</PropertySpec>
+		</EntrypointSpec>
 	);
-}
+};

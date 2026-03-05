@@ -1,6 +1,6 @@
 import {ManifestVersion as BaseManifestVersion} from "@components/docs/entrypoints/options";
 
-export default function ManifestVersion() {
+export default () => {
 	return (
 		<BaseManifestVersion>
 			Includes this entrypoint only for selected manifest version. If it does
@@ -8,4 +8,4 @@ export default function ManifestVersion() {
 			output.
 		</BaseManifestVersion>
 	);
-}
+};

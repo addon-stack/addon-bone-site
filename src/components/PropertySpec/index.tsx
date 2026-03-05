@@ -1,1 +1,1 @@
-export {default} from "./PropertySpec";
+export {default, type PropertySpecProps} from "./PropertySpec";

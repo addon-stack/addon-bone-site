@@ -1,15 +1,16 @@
-import PropertySpec from "@components/PropertySpec";
 import type {ComponentProps} from "react";
 
+import EntrypointSpec from "../EntrypointSpec";
+
 type ManifestVersionProps = Pick<
-	ComponentProps<typeof PropertySpec>,
+	ComponentProps<typeof EntrypointSpec>,
 	"children"
 >;
 
-export default function ManifestVersion({children}: ManifestVersionProps) {
+export default ({children}: ManifestVersionProps) => {
 	return (
-		<PropertySpec name="manifestVersion" type="2 | 3">
+		<EntrypointSpec name="manifestVersion" type="2 | 3">
 			{children}
-		</PropertySpec>
+		</EntrypointSpec>
 	);
-}
+};

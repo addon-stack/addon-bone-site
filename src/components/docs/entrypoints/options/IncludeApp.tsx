@@ -1,12 +1,13 @@
-import PropertySpec from "@components/PropertySpec";
 import type {ComponentProps} from "react";
 
-type IncludeAppProps = Pick<ComponentProps<typeof PropertySpec>, "children">;
+import EntrypointSpec from "../EntrypointSpec";
 
-export default function IncludeApp({children}: IncludeAppProps) {
+type IncludeAppProps = Pick<ComponentProps<typeof EntrypointSpec>, "children">;
+
+export default ({children}: IncludeAppProps) => {
 	return (
-		<PropertySpec name="includeApp" type="string[]">
+		<EntrypointSpec name="includeApp" type="string[]">
 			{children}
-		</PropertySpec>
+		</EntrypointSpec>
 	);
-}
+};

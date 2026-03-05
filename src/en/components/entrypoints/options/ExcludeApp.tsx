@@ -1,6 +1,6 @@
 import {ExcludeApp as BaseExcludeApp} from "@components/docs/entrypoints/options";
 
-export default function ExcludeApp() {
+export default () => {
 	return (
 		<BaseExcludeApp>
 			Excludes this entrypoint for selected app names (<code>config.app</code>).
@@ -8,4 +8,4 @@ export default function ExcludeApp() {
 			output.
 		</BaseExcludeApp>
 	);
-}
+};

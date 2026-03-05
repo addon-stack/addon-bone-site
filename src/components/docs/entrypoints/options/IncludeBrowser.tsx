@@ -1,15 +1,16 @@
-import PropertySpec from "@components/PropertySpec";
 import type {ComponentProps} from "react";
 
+import EntrypointSpec from "../EntrypointSpec";
+
 type IncludeBrowserProps = Pick<
-	ComponentProps<typeof PropertySpec>,
+	ComponentProps<typeof EntrypointSpec>,
 	"children"
 >;
 
-export default function IncludeBrowser({children}: IncludeBrowserProps) {
+export default ({children}: IncludeBrowserProps) => {
 	return (
-		<PropertySpec name="includeBrowser" type="Browser[]" required>
+		<EntrypointSpec name="includeBrowser" type="Browser[]">
 			{children}
-		</PropertySpec>
+		</EntrypointSpec>
 	);
-}
+};

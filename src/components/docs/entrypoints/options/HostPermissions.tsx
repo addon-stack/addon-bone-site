@@ -1,15 +1,16 @@
-import PropertySpec from "@components/PropertySpec";
 import type {ComponentProps} from "react";
 
+import EntrypointSpec from "../EntrypointSpec";
+
 type HostPermissionsProps = Pick<
-	ComponentProps<typeof PropertySpec>,
+	ComponentProps<typeof EntrypointSpec>,
 	"children"
 >;
 
-export default function HostPermissions({children}: HostPermissionsProps) {
+export default ({children}: HostPermissionsProps) => {
 	return (
-		<PropertySpec name="hostPermissions" type="string[]">
+		<EntrypointSpec name="hostPermissions" type="string[]">
 			{children}
-		</PropertySpec>
+		</EntrypointSpec>
 	);
-}
+};

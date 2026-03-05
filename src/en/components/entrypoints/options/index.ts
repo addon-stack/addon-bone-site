@@ -4,7 +4,7 @@ export {default as ExcludeBrowser} from "./ExcludeBrowser";
 export {default as HostPermissions} from "./HostPermissions";
 export {default as IncludeApp} from "./IncludeApp";
 export {default as IncludeBrowser} from "./IncludeBrowser";
-export {default as Main} from "./Main";
+export {default as BackgroundMain} from "./BackgroundMain";
 export {default as ManifestVersion} from "./ManifestVersion";
 export {default as Mode} from "./Mode";
 export {default as OptionalHostPermissions} from "./OptionalHostPermissions";

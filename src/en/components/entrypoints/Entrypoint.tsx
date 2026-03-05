@@ -8,7 +8,7 @@ import {
 	Mode,
 } from "./options";
 
-export default function Entrypoint() {
+export default () => {
 	return (
 		<>
 			<IncludeBrowser />
@@ -20,4 +20,4 @@ export default function Entrypoint() {
 			<ManifestVersion />
 		</>
 	);
-}
+};

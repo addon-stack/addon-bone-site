@@ -1,10 +1,10 @@
 import {ExcludeBrowser as BaseExcludeBrowser} from "@components/docs/entrypoints/options";
 
-export default function ExcludeBrowser() {
+export default () => {
 	return (
 		<BaseExcludeBrowser>
 			Excludes this entrypoint for selected target browsers. If current build
 			browser is listed, the entrypoint is excluded from the build output.
 		</BaseExcludeBrowser>
 	);
-}
+};

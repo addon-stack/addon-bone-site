@@ -1,6 +1,6 @@
 import {IncludeBrowser as BaseIncludeBrowser} from "@components/docs/entrypoints/options";
 
-export default function IncludeBrowser() {
+export default () => {
 	return (
 		<BaseIncludeBrowser>
 			Includes this entrypoint only for selected target browsers. If current
@@ -8,4 +8,4 @@ export default function IncludeBrowser() {
 			output.
 		</BaseIncludeBrowser>
 	);
-}
+};

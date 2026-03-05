@@ -1,6 +1,6 @@
 import {IncludeApp as BaseIncludeApp} from "@components/docs/entrypoints/options";
 
-export default function IncludeApp() {
+export default () => {
 	return (
 		<BaseIncludeApp>
 			Includes this entrypoint only for selected app names (
@@ -8,4 +8,4 @@ export default function IncludeApp() {
 			excluded from the build output.
 		</BaseIncludeApp>
 	);
-}
+};

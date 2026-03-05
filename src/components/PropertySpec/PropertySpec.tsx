@@ -1,17 +1,18 @@
-import DocHeading from "@components/DocHeading";
+import type {ReactNode, ComponentProps} from "react";
+
 import {useI18n} from "@rspress/core/runtime";
 import {Badge} from "@rspress/core/theme";
-import type {ReactNode} from "react";
+
+import DocHeading from "@components/DocHeading";
 
 import styles from "./property-spec.scss";
 
-interface PropertySpecProps {
+export interface PropertySpecProps extends ComponentProps<"div"> {
 	name: string;
 	type: string;
 	required?: boolean;
 	toc?: boolean;
 	header?: ReactNode;
-	children: ReactNode;
 }
 
 type PropertySpecI18n = {
@@ -19,12 +20,20 @@ type PropertySpecI18n = {
 };
 
 export default (props: PropertySpecProps) => {
-	const {name, type, required = false, toc = false, header, children} = props;
+	const {
+		name,
+		type,
+		required = false,
+		toc = false,
+		header,
+		children,
+		...rest
+	} = props;
 
 	const t = useI18n<PropertySpecI18n>();
 
 	return (
-		<div className={styles["rp-property-spec"]}>
+		<div className={styles["rp-property-spec"]} {...rest}>
 			<div className={styles["rp-property-spec__header"]}>
 				<DocHeading
 					className={styles["rp-property-spec__name"]}

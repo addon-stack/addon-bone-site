@@ -1,12 +1,13 @@
-import PropertySpec from "@components/PropertySpec";
 import type {ComponentProps} from "react";
 
-type ModeProps = Pick<ComponentProps<typeof PropertySpec>, "children">;
+import EntrypointSpec from "../EntrypointSpec";
 
-export default function Mode({children}: ModeProps) {
+type ModeProps = Pick<ComponentProps<typeof EntrypointSpec>, "children">;
+
+export default ({children}: ModeProps) => {
 	return (
-		<PropertySpec name="mode" type={'"development" | "production" | "none"'}>
+		<EntrypointSpec name="mode" type={'"development" | "production" | "none"'}>
 			{children}
-		</PropertySpec>
+		</EntrypointSpec>
 	);
-}
+};

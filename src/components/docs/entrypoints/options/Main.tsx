@@ -1,12 +1,13 @@
-import PropertySpec from "@components/PropertySpec";
-import type {ComponentProps} from "react";
+import EntrypointSpec, {type EntrypointSpecProps} from "../EntrypointSpec";
 
-type MainProps = Pick<ComponentProps<typeof PropertySpec>, "children">;
+export type MainProps = Partial<EntrypointSpecProps>;
 
-export default function Main({children}: MainProps) {
-	return (
-		<PropertySpec name="main" type="(options) => void | Promise<void>">
-			{children}
-		</PropertySpec>
-	);
-}
+export default (props: MainProps) => {
+	const {
+		name = "main",
+		type = "(options) => void | Promise<void>",
+		...rest
+	} = props;
+
+	return <EntrypointSpec name={name} type={type} {...rest} />;
+};
