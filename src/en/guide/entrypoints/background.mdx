@@ -1,11 +1,14 @@
 # Background
 
 
+
 import {Tab, Tabs} from "@rspress/core/theme";
 
 import Details from "@components/Details";
 import DocHeading from "@components/DocHeading";
 import {Background, Entrypoint} from "@en/components/entrypoints";
+import EntrypointDefinitionAdvanced from "./fragments/entrypoint-definition-advanced.mdx";
+import EntrypointDefinitionRecommended from "./fragments/entrypoint-definition-recommended.mdx";
 import EntrypointExportNote from "./fragments/entrypoint-export-note.mdx";
 
 `background` is the backend entrypoint of your browser extension in Addon Bone.
@@ -23,7 +26,7 @@ Create `background.ts` and write your first extension logic directly at the top 
 
 This is the fastest way to feel how Addon Bone background works: no boilerplate, no extra setup, just a real background module that starts doing useful work immediately.
 
-```ts title="background.ts"
+```ts title="src/background.ts"
 console.log("Background started");
 
 export {};
@@ -73,18 +76,16 @@ Use `main` when you want a dedicated async-safe execution point for background s
 
 Background can be declared in two formats:
 
-- **Recommended (`defineBackground`)**: the default choice for getting started and for day-to-day development.
-  `defineBackground` provides strict TypeScript declarations: autocomplete, full option hints, and inline type validation while you write. This helps you avoid mistakes and understand the framework API faster.
-- **Advanced (explicit exports)**: for cases where you already know the available fields and their types.
-  Options are declared via named exports, and the target handler is declared via `export default`. This style is useful when you want a more manual and fast setup without importing a helper.
+<EntrypointDefinitionRecommended/>
+<EntrypointDefinitionAdvanced/>
 
 <Tabs>
     <Tab label="Recommended">
-        ```ts file="../../../code/background.recommended.ts" title="background.ts"
+        ```ts file="../../../code/background.recommended.ts" title="src/background.ts"
         ```
     </Tab>
     <Tab label="Advanced">
-        ```ts file="../../../code/background.advanced.ts" title="background.ts"
+        ```ts file="../../../code/background.advanced.ts" title="src/background.ts"
         ```
     </Tab>
 </Tabs>
@@ -97,11 +98,16 @@ They define:
 - which entrypoints are included in the build and which are excluded;
 - which fields are added to `manifest.json`.
 
-For `background`, this includes fields such as `permissions`, `optionalPermissions`, `hostPermissions`, `persistent`, and others.
+<DocHeading level={3} id="definition-background-options" toc={false}>Background Options</DocHeading>
+
+These options are specific to the `background` entrypoint.
 
 <Background/>
 
-Background also inherits common options shared by all entrypoints.
+<DocHeading level={3} id="definition-common-options" toc={false}>Common Entrypoint Options</DocHeading>
+
+These options are shared by all entrypoints.
+Read more in [Introduction](./introduction).
 
 <Details title="Common Entrypoint Options">
     <Entrypoint/>
@@ -154,30 +160,30 @@ export default defineConfig({
 <DocHeading level={3} id="multi-app-merge" toc={false}><code>mergeBackground</code> behavior</DocHeading>
 
 - `mergeBackground: true`  
-  Shared and app backgrounds are merged.
+Shared and app backgrounds are merged.
 - `mergeBackground: false`  
-  If an app background exists, only app background is used.
+If an app background exists, only app background is used.
 - If an app background does not exist  
-  Shared background is used.
+Shared background is used.
 
 This lets you keep one shared baseline and add app-specific behavior without duplicating the full structure.
 
 ## Best Practices
 
 - Keep options close to the background logic that uses them.  
-  If a module relies on `tabs`, `storage`, or host access, declare the corresponding options in the same entrypoint.
+If a module relies on `tabs`, `storage`, or host access, declare the corresponding options in the same entrypoint.
 
 - Do not rely on another background entrypoint to provide required options.  
-  Each entrypoint should be self-sufficient for critical fields.
+Each entrypoint should be self-sufficient for critical fields.
 
 - Account for build filters (`includeBrowser`, `excludeBrowser`, `includeApp`, `excludeApp`, `mode`, `debug`, `manifestVersion`).  
-  If an entrypoint can be excluded, critical options should also be declared in fallback entrypoints.
+If an entrypoint can be excluded, critical options should also be declared in fallback entrypoints.
 
 - Use one structure style per scope: root-level or `backgrounds/`.  
-  If `backgrounds/` exists in a scope, only that directory is used, and root-level background files in the same scope are ignored.
+If `backgrounds/` exists in a scope, only that directory is used, and root-level background files in the same scope are ignored.
 
 - In multi-app mode, treat `shared` as the baseline and `apps/*` as app-specific layers.  
-  Keep shared logic in `shared`, and put differences/overrides in each app.
+Keep shared logic in `shared`, and put differences/overrides in each app.
 
 - Prefer `defineBackground` as the default style for new modules.  
-  It provides stronger TypeScript typing, better autocomplete, and fewer option-related mistakes.
+It provides stronger TypeScript typing, better autocomplete, and fewer option-related mistakes.
