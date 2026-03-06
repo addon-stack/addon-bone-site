@@ -1,8 +1,9 @@
+import type {ComponentProps, ReactNode} from "react";
+
 import DocHeading from "@components/DocHeading";
+import PropertyBadge from "@components/PropertyBadge";
 
 import {useI18n} from "@rspress/core/runtime";
-import {Badge} from "@rspress/core/theme";
-import type {ComponentProps, ReactNode} from "react";
 
 import styles from "./property-spec.scss";
 
@@ -42,8 +43,10 @@ export default (props: PropertySpecProps) => {
 				>
 					{name}
 				</DocHeading>
-				<Badge text={type} type="tip" outline />
-				{required && <Badge type="danger" text={t("required_badge")} outline />}
+				<code className={styles["rp-property-spec__type"]}>{type}</code>
+				{required && (
+					<PropertyBadge type="danger" text={t("required_badge")} outline />
+				)}
 				{header}
 			</div>
 			<p className={styles["rp-property-spec__content"]}>{children}</p>

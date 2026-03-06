@@ -1,5 +1,6 @@
 import {useI18n} from "@rspress/core/runtime";
-import {Badge} from "@rspress/core/theme";
+
+import PropertyBadge from "@components/PropertyBadge";
 
 type ManifestBadgeI18n = {
 	manifest_badge: string;
@@ -8,5 +9,5 @@ type ManifestBadgeI18n = {
 export default () => {
 	const t = useI18n<ManifestBadgeI18n>();
 
-	return <Badge type="warning" text={t("manifest_badge")} outline />;
+	return <PropertyBadge type="warning" text={t("manifest_badge")} outline />;
 };
