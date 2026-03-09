@@ -11,11 +11,7 @@ import EntrypointExportNote from "./fragments/entrypoint-export-note.mdx";
 
 `background` is the backend entrypoint of your browser extension in Addon Bone.
 It runs in the background without a visible UI and acts as the central hub of your extension.
-
-In browser terms, this entrypoint maps to:
-
-- **Manifest V3**: background **service worker**
-- **Manifest V2**: background **page** (persistent or non-persistent)
+Addon Bone automatically generates the background service worker (MV3) or background page (MV2) from your source files — you just write the logic, and the framework handles manifest configuration, file merging, and build output.
 
 Use background for startup logic, browser event listeners, command handling, messaging orchestration, and privileged extension APIs.
 
@@ -33,7 +29,7 @@ export {};
 
 <EntrypointExportNote/>
 
-Here is a more practical example — listening for the extension install event:
+Here is a more practical example — listening for the extension install event using [Addon Bone browser API wrappers](/guide/extension-apis):
 
 ```ts title="src/background.ts"
 import {getManifestVersion, onInstalled} from "adnbn/browser";
@@ -53,7 +49,7 @@ export {};
 
 ## File Structure
 
-Addon Bone auto-discovers background entrypoints by file naming patterns.
+Addon Bone auto-discovers background entrypoints by file naming patterns — no manual registration or manifest editing is required.
 Use the default flat structure for most projects. If you have many background files, group them in `backgrounds/` to separate concerns and organize logic by feature.
 
 <Tabs>
@@ -82,8 +78,8 @@ Supported patterns include:
 If a `backgrounds/` directory exists, Addon Bone scans only that directory for background entrypoints in the same scope and does not merge them with root-level background files.
 :::
 
-All discovered background entrypoints are merged into one final background output during build.
-You can split logic into multiple files, and Addon Bone will combine them automatically.
+During build, Addon Bone merges all discovered background entrypoints into a single service worker (MV3) or background script (MV2).
+You can split logic into multiple files, and the framework will combine them automatically.
 
 Merge order:
 
@@ -101,12 +97,12 @@ Only aggregate manifest fields (such as `permissions`) are combined in the final
 
 ## Definition
 
-`main` is the main execution function for the `background` entrypoint, but it is not required.
+`main` is a framework-provided execution function for the `background` entrypoint — it is not part of the browser API, but a convention introduced by Addon Bone. It is not required.
 You can define only options (for example `permissions`) and keep top-level logic without declaring `main`.
 
 Use `main` when you want a dedicated entry function for background startup logic.
 It can be both sync and async — no additional `try-catch` wrapping is needed.
-If an error occurs inside `main`, it is caught and logged to the console without affecting other background entrypoints or the extension itself.
+Addon Bone automatically wraps `main` execution: if an error occurs, it is caught and logged to the console without affecting other background entrypoints or the extension itself.
 
 Background can be declared in two formats:
 
@@ -128,11 +124,8 @@ Switch between tabs below to see each format in code:
 
 ## Options
 
-Options are declarative settings for an entrypoint file.
-They define:
-
-- which entrypoints are included in the build and which are excluded;
-- which fields are added to `manifest.json`.
+Options are declarative settings recognized by Addon Bone at build time.
+They control how the entrypoint is included in the build and what fields are added to `manifest.json` — you never need to edit the manifest manually.
 
 <DocHeading level={3} id="background-options" toc={false}>Background Options</DocHeading>
 
@@ -148,25 +141,6 @@ Read more in [Introduction](./introduction).
 <Details title="Common Entrypoint Options">
     <Entrypoint/>
 </Details>
-
-## Lifecycle
-
-Understanding the background lifecycle is important for writing reliable extension logic.
-
-<DocHeading level={3} id="manifest-v3" toc={false}>Manifest V3 (Service Worker)</DocHeading>
-
-The background runs as a **service worker**. The browser may terminate it at any time when idle and restart it when needed (for example, when an event fires).
-
-Key implications:
-- **Do not store state in global variables** — they will be lost when the service worker is terminated. Use `chrome.storage` or IndexedDB instead.
-- **Register event listeners synchronously** at the top level of your script. If you register them inside an async callback, the service worker may miss events.
-- The service worker is restarted on every browser launch and when a registered event fires.
-
-<DocHeading level={3} id="manifest-v2" toc={false}>Manifest V2 (Background Page)</DocHeading>
-
-The background runs as a **long-lived page** (or a non-persistent event page, depending on configuration). It stays in memory for the lifetime of the browser session (or until the browser unloads the event page).
-
-Global variables persist for the session, but relying on them is still discouraged if you plan to migrate to Manifest V3.
 
 ## Multi-App Structure
 
@@ -210,10 +184,10 @@ export default defineConfig({
 <DocHeading level={3} id="multi-app-merge" toc={false}><code>mergeBackground</code> behavior</DocHeading>
 
 - `mergeBackground: true`  
-Shared and app backgrounds are merged into one final output.
+  Shared and app backgrounds are merged into one final output.
 - `mergeBackground: false`  
-If an app has its own background, only the app background is used; shared background is ignored.
-If an app does not have its own background, the shared background is used as a fallback.
+  If an app has its own background, only the app background is used; shared background is ignored.  
+  If an app does not have its own background, the shared background is used as a fallback.
 
 This lets you keep one shared baseline and add app-specific behavior without duplicating the full structure.
 
@@ -222,24 +196,24 @@ This lets you keep one shared baseline and add app-specific behavior without dup
 <DocHeading level={3} id="best-practices-critical" toc={false}>Critical</DocHeading>
 
 - **Use one structure style per scope: root-level or `backgrounds/`.**  
-If `backgrounds/` exists in a scope, only that directory is used, and root-level background files in the same scope are ignored.
+  If `backgrounds/` exists in a scope, only that directory is used, and root-level background files in the same scope are ignored.
 
 - **Each entrypoint should be self-sufficient for critical fields.**  
-Do not rely on another background entrypoint to provide required options (like `permissions`).
+  Do not rely on another background entrypoint to provide required options (like `permissions`).
 
 - **Account for build filters** (`includeBrowser`, `excludeBrowser`, `includeApp`, `excludeApp`, `mode`, `debug`, `manifestVersion`).  
-If an entrypoint can be excluded, critical options should also be declared in fallback entrypoints.
+  If an entrypoint can be excluded, critical options should also be declared in fallback entrypoints.
 
-<DocHeading level={3} id="best-practices-recommended" toc={false}>Critical</DocHeading>
+<DocHeading level={3} id="best-practices-recommended" toc={false}>Recommended</DocHeading>
 
 - Keep options close to the background logic that uses them.  
-If a module relies on `tabs`, `storage`, or host access, declare the corresponding options in the same entrypoint.
+  If a module relies on `tabs`, `storage`, or host access, declare the corresponding options in the same entrypoint.
 
 - In multi-app mode, treat `shared` as the baseline and `apps/*` as app-specific layers.  
-Keep shared logic in `shared`, and put differences/overrides in each app.
+  Keep shared logic in `shared`, and put differences/overrides in each app.
 
 - Prefer [`defineBackground`](#definition) as the default style for new modules.  
-It provides stronger TypeScript typing, better autocomplete, and fewer option-related mistakes.
+  It provides stronger TypeScript typing, better autocomplete, and fewer option-related mistakes.
 
 ## Debugging
 
