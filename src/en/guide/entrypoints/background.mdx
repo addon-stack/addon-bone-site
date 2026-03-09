@@ -29,10 +29,10 @@ export {};
 
 <EntrypointExportNote/>
 
-Here is a more practical example — listening for the extension install event using [Addon Bone browser API wrappers](/guide/extension-apis):
+Here is a more practical example — listening for the extension install event using [browser API wrappers](/guide/extension-apis):
 
 ```ts title="src/background.ts"
-import {getManifestVersion, onInstalled} from "adnbn/browser";
+import {onInstalled} from "adnbn/browser";
 
 onInstalled((details) => {
     if (details.reason === "install") {
@@ -40,7 +40,7 @@ onInstalled((details) => {
     }
 
     if (details.reason === "update") {
-      console.log("Extension updated to version", getManifestVersion());
+      console.log("Extension updated from version", details.previousVersion);
     }
 });
 
@@ -102,7 +102,7 @@ You can define only options (for example `permissions`) and keep top-level logic
 
 Use `main` when you want a dedicated entry function for background startup logic.
 It can be both sync and async — no additional `try-catch` wrapping is needed.
-Addon Bone automatically wraps `main` execution: if an error occurs, it is caught and logged to the console without affecting other background entrypoints or the extension itself.
+Addon Bone invokes `main` in a protected execution flow and logs runtime errors, so one failing handler does not break the entire background startup pipeline.
 
 Background can be declared in two formats:
 
@@ -126,17 +126,19 @@ Switch between tabs below to see each format in code:
 
 Options are declarative settings recognized by Addon Bone at build time.
 They control how the entrypoint is included in the build and what fields are added to `manifest.json` — you never need to edit the manifest manually.
+For manifest-related fields, Addon Bone aggregates compatible values across discovered background entrypoints and deduplicates repeated items in the final manifest output.
 
 <DocHeading level={3} id="background-options" toc={false}>Background Options</DocHeading>
 
 These options are specific to the `background` entrypoint.
+They define background-specific manifest behavior and runtime startup handling.
 
 <Background/>
 
 <DocHeading level={3} id="common-options" toc={false}>Common Entrypoint Options</DocHeading>
 
-These options are shared by all entrypoints.
-Read more in [Introduction](./introduction).
+These options are shared by all entrypoints (build filters, mode targeting, and manifest constraints).
+Read the full model in [Introduction](./introduction).
 
 <Details title="Common Entrypoint Options">
     <Entrypoint/>
@@ -151,6 +153,7 @@ Typical scenario:
 - and per-app differences (design, feature set, audience, integrations).
 
 With Addon Bone, you can keep shared logic in one place and extend it per app.
+To enable shared-layer discovery, set `shared` in `defineConfig` (`true`, `false`, or a custom directory name).
 
 ```tree file="./code/background.multi-app.tree"
 ```
@@ -199,7 +202,8 @@ This lets you keep one shared baseline and add app-specific behavior without dup
   If `backgrounds/` exists in a scope, only that directory is used, and root-level background files in the same scope are ignored.
 
 - **Each entrypoint should be self-sufficient for critical fields.**  
-  Do not rely on another background entrypoint to provide required options (like `permissions`).
+  Declare critical fields (`permissions`, `hostPermissions`, optional permissions) in each entrypoint that needs them.  
+  Entrypoints can be excluded by developer-defined build filters (for example `excludeApp`, `excludeBrowser`, `includeApp`, `includeBrowser`), so relying on another file to "provide" those fields can break the final manifest.
 
 - **Account for build filters** (`includeBrowser`, `excludeBrowser`, `includeApp`, `excludeApp`, `mode`, `debug`, `manifestVersion`).  
   If an entrypoint can be excluded, critical options should also be declared in fallback entrypoints.
