@@ -9,5 +9,5 @@ type TargetBadgeI18n = {
 export default () => {
 	const t = useI18n<TargetBadgeI18n>();
 
-	return <PropertyBadge type="info" text={t("target_badge")} outline />;
+	return <PropertyBadge type="tip" text={t("target_badge")} outline />;
 };
