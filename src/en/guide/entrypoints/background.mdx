@@ -1,7 +1,5 @@
 # Background
 
-
-
 import {Tab, Tabs} from "@rspress/core/theme";
 
 import Details from "@components/Details";
@@ -12,6 +10,7 @@ import EntrypointDefinitionRecommended from "./fragments/entrypoint-definition-r
 import EntrypointExportNote from "./fragments/entrypoint-export-note.mdx";
 
 `background` is the backend entrypoint of your browser extension in Addon Bone.
+It runs in the background without a visible UI and acts as the central hub of your extension.
 
 In browser terms, this entrypoint maps to:
 
@@ -24,7 +23,7 @@ Use background for startup logic, browser event listeners, command handling, mes
 
 Create `background.ts` and write your first extension logic directly at the top level.
 
-This is the fastest way to feel how Addon Bone background works: no boilerplate, no extra setup, just a real background module that starts doing useful work immediately.
+This is the quickest way to get started with Addon Bone background: no boilerplate, no extra setup, just a real background module that starts doing useful work immediately.
 
 ```ts title="src/background.ts"
 console.log("Background started");
@@ -34,10 +33,28 @@ export {};
 
 <EntrypointExportNote/>
 
+Here is a more practical example — listening for the extension install event:
+
+```ts title="src/background.ts"
+import {getManifestVersion, onInstalled} from "adnbn/browser";
+
+onInstalled((details) => {
+    if (details.reason === "install") {
+      console.log("Extension installed for the first time");
+    }
+
+    if (details.reason === "update") {
+      console.log("Extension updated to version", getManifestVersion());
+    }
+});
+
+export {};
+```
+
 ## File Structure
 
 Addon Bone auto-discovers background entrypoints by file naming patterns.
-Use the default flat structure for most projects. If you have many background files, group them in `backgrounds/`.
+Use the default flat structure for most projects. If you have many background files, group them in `backgrounds/` to separate concerns and organize logic by feature.
 
 <Tabs>
     <Tab label="Default">
@@ -61,23 +78,42 @@ Supported patterns include:
 - `backgrounds/background/index.ts`
 - `backgrounds/*.background/index.ts`
 
-Scope rule: if a `backgrounds/` directory exists, Addon Bone scans only that directory for background entrypoints in the same scope and does not merge it with root-level background files.
+:::warning Scope rule
+If a `backgrounds/` directory exists, Addon Bone scans only that directory for background entrypoints in the same scope and does not merge them with root-level background files.
+:::
 
 All discovered background entrypoints are merged into one final background output during build.
 You can split logic into multiple files, and Addon Bone will combine them automatically.
 
+Merge order:
+
+1. **External entrypoints** — provided by plugins.
+2. **Shared entrypoints** — from the `shared` directory (in multi-app mode).
+3. **App-specific entrypoints** — from the current app directory.
+
+Within the same priority level, files are sorted by lexicographic path comparison.
+
+:::info
+Options are not merged between files into a single object. Each file is processed independently.
+Only aggregate manifest fields (such as `permissions`) are combined in the final output.
+:::
+
 
 ## Definition
 
-`main` is the target handler for the `background` entrypoint, but it is not required.
+`main` is the main execution function for the `background` entrypoint, but it is not required.
 You can define only options (for example `permissions`) and keep top-level logic without declaring `main`.
 
-Use `main` when you want a dedicated async-safe execution point for background startup logic.
+Use `main` when you want a dedicated entry function for background startup logic.
+It can be both sync and async — no additional `try-catch` wrapping is needed.
+If an error occurs inside `main`, it is caught and logged to the console without affecting other background entrypoints or the extension itself.
 
 Background can be declared in two formats:
 
 <EntrypointDefinitionRecommended/>
 <EntrypointDefinitionAdvanced/>
+
+Switch between tabs below to see each format in code:
 
 <Tabs>
     <Tab label="Recommended">
@@ -98,13 +134,13 @@ They define:
 - which entrypoints are included in the build and which are excluded;
 - which fields are added to `manifest.json`.
 
-<DocHeading level={3} id="definition-background-options" toc={false}>Background Options</DocHeading>
+<DocHeading level={3} id="background-options" toc={false}>Background Options</DocHeading>
 
 These options are specific to the `background` entrypoint.
 
 <Background/>
 
-<DocHeading level={3} id="definition-common-options" toc={false}>Common Entrypoint Options</DocHeading>
+<DocHeading level={3} id="common-options" toc={false}>Common Entrypoint Options</DocHeading>
 
 These options are shared by all entrypoints.
 Read more in [Introduction](./introduction).
@@ -112,6 +148,25 @@ Read more in [Introduction](./introduction).
 <Details title="Common Entrypoint Options">
     <Entrypoint/>
 </Details>
+
+## Lifecycle
+
+Understanding the background lifecycle is important for writing reliable extension logic.
+
+<DocHeading level={3} id="manifest-v3" toc={false}>Manifest V3 (Service Worker)</DocHeading>
+
+The background runs as a **service worker**. The browser may terminate it at any time when idle and restart it when needed (for example, when an event fires).
+
+Key implications:
+- **Do not store state in global variables** — they will be lost when the service worker is terminated. Use `chrome.storage` or IndexedDB instead.
+- **Register event listeners synchronously** at the top level of your script. If you register them inside an async callback, the service worker may miss events.
+- The service worker is restarted on every browser launch and when a registered event fires.
+
+<DocHeading level={3} id="manifest-v2" toc={false}>Manifest V2 (Background Page)</DocHeading>
+
+The background runs as a **long-lived page** (or a non-persistent event page, depending on configuration). It stays in memory for the lifetime of the browser session (or until the browser unloads the event page).
+
+Global variables persist for the session, but relying on them is still discouraged if you plan to migrate to Manifest V3.
 
 ## Multi-App Structure
 
@@ -126,12 +181,7 @@ With Addon Bone, you can keep shared logic in one place and extend it per app.
 ```tree file="./code/background.multi-app.tree"
 ```
 
-Background naming patterns in multi-app mode are the same as in the default structure:
-- `background.ts`
-- `*.background.ts`
-- `background/index.ts`
-- `*.background/index.ts`
-- grouped structure via `backgrounds/`
+Background naming patterns in multi-app mode follow the same rules as described in [File Structure](#file-structure).
 
 This works the same way:
 - inside `shared`;
@@ -160,30 +210,46 @@ export default defineConfig({
 <DocHeading level={3} id="multi-app-merge" toc={false}><code>mergeBackground</code> behavior</DocHeading>
 
 - `mergeBackground: true`  
-Shared and app backgrounds are merged.
+Shared and app backgrounds are merged into one final output.
 - `mergeBackground: false`  
-If an app background exists, only app background is used.
-- If an app background does not exist  
-Shared background is used.
+If an app has its own background, only the app background is used; shared background is ignored.
+If an app does not have its own background, the shared background is used as a fallback.
 
 This lets you keep one shared baseline and add app-specific behavior without duplicating the full structure.
 
 ## Best Practices
 
-- Keep options close to the background logic that uses them.  
-If a module relies on `tabs`, `storage`, or host access, declare the corresponding options in the same entrypoint.
+<DocHeading level={3} id="best-practices-critical" toc={false}>Critical</DocHeading>
 
-- Do not rely on another background entrypoint to provide required options.  
-Each entrypoint should be self-sufficient for critical fields.
+- **Use one structure style per scope: root-level or `backgrounds/`.**  
+If `backgrounds/` exists in a scope, only that directory is used, and root-level background files in the same scope are ignored.
 
-- Account for build filters (`includeBrowser`, `excludeBrowser`, `includeApp`, `excludeApp`, `mode`, `debug`, `manifestVersion`).  
+- **Each entrypoint should be self-sufficient for critical fields.**  
+Do not rely on another background entrypoint to provide required options (like `permissions`).
+
+- **Account for build filters** (`includeBrowser`, `excludeBrowser`, `includeApp`, `excludeApp`, `mode`, `debug`, `manifestVersion`).  
 If an entrypoint can be excluded, critical options should also be declared in fallback entrypoints.
 
-- Use one structure style per scope: root-level or `backgrounds/`.  
-If `backgrounds/` exists in a scope, only that directory is used, and root-level background files in the same scope are ignored.
+<DocHeading level={3} id="best-practices-recommended" toc={false}>Critical</DocHeading>
+
+- Keep options close to the background logic that uses them.  
+If a module relies on `tabs`, `storage`, or host access, declare the corresponding options in the same entrypoint.
 
 - In multi-app mode, treat `shared` as the baseline and `apps/*` as app-specific layers.  
 Keep shared logic in `shared`, and put differences/overrides in each app.
 
-- Prefer `defineBackground` as the default style for new modules.  
+- Prefer [`defineBackground`](#definition) as the default style for new modules.  
 It provides stronger TypeScript typing, better autocomplete, and fewer option-related mistakes.
+
+## Debugging
+
+To inspect and debug the background entrypoint:
+
+1. Open `chrome://extensions` (or the equivalent in your browser).
+2. Make sure **Developer mode** is enabled.
+3. Find your extension and click **Inspect views → service worker** (MV3) or **Inspect views → background page** (MV2).
+4. This opens a dedicated DevTools window where you can see console output, set breakpoints, and inspect network requests from the background context.
+
+:::tip
+If the service worker is inactive, triggering any registered event (for example, clicking the extension icon) will restart it and attach the debugger.
+:::
