@@ -1,6 +1,5 @@
-import {Link} from "@rspress/core/theme";
-
 import {HostPermissions as BaseHostPermissions} from "@components/docs/entrypoints/options";
+import {Link} from "@rspress/core/theme";
 
 export default () => {
 	return (

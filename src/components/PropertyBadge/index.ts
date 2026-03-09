@@ -1,5 +1,5 @@
 export {
 	default,
-	type PropertyBadgeType,
 	type PropertyBadgeProps,
+	type PropertyBadgeType,
 } from "./PropertyBadge";
