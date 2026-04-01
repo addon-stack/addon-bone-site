@@ -8,6 +8,11 @@ node_modules
 dist/
 doc_build/
 
+# AI skills
+.agents/
+.augment/
+.junie/
+
 # IDE
 .vscode/*
 !.vscode/extensions.json
