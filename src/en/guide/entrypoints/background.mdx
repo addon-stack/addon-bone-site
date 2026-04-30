@@ -17,7 +17,7 @@ import EntrypointExportNote from "./fragments/entrypoint-export-note.mdx";
 It runs in the background without a visible UI and acts as the central hub of your extension.
 Addon Bone automatically generates the background service worker (MV3) or background page (MV2) from your source files — you just write the logic, and the framework handles manifest configuration, file merging, and build output.
 
-Use background for startup logic, browser event listeners, command handling, messaging orchestration, and privileged extension APIs.
+Use `background` for startup logic, browser event listeners, command handling, messaging orchestration, and privileged extension APIs.
 
 ## Quick Start
 
@@ -40,11 +40,11 @@ import {onInstalled} from "adnbn/browser";
 
 onInstalled((details) => {
     if (details.reason === "install") {
-      console.log("Extension installed for the first time");
+        console.log("Extension installed for the first time");
     }
 
     if (details.reason === "update") {
-      console.log("Extension updated from version", details.previousVersion);
+        console.log("Extension updated from version", details.previousVersion);
     }
 });
 
@@ -88,7 +88,7 @@ You can split logic into multiple files, and the framework will combine them aut
 Merge order:
 
 1. **External entrypoints** — provided by plugins.
-2. **Shared entrypoints** — from the `shared` directory (in multi-app mode).
+2. **Shared entrypoints** — from the configured shared layer (in multi-app mode).
 3. **App-specific entrypoints** — from the current app directory.
 
 Within the same priority level, files are sorted by lexicographic path comparison.
@@ -97,7 +97,6 @@ Within the same priority level, files are sorted by lexicographic path compariso
 Options are not merged between files into a single object. Each file is processed independently.
 Only aggregate manifest fields (such as `permissions`) are combined in the final output.
 :::
-
 
 ## Definition
 
@@ -139,12 +138,12 @@ They define background-specific manifest behavior and runtime startup handling.
 
 <Background/>
 
-<DocHeading level={3} id="common-options" toc={false}>Common Entrypoint Options</DocHeading>
+<DocHeading level={3} id="common-options" toc={false}>Common Options</DocHeading>
 
 These options are shared by all entrypoints (build filters, mode targeting, and manifest constraints).
 Read the full model in [Introduction](./introduction).
 
-<Details title="Common Entrypoint Options">
+<Details title="Common Options">
     <Entrypoint/>
 </Details>
 

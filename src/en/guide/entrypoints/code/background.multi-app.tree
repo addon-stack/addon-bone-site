@@ -11,3 +11,4 @@ src
     └── app-b
         └── background.ts // single app-specific background override for app-b
 adnbn.config.ts
+package.json
