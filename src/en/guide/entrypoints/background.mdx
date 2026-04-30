@@ -79,7 +79,7 @@ Supported patterns include:
 - `backgrounds/*.background/index.ts`
 
 :::warning Scope rule
-If a `backgrounds/` directory exists, Addon Bone scans only that directory for background entrypoints in the same scope and does not merge them with root-level background files.
+If a `backgrounds/` directory contains background entrypoints, Addon Bone scans only that directory for background entrypoints in the same scope and does not merge them with root-level background files.
 :::
 
 During build, Addon Bone merges all discovered background entrypoints into a single service worker (MV3) or background script (MV2).
@@ -150,14 +150,15 @@ Read the full model in [Introduction](./introduction).
 
 ## Multi-App Structure
 
-Use this mode when you build multiple extensions from a single codebase.
+Use this mode when you build multiple extension apps or products from a single codebase.
 
 Typical scenario:
 - you have shared logic (core modules, API layer, part of background logic);
 - and per-app differences (design, feature set, audience, integrations).
 
 With Addon Bone, you can keep shared logic in one place and extend it per app.
-To enable shared-layer discovery, set `shared` in `defineConfig` (`true`, `false`, or a custom directory name).
+Single-app projects do not need a separate shared directory — your normal source files are used directly.
+Use `shared` when you want to move common code into a dedicated shared layer for multiple apps.
 
 ```tree file="./code/background.multi-app.tree"
 ```
@@ -174,10 +175,10 @@ This works the same way:
 import {defineConfig} from "adnbn";
 
 export default defineConfig({
-  // Enables shared mode:
-  // true -> uses "shared" directory by default
-  // false -> shared mode is disabled
-  // string -> custom directory name for shared layer
+  // Configures the shared source layer:
+  // false -> no separate shared directory (default)
+  // true -> uses "shared" directory
+  // string -> uses a custom shared directory name
   shared: true,
 
   // Merges shared background and app background
@@ -203,7 +204,7 @@ This lets you keep one shared baseline and add app-specific behavior without dup
 <DocHeading level={3} id="best-practices-critical" toc={false}>Critical</DocHeading>
 
 - **Use one structure style per scope: root-level or `backgrounds/`.**  
-  If `backgrounds/` exists in a scope, only that directory is used, and root-level background files in the same scope are ignored.
+  If `backgrounds/` contains background entrypoints in a scope, only that directory is used, and root-level background files in the same scope are ignored.
 
 - **Each entrypoint should be self-sufficient for critical fields.**  
   Declare critical fields (`permissions`, `hostPermissions`, optional permissions) in each entrypoint that needs them.  
