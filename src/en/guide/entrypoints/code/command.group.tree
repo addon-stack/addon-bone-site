@@ -1,0 +1,10 @@
+src
+└── commands // organize all command entrypoints in one place
+    ├── command.ts
+    ├── open.command.ts
+    ├── command
+    │   └── index.ts
+    └── open.command/
+        └── index.ts
+adnbn.config.ts
+package.json

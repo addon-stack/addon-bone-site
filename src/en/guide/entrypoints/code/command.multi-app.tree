@@ -1,0 +1,13 @@
+src
+├── shared // shared logic for all apps (including shared command entrypoints)
+│   ├── open.command.ts
+│   └── command
+│       └── index.ts
+└── apps
+    ├── app-a
+    │   └── commands // app-specific commands for app-a
+    │       └── open.command.ts
+    └── app-b
+        └── open.command.ts // single app-specific command override for app-b
+adnbn.config.ts
+package.json
