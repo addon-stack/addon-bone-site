@@ -130,10 +130,15 @@ export default async (tab) => {
 Addon Bone registers it in the generated background context and calls it when the browser command fires.
 
 ```ts
-execute(tab, options) {
-  console.log(tab?.id);
-  console.log(options.name);
-}
+import {defineCommand} from "adnbn";
+
+export default defineCommand({
+  defaultKey: "Ctrl+Shift+Y",
+  execute(tab, options) {
+    console.log(tab?.id);
+    console.log(options.name);
+  },
+});
 ```
 
 The first argument is the active tab when the browser provides one.
