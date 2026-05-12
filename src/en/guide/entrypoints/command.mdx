@@ -25,10 +25,10 @@ Create a command entrypoint and export `defineCommand`.
 import {defineCommand} from "adnbn";
 
 export default defineCommand({
-  defaultKey: "Ctrl+Shift+Y",
-  execute(tab) {
-    console.log("Open command executed", tab);
-  },
+	defaultKey: "Ctrl+Shift+Y",
+	execute(tab) {
+		console.log("Open command executed", tab);
+	},
 });
 ```
 
@@ -92,32 +92,12 @@ Switch between tabs below to see each format in code:
 
 <Tabs>
     <Tab label="Recommended">
-
-        ```ts title="src/open.command.ts"
-        import {defineCommand} from "adnbn";
-
-        export default defineCommand({
-        name: "open-dashboard",
-        defaultKey: "Ctrl+Shift+Y",
-        permissions: ["tabs"],
-        async execute(tab) {
-        console.log("Open dashboard from", tab?.url);
-    },
-    });
+        ```ts file="../../../code/command.recommended.ts" title="src/open.command.ts"
         ```
-
     </Tab>
     <Tab label="Advanced">
-
-        ```ts title="src/open.command.ts"
-        export const name = "open-dashboard";
-        export const defaultKey = "Ctrl+Shift+Y";
-
-        export default async (tab) => {
-        console.log("Open dashboard from", tab?.url);
-    };
+        ```ts file="../../../code/command.advanced.ts" title="src/open.command.ts"
         ```
-
     </Tab>
 </Tabs>
 
@@ -133,11 +113,11 @@ Addon Bone registers it in the generated background context and calls it when th
 import {defineCommand} from "adnbn";
 
 export default defineCommand({
-  defaultKey: "Ctrl+Shift+Y",
-  execute(tab, options) {
-    console.log(tab?.id);
-    console.log(options.name);
-  },
+	defaultKey: "Ctrl+Shift+Y",
+	execute(tab, options) {
+		console.log(tab?.id);
+		console.log(options.name);
+	},
 });
 ```
 
@@ -156,10 +136,10 @@ Addon Bone maps it to the browser-reserved `_execute_action` command and registe
 import {defineExecuteActionCommand} from "adnbn";
 
 export default defineExecuteActionCommand({
-  defaultKey: "Ctrl+Shift+U",
-  execute(tab) {
-    console.log("Action command executed", tab);
-  },
+	defaultKey: "Ctrl+Shift+U",
+	execute(tab) {
+		console.log("Action command executed", tab);
+	},
 });
 ```
 
@@ -254,10 +234,10 @@ The app files can add commands that only one app needs; they do not need to repe
 import {defineConfig, Workspace} from "adnbn";
 
 export default defineConfig({
-  workspace: Workspace.Multi,
+	workspace: Workspace.Multi,
 
-  // Merges shared commands and app commands
-  mergeCommands: true,
+	// Merges shared commands and app commands
+	mergeCommands: true,
 });
 ```
 

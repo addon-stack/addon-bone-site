@@ -39,13 +39,13 @@ Here is a more practical example — listening for the extension install event u
 import {onInstalled} from "adnbn/browser";
 
 onInstalled((details) => {
-    if (details.reason === "install") {
-        console.log("Extension installed for the first time");
-    }
+	if (details.reason === "install") {
+		console.log("Extension installed for the first time");
+	}
 
-    if (details.reason === "update") {
-        console.log("Extension updated from version", details.previousVersion);
-    }
+	if (details.reason === "update") {
+		console.log("Extension updated from version", details.previousVersion);
+	}
 });
 
 export {};
@@ -172,10 +172,10 @@ The app files can add background behavior that only one app needs; they do not n
 import {defineConfig, Workspace} from "adnbn";
 
 export default defineConfig({
-  workspace: Workspace.Multi,
+	workspace: Workspace.Multi,
 
-  // Merges shared background and app background
-  mergeBackground: true,
+	// Merges shared background and app background
+	mergeBackground: true,
 });
 ```
 

@@ -15,10 +15,10 @@ class ArticleMv2Service implements ArticleService, MessageSenderAware {
 		}
 
 		const parseArticle = `(() => ({
-      title: document.title,
-      text: document.body.innerText.slice(0, 5000),
-      url: location.href,
-    }))()`;
+			title: document.title,
+			text: document.body.innerText.slice(0, 5000),
+			url: location.href,
+		}))()`;
 
 		const [snapshot] =
 			(await executeScriptTab(tabId, {

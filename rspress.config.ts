@@ -6,6 +6,7 @@ import fileTree from "rspress-plugin-file-tree";
 
 export default defineConfig({
 	root: path.join(__dirname, "src"),
+	llms: true,
 	route: {
 		exclude: ["components/**", "en/components/**", "code/**"],
 	},

@@ -141,12 +141,12 @@ Nested members work the same way:
 
 ```ts title="src/diagnostics.service.ts"
 export default () => ({
-  version: "1.0.0",
-  health: {
-    status(): string {
-      return "ok";
-    },
-  },
+	version: "1.0.0",
+	health: {
+		status(): string {
+			return "ok";
+		},
+	},
 });
 ```
 
@@ -157,17 +157,17 @@ It receives the created service instance and the resolved service options.
 import {defineService} from "adnbn";
 
 export default defineService({
-  init() {
-    return {
-      ready(): void {
-        console.log("Notifier service is ready");
-      },
-    };
-  },
+	init() {
+		return {
+			ready(): void {
+				console.log("Notifier service is ready");
+			},
+		};
+	},
 
-  main(notifier) {
-    notifier.ready();
-  },
+	main(notifier) {
+		notifier.ready();
+	},
 });
 ```
 
@@ -214,9 +214,9 @@ It contains the `chrome.runtime.MessageSender` for the current proxy call and is
 import type {MessageSenderAware} from "adnbn/message";
 
 export default () => ({
-  currentTabId(this: MessageSenderAware): number | undefined {
-    return this.$sender?.tab?.id;
-  },
+	currentTabId(this: MessageSenderAware): number | undefined {
+		return this.$sender?.tab?.id;
+	},
 });
 ```
 
@@ -359,10 +359,10 @@ The app files can add services that only one app needs; they do not need to repe
 import {defineConfig, Workspace} from "adnbn";
 
 export default defineConfig({
-  workspace: Workspace.Multi,
+	workspace: Workspace.Multi,
 
-  // Merges shared services and app services
-  mergeService: true,
+	// Merges shared services and app services
+	mergeService: true,
 });
 ```
 
