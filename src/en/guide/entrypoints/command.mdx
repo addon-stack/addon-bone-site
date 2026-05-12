@@ -9,11 +9,13 @@ import {Tab, Tabs} from "@rspress/core/theme";
 import Details from "@components/Details";
 import DocHeading from "@components/DocHeading";
 import {Command, CommandBackgroundOptions, Entrypoint} from "@en/components/entrypoints";
+import EntrypointDefinitionAdvanced from "./fragments/entrypoint-definition-advanced.mdx";
+import EntrypointDefinitionRecommended from "./fragments/entrypoint-definition-recommended.mdx";
 
-`command` is the keyboard shortcut entrypoint for your browser extension in Addon Bone.
-It declares a browser command, writes the matching `manifest.commands` entry, and registers the runtime handler in the generated background context.
+`command` is the entrypoint for extension actions that users trigger with a keyboard shortcut or by clicking the extension icon in the browser toolbar.
 
-Use `command` for keyboard shortcuts, command-palette style actions, quick tab operations, and extension action clicks handled through `_execute_action`.
+Addon Bone discovers the command file, adds the command to `manifest.commands`, and registers the runtime handler in the generated background context.
+You do not need to describe the manifest command manually or wire it to runtime logic yourself.
 
 ## Quick Start
 
@@ -31,21 +33,6 @@ export default defineCommand({
 ```
 
 Addon Bone discovers the file, generates the command name from `open.command.ts`, adds the shortcut to `manifest.commands`, and connects `execute` to the browser command event.
-
-For public or long-lived shortcuts, declare `name` explicitly so the manifest key stays stable even if the file is renamed.
-
-```ts title="src/open.command.ts"
-import {defineCommand} from "adnbn";
-
-export default defineCommand({
-  name: "open-dashboard",
-  defaultKey: "Ctrl+Shift+Y",
-  execute(tab, options) {
-    console.log("Command:", options.name);
-    console.log("Active tab:", tab);
-  },
-});
-```
 
 ## File Structure
 
@@ -96,33 +83,46 @@ Only aggregate manifest fields (such as `permissions`) are combined in the final
 
 ## Definition
 
-`defineCommand` is the recommended format for command entrypoints.
-It gives TypeScript the full command shape and makes build-time options visible to Addon Bone.
+Command can be declared in two formats:
 
-```ts title="src/open.command.ts"
-import {defineCommand} from "adnbn";
+<EntrypointDefinitionRecommended/>
+<EntrypointDefinitionAdvanced/>
 
-export default defineCommand({
-  name: "open-dashboard",
-  defaultKey: "Ctrl+Shift+Y",
-  permissions: ["tabs"],
-  async execute(tab) {
-    console.log("Open dashboard from", tab?.url);
-  },
-});
-```
+Switch between tabs below to see each format in code:
 
-A command can also be declared with named exports or a default `execute` function.
-This is useful for small commands, but `defineCommand` is the safest default because command entrypoints usually need manifest options.
+<Tabs>
+    <Tab label="Recommended">
 
-```ts title="src/open.command.ts"
-export const name = "open-dashboard";
-export const defaultKey = "Ctrl+Shift+Y";
+        ```ts title="src/open.command.ts"
+        import {defineCommand} from "adnbn";
 
-export default async (tab) => {
-  console.log("Open dashboard from", tab?.url);
-};
-```
+        export default defineCommand({
+        name: "open-dashboard",
+        defaultKey: "Ctrl+Shift+Y",
+        permissions: ["tabs"],
+        async execute(tab) {
+        console.log("Open dashboard from", tab?.url);
+    },
+    });
+        ```
+
+    </Tab>
+    <Tab label="Advanced">
+
+        ```ts title="src/open.command.ts"
+        export const name = "open-dashboard";
+        export const defaultKey = "Ctrl+Shift+Y";
+
+        export default async (tab) => {
+        console.log("Open dashboard from", tab?.url);
+    };
+        ```
+
+    </Tab>
+</Tabs>
+
+For commands, a bare default export maps to the `execute` target.
+Both formats support the same command options, background options, and common entrypoint filters.
 
 ## Execute Function
 
@@ -180,7 +180,10 @@ They define the manifest command record and the runtime handler.
 
 :::warning Shortcut requirement
 At least one suggested key must be defined: `defaultKey`, `windowsKey`, `macKey`, `chromeosKey`, or `linuxKey`.
-Supported shortcut format is a modifier (`Ctrl`, `Command`, `MacCtrl`, `Alt`, or `Option`), optional `+Shift`, and one letter or number.
+For regular commands, browser shortcuts must include `Ctrl` or `Alt`.
+On macOS, `Command` or `MacCtrl` can be used for the Ctrl side, and `Option` can be used for the Alt side.
+`Shift` may be added as a secondary modifier.
+Chrome global commands are stricter and should use `Ctrl+Shift+[0..9]`.
 :::
 
 <DocHeading level={3} id="background-options" toc={false}>Background Options</DocHeading>
@@ -228,76 +231,74 @@ Example output:
 
 ## Multi-App Structure
 
-Use this mode when you build multiple extension apps or products from a single codebase.
+Use this structure when one project builds several extension apps from the same codebase.
 
-Typical scenario:
-- you have shared commands (open dashboard, toggle state, shared shortcuts);
-- and app-specific commands (product-specific actions, different shortcut sets, feature flags).
+Shared commands live in `src/shared`.
+Use them for shortcuts that every app needs, such as opening a dashboard, toggling shared state, or running a common action.
+
+App-specific commands live in `src/apps/<app>`.
+Use them when one app needs its own shortcuts, action behavior, permissions, or feature flags.
+
+In a single-app project, you do not need this structure.
+Addon Bone works with your normal `src` files directly.
 
 ```tree file="./code/command.multi-app.tree"
 ```
 
-Command naming patterns in multi-app mode follow the same rules as described in [File Structure](#file-structure).
-
-This works the same way:
-- inside `shared`;
-- inside each app under `apps/*`.
+Command naming patterns work the same way in both layers: `src/shared` and `src/apps/<app>`.
+The app files can add commands that only one app needs; they do not need to repeat the shared command filenames.
 
 <DocHeading level={3} id="multi-app-configuration" toc={false}>Configuration</DocHeading>
 
 ```ts title="adnbn.config.ts"
-import {defineConfig} from "adnbn";
+import {defineConfig, Workspace} from "adnbn";
 
 export default defineConfig({
-  // Configures the shared source layer:
-  // false -> no separate shared directory (default)
-  // true -> uses "shared" directory
-  // string -> uses a custom shared directory name
-  shared: true,
+  workspace: Workspace.Multi,
 
   // Merges shared commands and app commands
   mergeCommands: true,
-
-  // Optional: apps directory can also be renamed
-  // apps: "applications",
 });
 ```
 
 <DocHeading level={3} id="multi-app-merge" toc={false}><code>mergeCommands</code> behavior</DocHeading>
 
-- `mergeCommands: true`  
-  Shared and app commands are included together.
-- `mergeCommands: false`  
-  If an app has its own commands, only app commands are used; shared commands are ignored.  
-  If an app does not have its own commands, shared commands are used as a fallback.
+`workspace: Workspace.Multi` enables the shared/app source layout.
+`mergeCommands` controls what happens when the shared layer and the current app both provide command entrypoints.
 
-This lets you keep shared shortcuts in one place and add app-specific commands only where they differ.
+- `mergeCommands: true`
+Shared and app command entrypoints are included together.
+- `mergeCommands: false`
+App command entrypoints replace shared command entrypoints when the app has its own files.
+If the app has no command entrypoints, shared command entrypoints are used as a fallback.
+
+This lets you keep shared shortcuts in one place and add app-specific commands only where an app needs them.
 
 ## Best Practices
 
 <DocHeading level={3} id="best-practices-critical" toc={false}>Critical</DocHeading>
 
-- **Use one structure style per scope: root-level or `commands/`.**  
-  If `commands/` contains command entrypoints in a scope, only that directory is used, and root-level command files in the same scope are ignored.
+- **Use one structure style per scope: root-level or `commands/`.**
+If `commands/` contains command entrypoints in a scope, only that directory is used, and root-level command files in the same scope are ignored.
 
-- **Declare at least one shortcut key in every command.**  
-  Addon Bone validates command options during build and requires one of `defaultKey`, `windowsKey`, `macKey`, `chromeosKey`, or `linuxKey`.
+- **Declare at least one shortcut key in every command.**
+Addon Bone validates command options during build and requires one of `defaultKey`, `windowsKey`, `macKey`, `chromeosKey`, or `linuxKey`.
 
-- **Each command should be self-sufficient for critical fields.**  
-  If a command needs `tabs`, `storage`, host access, or optional permissions, declare them in the same entrypoint. Build filters can exclude other files, so relying on another entrypoint to provide permissions can break the final manifest.
+- **Each command should be self-sufficient for critical fields.**
+If a command needs `tabs`, `storage`, host access, or optional permissions, declare them in the same entrypoint. Build filters can exclude other files, so relying on another entrypoint to provide permissions can break the final manifest.
 
 <DocHeading level={3} id="best-practices-recommended" toc={false}>Recommended</DocHeading>
 
-- Use explicit `name` values for public shortcuts.  
-  Generated names are convenient, but explicit names survive file renames.
+- Use explicit `name` values for public shortcuts.
+Generated names are convenient, but explicit names survive file renames.
 
 - Prefer `defaultKey` for simple shortcuts and platform-specific keys when macOS, Windows, Linux, or ChromeOS need different combinations.
 
-- Avoid browser and operating-system shortcut conflicts.  
-  Users can inspect and change extension shortcuts in the browser shortcuts page.
+- Avoid browser and operating-system shortcut conflicts.
+Users can inspect and change extension shortcuts on the browser shortcuts page.
 
-- Keep command handlers small.  
-  Move larger logic into services or shared modules and let the command entrypoint orchestrate the action.
+- Keep command handlers small.
+Move larger logic into services or shared modules and let the command entrypoint orchestrate the action.
 
 ## Debugging
 

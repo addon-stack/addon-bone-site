@@ -149,54 +149,48 @@ Read the full model in [Introduction](./introduction).
 
 ## Multi-App Structure
 
-Use this mode when you build multiple extension apps or products from a single codebase.
+Use this structure when one project builds several extension apps from the same codebase.
 
-Typical scenario:
-- you have shared logic (core modules, API layer, part of background logic);
-- and per-app differences (design, feature set, audience, integrations).
+Shared background logic lives in `src/shared`.
+Use it for code that every app needs, such as install/update handlers, shared browser events, API clients, or common permissions.
 
-With Addon Bone, you can keep shared logic in one place and extend it per app.
-Single-app projects do not need a separate shared directory — your normal source files are used directly.
-Use `shared` when you want to move common code into a dedicated shared layer for multiple apps.
+App-specific background logic lives in `src/apps/<app>`.
+Use it for behavior that belongs only to one app, such as product-specific events, permissions, integrations, or startup logic.
+
+In a single-app project, you do not need this structure.
+Addon Bone works with your normal `src` files directly.
 
 ```tree file="./code/background.multi-app.tree"
 ```
 
-Background naming patterns in multi-app mode follow the same rules as described in [File Structure](#file-structure).
-
-This works the same way:
-- inside `shared`;
-- inside each app under `apps/*`.
+Background naming patterns work the same way in both layers: `src/shared` and `src/apps/<app>`.
+The app files can add background behavior that only one app needs; they do not need to repeat the shared filenames.
 
 <DocHeading level={3} id="multi-app-configuration" toc={false}>Configuration</DocHeading>
 
 ```ts title="adnbn.config.ts"
-import {defineConfig} from "adnbn";
+import {defineConfig, Workspace} from "adnbn";
 
 export default defineConfig({
-  // Configures the shared source layer:
-  // false -> no separate shared directory (default)
-  // true -> uses "shared" directory
-  // string -> uses a custom shared directory name
-  shared: true,
+  workspace: Workspace.Multi,
 
   // Merges shared background and app background
   mergeBackground: true,
-
-  // Optional: apps directory can also be renamed
-  // apps: "applications",
 });
 ```
 
 <DocHeading level={3} id="multi-app-merge" toc={false}><code>mergeBackground</code> behavior</DocHeading>
 
-- `mergeBackground: true`  
-  Shared and app backgrounds are merged into one final output.
-- `mergeBackground: false`  
-  If an app has its own background, only the app background is used; shared background is ignored.  
-  If an app does not have its own background, the shared background is used as a fallback.
+`workspace: Workspace.Multi` enables the shared/app source layout.
+`mergeBackground` controls what happens when the shared layer and the current app both provide background entrypoints.
 
-This lets you keep one shared baseline and add app-specific behavior without duplicating the full structure.
+- `mergeBackground: true`  
+  Shared and app background entrypoints are included together.
+- `mergeBackground: false`  
+  App background entrypoints replace shared background entrypoints when the app has its own files.  
+  If the app has no background entrypoints, shared background entrypoints are used as a fallback.
+
+This lets you keep a shared background baseline and add app-specific behavior only where an app needs it.
 
 ## Best Practices
 

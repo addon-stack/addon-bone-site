@@ -1,0 +1,10 @@
+src
+└── services // organize all service entrypoints in one place
+    ├── service.ts
+    ├── storage.service.ts
+    ├── service
+    │   └── index.ts
+    └── storage.service/
+        └── index.ts
+adnbn.config.ts
+package.json

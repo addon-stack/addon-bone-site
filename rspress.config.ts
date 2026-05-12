@@ -41,7 +41,7 @@ export default defineConfig({
 			{
 				icon: "npm",
 				mode: "link",
-				content: "https://www.npmjs.com/~addon-stack",
+				content: "https://www.npmjs.com/package/adnbn",
 			},
 		],
 	},

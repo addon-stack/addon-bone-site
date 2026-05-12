@@ -1,13 +1,13 @@
 src
-├── shared // shared logic for all apps (including shared command entrypoints)
-│   ├── open.command.ts
-│   └── command
-│       └── index.ts
+├── shared // commands available in every app
+│   ├── open-dashboard.command.ts
+│   └── sync-data.command.ts
 └── apps
     ├── app-a
-    │   └── commands // app-specific commands for app-a
-    │       └── open.command.ts
+    │   └── commands // extra commands for app-a
+    │       ├── export-report.command.ts
+    │       └── import-data.command.ts
     └── app-b
-        └── open.command.ts // single app-specific command override for app-b
+        └── capture-page.command.ts // extra command for app-b
 adnbn.config.ts
 package.json

@@ -27,9 +27,11 @@ export default () => {
 			</EntrypointSpec>
 			<EntrypointSpec name="defaultKey" type="string" manifest>
 				Default suggested keyboard shortcut for the command. At least one
-				suggested key option must be declared. Supported format:{" "}
-				<code>Ctrl+Shift+K</code>, <code>Command+Shift+P</code>, or another
-				supported modifier plus a single letter or number.
+				suggested key option must be declared. Regular shortcuts use{" "}
+				<code>Ctrl</code> or <code>Alt</code>, optional <code>Shift</code>, and
+				a supported key. Use <code>macKey</code> for macOS-specific{" "}
+				<code>Command</code>, <code>MacCtrl</code>, or <code>Option</code>{" "}
+				shortcuts.
 			</EntrypointSpec>
 			<EntrypointSpec name="windowsKey" type="string" manifest>
 				Windows-specific suggested shortcut written to{" "}

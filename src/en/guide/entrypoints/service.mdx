@@ -1,1 +1,424 @@
+---
+description: "Build typed Addon Bone services for background-owned APIs without manual sendMessage and onMessage wiring."
+---
+
 # Service
+
+import {Tab, Tabs} from "@rspress/core/theme";
+
+import Details from "@components/Details";
+import DocHeading from "@components/DocHeading";
+import {Entrypoint, Service, ServiceBackgroundOptions} from "@en/components/entrypoints";
+import EntrypointDefinitionAdvanced from "./fragments/entrypoint-definition-advanced.mdx";
+import EntrypointDefinitionRecommended from "./fragments/entrypoint-definition-recommended.mdx";
+
+`service` is a named object API that lives in the generated background context.
+It lets popup, content, page, sidebar, and other extension contexts call background-owned logic through a typed async proxy.
+
+Instead of designing message names, payload contracts, response contracts, and `onMessage` handlers by hand, you return a regular object or class instance.
+Addon Bone registers it as a background service, generates TypeScript declarations, and exposes it with `getService(name)`.
+
+Use `service` for privileged browser API access, shared background logic, API clients, auth/session helpers, notification helpers, tab-aware work, and any feature where UI or content code needs to ask the background context to do something.
+
+## Quick Start
+
+Create a notification service in the background context.
+
+<Tabs>
+    <Tab label="Service">
+
+```ts file="../../../code/notifier.service.ts" title="src/notifier.service.ts"
+```
+
+    </Tab>
+    <Tab label="Popup">
+
+```ts title="src/popup.ts"
+import {getService} from "adnbn";
+
+const notifier = getService("notifier");
+
+const notificationId = await notifier.notify("Background service is ready.");
+
+console.log(notificationId);
+```
+
+    </Tab>
+</Tabs>
+
+Addon Bone discovers `notifier.service.ts`, registers it in the generated background context, adds `notifications` to the generated manifest, generates service declarations, and exposes a typed async proxy for `getService("notifier")`.
+The popup calls `notifier.notify()` like a normal method, while Addon Bone transports the call through the extension messaging layer.
+The service name is generated from `notifier.service.ts`, so you can start without declaring `name` explicitly.
+
+## Definition
+
+Service entrypoints can be declared in two equivalent formats:
+
+<EntrypointDefinitionRecommended/>
+<EntrypointDefinitionAdvanced/>
+
+Switch between tabs below to see each format in code:
+
+<Tabs>
+    <Tab label="Recommended">
+        ```ts file="../../../code/service.recommended.ts" title="src/ping.service.ts"
+        ```
+    </Tab>
+    <Tab label="Advanced">
+        ```ts file="../../../code/service.advanced.ts" title="src/ping.service.ts"
+        ```
+    </Tab>
+</Tabs>
+
+For `service`, a bare default export maps to the `init` target.
+Both formats support the same service options, background options, and common entrypoint filters.
+Addon Bone uses the returned service shape to generate declarations, so callers get autocomplete and typed async return values from `getService(name)`.
+
+## File Structure
+
+Addon Bone auto-discovers service entrypoints by file naming patterns.
+No manual registration or manifest editing is required.
+Use the default flat structure for most projects.
+If you have many services, group them in `services/` to keep background APIs in one place.
+
+<Tabs>
+    <Tab label="Default">
+
+```tree file="./code/service.default.tree"
+```
+
+    </Tab>
+    <Tab label="Grouped">
+
+```tree file="./code/service.group.tree"
+```
+
+    </Tab>
+</Tabs>
+
+Supported patterns include:
+
+- `service.ts`
+- `*.service.ts`
+- `service/index.ts`
+- `*.service/index.ts`
+- `services/service.ts`
+- `services/*.service.ts`
+- `services/service/index.ts`
+- `services/*.service/index.ts`
+
+:::warning Scope rule
+If a `services/` directory contains service entrypoints, Addon Bone scans only that directory for service entrypoints in the same scope and does not merge them with root-level service files.
+:::
+
+During build, Addon Bone adds every discovered service entrypoint to the generated background context.
+Each service is registered under a name and exposed to other extension contexts through generated service declarations.
+
+Merge order:
+
+1. **External entrypoints** - provided by plugins.
+2. **Shared entrypoints** - from the configured shared layer in multi-app mode.
+3. **App-specific entrypoints** - from the current app directory.
+
+Within the same priority level, files are sorted by lexicographic path comparison.
+
+:::info
+Options are not merged between files into a single object.
+Each service file is processed independently.
+Only aggregate manifest fields, such as `permissions`, are combined in the final output.
+:::
+
+## Writing a Service
+
+The value returned from `init` becomes the service API.
+It can be an object literal, a class instance, or any object whose methods and nested objects make up the public service API.
+Public methods, properties, and nested objects are available through the proxy.
+
+```ts file="../../../code/todo.service.ts" title="src/todo.service.ts"
+```
+
+Nested members work the same way:
+
+```ts title="src/diagnostics.service.ts"
+export default () => ({
+  version: "1.0.0",
+  health: {
+    status(): string {
+      return "ok";
+    },
+  },
+});
+```
+
+Use `main` for bootstrap work that should run after the service is registered.
+It receives the created service instance and the resolved service options.
+
+```ts title="src/notifier.service.ts"
+import {defineService} from "adnbn";
+
+export default defineService({
+  init() {
+    return {
+      ready(): void {
+        console.log("Notifier service is ready");
+      },
+    };
+  },
+
+  main(notifier) {
+    notifier.ready();
+  },
+});
+```
+
+Most services only need `init`.
+Use `main` for subscriptions, one-time startup checks, or setup that needs the created instance.
+
+## Calling a Service
+
+Use `getService` from `adnbn` in non-background contexts.
+
+```ts title="src/content.ts"
+import {getService} from "adnbn";
+
+const todos = getService("todo");
+
+const created = await todos.create("Prepare store release");
+await todos.complete(created.id);
+
+const items = await todos.list();
+console.log(items.length);
+```
+
+Service proxy calls are always async because they cross an extension messaging boundary.
+Even when the real service method is synchronous, call it with `await` from popup, content, page, sidebar, and similar non-background contexts.
+
+Nested members are also proxied:
+
+```ts
+const diagnostics = getService("diagnostics");
+
+const version = await diagnostics.version();
+const status = await diagnostics.health.status();
+```
+
+This is the main developer experience difference from manual browser messaging:
+you define one service API and use it like an object, without message names, payload handlers, response handlers, or service keys.
+
+## Sender Context
+
+Every service method call has a request-scoped `$sender`.
+It contains the `chrome.runtime.MessageSender` for the current proxy call and is available inside service methods through `this.$sender`.
+
+```ts title="src/tab.service.ts"
+import type {MessageSenderAware} from "adnbn/message";
+
+export default () => ({
+  currentTabId(this: MessageSenderAware): number | undefined {
+    return this.$sender?.tab?.id;
+  },
+});
+```
+
+`$sender` is not passed as a method argument and is not stored on the real service instance.
+Addon Bone exposes it only for the current call, so parallel service calls keep separate sender values.
+Class-based services can implement `MessageSenderAware` and declare a readonly `$sender?: MessageSender` field for TypeScript.
+The `declare` field is type-only; it does not create stored runtime state on the real service instance.
+
+`sender.tab.id` is expected for tab-backed calls, such as calls from a content script.
+For popup, sidebar, options, and other extension pages, the sender usually identifies the extension page through `sender.url` or `sender.origin`, and `sender.tab` may be missing.
+
+## Background Access
+
+Inside background code, you usually do not need a proxy because the service already lives in the background context.
+Use `getService` from `adnbn/service` when background logic needs direct access to the real service instance.
+
+```ts title="src/background.ts"
+import {getService} from "adnbn/service";
+
+const notifier = getService("notifier");
+
+await notifier.notify("Background startup finished.");
+```
+
+## Service as Strategy
+
+Services can act as build-time strategies.
+Expose one stable service name and provide different implementations for different manifest versions, browsers, apps, modes, or debug settings.
+
+This example exposes an `ArticleService`.
+The consumer always calls `article.parse()` with no arguments.
+Each implementation gets the tab id from `$sender`, then uses the browser API that matches the current manifest version.
+The shared contract comes first because it is the public API every build-specific implementation must keep stable.
+
+<Tabs>
+    <Tab label="Shared Contract">
+
+```ts file="../../../code/types/article.ts" title="src/types/article.ts"
+```
+
+    </Tab>
+    <Tab label="Service for MV3">
+
+```ts file="../../../code/services/article-mv3.service.ts" title="src/services/article-mv3.service.ts"
+```
+
+    </Tab>
+    <Tab label="Service for MV2">
+
+```ts file="../../../code/services/article-mv2.service.ts" title="src/services/article-mv2.service.ts"
+```
+
+    </Tab>
+    <Tab label="Content Script">
+
+```ts title="src/content.ts"
+import {getService} from "adnbn";
+
+const article = getService("article");
+
+const snapshot = await article.parse();
+
+console.log(snapshot.title);
+```
+
+    </Tab>
+</Tabs>
+
+The files use `article-mv3` and `article-mv2` in their names, but both declare `name: "article"` so the public service name stays stable.
+Only one `article` service is included in a given build because `manifestVersion` filters the entrypoints.
+The same strategy works with `includeBrowser`, `excludeBrowser`, `includeApp`, `excludeApp`, `mode`, and `debug`.
+
+Keep every strategy implementation self-sufficient.
+If one implementation needs a permission or host permission, declare it in that same service entrypoint.
+
+## Options
+
+Options are declarative settings recognized by Addon Bone at build time.
+They control service registration, background permissions, and build filters.
+You never need to edit `manifest.json` manually for these fields.
+
+<DocHeading level={3} id="service-options" toc={false}>Service Options</DocHeading>
+
+These options are specific to the `service` entrypoint.
+They define the service API and optional startup behavior.
+
+<Service/>
+
+<DocHeading level={3} id="background-options" toc={false}>Background Options</DocHeading>
+
+Service runs in the generated background context, so it can declare the same background-related manifest options as `background`.
+Keep these options close to the service that needs them.
+
+<Details title="Background Options">
+    <ServiceBackgroundOptions/>
+</Details>
+
+<DocHeading level={3} id="common-options" toc={false}>Common Options</DocHeading>
+
+These options are shared by all entrypoints: build filters, mode targeting, and manifest constraints.
+Read the full model in [Introduction](./introduction).
+
+<Details title="Common Options">
+    <Entrypoint/>
+</Details>
+
+## Manifest Output
+
+Service does not create a dedicated manifest field.
+Addon Bone registers services inside the generated background context and generates TypeScript declarations for service access.
+
+Service background options can still affect manifest output:
+
+- `persistent` contributes to the generated background configuration.
+- `permissions` are aggregated with other background context entrypoints.
+- `optionalPermissions`, `hostPermissions`, and `optionalHostPermissions` are mapped to the correct Manifest V2/V3 fields.
+
+## Multi-App Structure
+
+Use this structure when one project builds several extension apps from the same codebase.
+
+Shared services live in `src/shared`.
+Use them for background APIs that every app needs, such as session, billing, telemetry, or a common API client.
+
+App-specific services live in `src/apps/<app>`.
+Use them when one app needs its own background API, permissions, integrations, or business logic.
+
+In a single-app project, you do not need this structure.
+Addon Bone works with your normal `src` files directly.
+
+```tree file="./code/service.multi-app.tree"
+```
+
+Service naming patterns work the same way in both layers: `src/shared` and `src/apps/<app>`.
+The app files can add services that only one app needs; they do not need to repeat the shared service filenames.
+
+<DocHeading level={3} id="multi-app-configuration" toc={false}>Configuration</DocHeading>
+
+```ts title="adnbn.config.ts"
+import {defineConfig, Workspace} from "adnbn";
+
+export default defineConfig({
+  workspace: Workspace.Multi,
+
+  // Merges shared services and app services
+  mergeService: true,
+});
+```
+
+<DocHeading level={3} id="multi-app-merge" toc={false}><code>mergeService</code> behavior</DocHeading>
+
+`workspace: Workspace.Multi` enables the shared/app source layout.
+`mergeService` controls what happens when the shared layer and the current app both provide service entrypoints.
+
+- `mergeService: true`  
+  Shared and app service entrypoints are included together.
+- `mergeService: false`  
+  App service entrypoints replace shared service entrypoints when the app has its own files.  
+  If the app has no service entrypoints, shared service entrypoints are used as a fallback.
+
+This lets you keep common background APIs in one place and add app-specific services only where an app needs them.
+
+## Best Practices
+
+<DocHeading level={3} id="best-practices-critical" toc={false}>Critical</DocHeading>
+
+- **Use one structure style per scope: root-level or `services/`.**  
+  If `services/` contains service entrypoints in a scope, only that directory is used, and root-level service files in the same scope are ignored.
+
+- **Treat service calls as async boundaries.**  
+  Calls from non-background contexts go through extension messaging, so always use `await`.
+
+- **Declare critical fields in the same service that needs them.**  
+  If a service needs permissions, optional permissions, or host access, declare them in that service entrypoint. Build filters can exclude other files, so relying on another entrypoint to provide permissions can break the final manifest.
+
+- **Do not store `$sender` on your service instance.**  
+  `$sender` belongs to the current call. Read it inside the service method that needs it.
+
+<DocHeading level={3} id="best-practices-recommended" toc={false}>Recommended</DocHeading>
+
+- Use explicit `name` values for public services.  
+  Generated names are convenient, but explicit names survive file renames.
+
+- Keep service APIs small and stable.  
+  Services are easiest to use when they expose clear methods instead of a large mutable object.
+
+- Use services instead of manual messaging for background communication.  
+  If you are about to write `sendMessage` and `onMessage` for an internal background API, a service is usually the better fit.
+
+- Keep UI state outside services.  
+  Services are best for background-owned logic, privileged APIs, shared browser events, and cross-context work.
+
+## Debugging
+
+To inspect and debug service entrypoints:
+
+1. Build the extension and confirm the service file is discovered.
+2. Check the service name used by `getService(name)`.
+3. Open the background DevTools window and inspect service startup logs or method errors.
+4. If a proxy call fails, check the background console first because the real method runs there.
+5. If `$sender.tab` is missing, confirm the call came from a tab-backed context such as a content script.
+
+:::tip
+If a service call works in background but not from popup or content, check the import path. Non-background contexts should import `getService` from `adnbn`; background code should import direct access from `adnbn/service`.
+:::

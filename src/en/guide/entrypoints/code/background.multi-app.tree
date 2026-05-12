@@ -1,14 +1,13 @@
 src
-├── shared // shared logic for all apps (including shared background entrypoints)
-│   ├── auth.background.ts
-│   └── background
-│       └── index.ts
+├── shared // background logic used by every app
+│   ├── install.background.ts
+│   └── session.background.ts
 └── apps
     ├── app-a
-    │   └── backgrounds // app-specific background files for app-a
-    │       └── background/
-    │           └── index.ts
+    │   └── backgrounds // extra background logic for app-a
+    │       ├── analytics.background.ts
+    │       └── onboarding.background.ts
     └── app-b
-        └── background.ts // single app-specific background override for app-b
+        └── billing.background.ts // extra background logic for app-b
 adnbn.config.ts
 package.json

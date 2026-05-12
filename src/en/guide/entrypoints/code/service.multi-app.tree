@@ -1,0 +1,13 @@
+src
+├── shared // services available in every app
+│   ├── session.service.ts
+│   └── storage.service.ts
+└── apps
+    ├── app-a
+    │   └── services // extra services for app-a
+    │       ├── billing.service.ts
+    │       └── reporting.service.ts
+    └── app-b
+        └── catalog.service.ts // extra service for app-b
+adnbn.config.ts
+package.json
