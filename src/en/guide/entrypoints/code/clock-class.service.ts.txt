@@ -1,0 +1,18 @@
+import {defineService} from "adnbn";
+
+class ClockService {
+	public now(): string {
+		return this._format(Date.now());
+	}
+
+	// Runtime helper, hidden from the generated contract.
+	public _format(ms: number): string {
+		return new Date(ms).toISOString();
+	}
+}
+
+export default defineService({
+	init() {
+		return new ClockService();
+	},
+});

@@ -1,0 +1,23 @@
+import {defineService} from "adnbn";
+import {ArticleParser, type ArticleSnapshot, type ParseOptions} from "@acme/article-parser";
+
+// ArticleParser is an external SDK class. JSDoc below exposes the SDK DTO types
+// that should appear in the generated contract.
+
+class ArticleService {
+	constructor(private readonly parser: ArticleParser) {}
+
+	/**
+	 * @param {import("@acme/article-parser").ParseOptions} options
+	 * @returns {Promise<import("@acme/article-parser").ArticleSnapshot>}
+	 */
+	parse(options: ParseOptions): Promise<ArticleSnapshot> {
+		return this.parser.parse(options);
+	}
+}
+
+export default defineService({
+	init() {
+		return new ArticleService(new ArticleParser());
+	},
+});

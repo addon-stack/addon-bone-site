@@ -10,7 +10,6 @@ import Details from "@components/Details";
 import DocHeading from "@components/DocHeading";
 import {Entrypoint, Service, ServiceBackgroundOptions} from "@en/components/entrypoints";
 import EntrypointDefinitionAdvanced from "./fragments/entrypoint-definition-advanced.mdx";
-import EntrypointDefinitionRecommended from "./fragments/entrypoint-definition-recommended.mdx";
 
 `service` is a named object API that lives in the generated background context.
 It lets popup, content, page, sidebar, and other extension contexts call background-owned logic through a typed async proxy.
@@ -54,7 +53,11 @@ The service name is generated from `notifier.service.ts`, so you can start witho
 
 Service entrypoints can be declared in two equivalent formats:
 
-<EntrypointDefinitionRecommended/>
+:::tip Recommended
+Use `defineService` as the default format.
+It provides strict TypeScript declarations: autocomplete, full option hints, and inline type validation while you write.
+:::
+
 <EntrypointDefinitionAdvanced/>
 
 Switch between tabs below to see each format in code:
@@ -173,6 +176,52 @@ export default defineService({
 
 Most services only need `init`.
 Use `main` for subscriptions, one-time startup checks, or setup that needs the created instance.
+
+## Generated Contracts
+
+Addon Bone reads the service target at build time and turns its public shape into a generated contract — emitted as TypeScript declarations.
+That contract is what gives `getService("todo")` autocomplete, method arguments, and typed async return values.
+
+Recognized targets include object literals, class instances, and nested objects.
+Within those targets, Addon Bone reads public methods, inherited public methods, properties, method parameters, and return types.
+Private, protected, static, and underscore-prefixed members are not part of the generated contract.
+The `this` parameter is also removed from the generated contract, which keeps helper types like `MessageSenderAware` out of the consumer API.
+
+<Tabs>
+    <Tab label="Object Target">
+
+```ts file="./code/clock-object.service.ts.txt" title="src/clock.service.ts"
+```
+
+    </Tab>
+    <Tab label="Class Target">
+
+```ts file="./code/clock-class.service.ts.txt" title="src/clock.service.ts"
+```
+
+    </Tab>
+</Tabs>
+
+Consumers of `getService("clock")` see only `now()`.
+The underscore prefix is a name-based convention: `_format` remains a normal runtime member on the real object, but generated service typings omit it.
+Use it only from code that holds the concrete instance, not as part of the service API.
+Use `private` when nothing outside the class should call a helper.
+
+Prefer normal TypeScript annotations for service methods and returned objects.
+Use JSDoc contract hints when the generated contract is hard to infer statically, comes from an external package, or should be more precise than an implementation detail.
+Supported hints include `@type` for properties, `@param` and `@returns` for methods, `@template` for generic methods, and `@typedef` with `@property` for inline object contracts.
+When both TypeScript and a JSDoc hint describe the same member, the generated contract uses the JSDoc hint.
+
+```ts file="./code/article-parser.service.ts.txt" title="src/article.service.ts"
+```
+
+The implementation stays strongly typed, and the generated contract uses the explicit JSDoc `import(...)` types.
+This is useful when a service wraps third-party SDKs, imported package types, or complex DTOs that should stay visible to consumers.
+
+:::warning
+JSDoc hints describe the public generated contract.
+Keep them aligned with real runtime values; they are not a replacement for validating data that crosses the transport boundary.
+:::
 
 ## Calling a Service
 
@@ -403,6 +452,9 @@ This lets you keep common background APIs in one place and add app-specific serv
 - Keep service APIs small and stable.  
   Services are easiest to use when they expose clear methods instead of a large mutable object.
 
+- Use JSDoc contract hints sparingly.  
+  Add them only to public service methods and properties when TypeScript annotations are not enough for the generated contract.
+
 - Use services instead of manual messaging for background communication.  
   If you are about to write `sendMessage` and `onMessage` for an internal background API, a service is usually the better fit.
 
@@ -418,6 +470,7 @@ To inspect and debug service entrypoints:
 3. Open the background DevTools window and inspect service startup logs or method errors.
 4. If a proxy call fails, check the background console first because the real method runs there.
 5. If `$sender.tab` is missing, confirm the call came from a tab-backed context such as a content script.
+6. If `getService(name)` loses autocomplete or falls back to `any`, make sure `init` returns a statically visible object or class instance, then add explicit TypeScript types or JSDoc contract hints where inference is not enough.
 
 :::tip
 If a service call works in background but not from popup or content, check the import path. Non-background contexts should import `getService` from `adnbn`; background code should import direct access from `adnbn/service`.

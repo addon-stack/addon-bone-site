@@ -10,7 +10,6 @@ import Details from "@components/Details";
 import DocHeading from "@components/DocHeading";
 import {Command, CommandBackgroundOptions, Entrypoint} from "@en/components/entrypoints";
 import EntrypointDefinitionAdvanced from "./fragments/entrypoint-definition-advanced.mdx";
-import EntrypointDefinitionRecommended from "./fragments/entrypoint-definition-recommended.mdx";
 
 `command` is the entrypoint for extension actions that users trigger with a keyboard shortcut or by clicking the extension icon in the browser toolbar.
 
@@ -85,7 +84,11 @@ Only aggregate manifest fields (such as `permissions`) are combined in the final
 
 Command can be declared in two formats:
 
-<EntrypointDefinitionRecommended/>
+:::tip Recommended
+Use `defineCommand` as the default format.
+It provides strict TypeScript declarations: autocomplete, full option hints, and inline type validation while you write.
+:::
+
 <EntrypointDefinitionAdvanced/>
 
 Switch between tabs below to see each format in code:

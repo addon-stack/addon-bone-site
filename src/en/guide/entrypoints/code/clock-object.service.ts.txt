@@ -1,0 +1,16 @@
+import {defineService} from "adnbn";
+
+export default defineService({
+	init() {
+		return {
+			now(): string {
+				return this._format(Date.now());
+			},
+
+			// Runtime helper, hidden from the generated contract.
+			_format(ms: number): string {
+				return new Date(ms).toISOString();
+			},
+		};
+	},
+});
