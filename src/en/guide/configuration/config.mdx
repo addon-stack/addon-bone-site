@@ -1,1 +1,47 @@
+---
+description: "Configure the extension toolbar button, icon groups, tooltip, and popup overrides in Addon Bone."
+---
+
 # Configuration
+
+## Toolbar Action
+
+Use `action` in `adnbn.config.ts` to set the extension toolbar button's default icon and tooltip.
+The icon is a group name from your icons directory, using the same groups as the popup `icon` option.
+The title accepts plain text or a locale key such as `@action.title`.
+
+```ts title="adnbn.config.ts"
+import {defineConfig} from "adnbn";
+
+export default defineConfig({
+    icon: "default",
+    action: {
+        icon: "active",
+        title: "Run extension",
+    },
+});
+```
+
+The top-level `icon` selects the extension icon in `manifest.icons`.
+`action.icon` selects the toolbar icon in `action.default_icon` for MV3 or `browser_action.default_icon` for MV2.
+Addon Bone resolves the selected group to its emitted icon paths and sizes.
+
+### Popup Overrides
+
+The applied popup overrides each field independently:
+
+- Icon: `popup.icon` → `config.action.icon` → `config.icon`.
+- Tooltip: `popup.title` → `config.action.title` → the extension name.
+
+For example, a popup that only sets `title` keeps the icon selected in `config.action`.
+A popup with `apply: false` does not affect the initial toolbar button.
+The popup supplies `default_popup`; the action configuration does not create an HTML page.
+
+### Declaring a Button Without a Popup
+
+An explicit `action` object, including `action: {}`, declares the button even when there is no popup or execute-action command.
+It configures appearance without creating a command, background entrypoint, or click handler.
+Use an [execute-action command](../entrypoints/command#execute-action-command) or register a handler in your background to respond to clicks.
+
+When `action` is omitted, an applied popup or execute-action command still declares the button and uses the same fallback rules.
+If none of these is present, Addon Bone does not generate an action entry.

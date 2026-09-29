@@ -149,6 +149,9 @@ export default defineExecuteActionCommand({
 This is useful for extensions whose action button performs logic directly.
 If your extension action opens a popup, the popup owns the click interaction, so use `_execute_action` only for action buttons without popup behavior.
 
+Configure the button's icon group and tooltip with [`action` in `adnbn.config.ts`](../configuration/config#toolbar-action).
+These appearance settings also work without a command. An applied popup overrides its explicitly specified icon and title.
+
 ## Options
 
 Options are declarative settings recognized by Addon Bone at build time.
