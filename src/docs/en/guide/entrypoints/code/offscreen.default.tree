@@ -1,0 +1,9 @@
+src
+├── offscreen.ts // default offscreen entrypoint
+├── thumbnail.offscreen.ts // named offscreen entrypoint
+├── offscreen // directory-based entrypoint
+│   └── index.ts
+└── image-tools.offscreen/  // custom directory name is also supported
+    └── index.ts
+adnbn.config.ts
+package.json

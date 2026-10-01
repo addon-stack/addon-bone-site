@@ -3,7 +3,7 @@ src
 ├── open.command.ts // named command entrypoint
 ├── command // directory-based entrypoint
 │   └── index.ts
-└── open.command/ // custom directory name is also supported
+└── open.command/  // custom directory name is also supported
     └── index.ts
 adnbn.config.ts
 package.json

@@ -1,0 +1,18 @@
+import {defineOffscreen, OffscreenReason} from "adnbn";
+
+export default defineOffscreen({
+	reasons: OffscreenReason.Blobs,
+
+	init() {
+		return {
+			status(): string {
+				return this._statusText();
+			},
+
+			// Runtime helper, hidden from the generated contract.
+			_statusText(): string {
+				return "ready";
+			},
+		};
+	},
+});

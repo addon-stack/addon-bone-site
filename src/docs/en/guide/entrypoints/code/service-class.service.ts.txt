@@ -1,0 +1,18 @@
+import {defineService} from "adnbn";
+
+class Service {
+	public status(): string {
+		return this._statusText();
+	}
+
+	// Runtime helper, hidden from the generated contract.
+	public _statusText(): string {
+		return "ready";
+	}
+}
+
+export default defineService({
+	init() {
+		return new Service();
+	},
+});

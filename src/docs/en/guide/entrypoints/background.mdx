@@ -38,13 +38,13 @@ Here is a more practical example — listening for the extension install event u
 import {onInstalled} from "adnbn/browser";
 
 onInstalled((details) => {
-	if (details.reason === "install") {
-		console.log("Extension installed for the first time");
-	}
+    if (details.reason === "install") {
+        console.log("Extension installed for the first time");
+    }
 
-	if (details.reason === "update") {
-		console.log("Extension updated from version", details.previousVersion);
-	}
+    if (details.reason === "update") {
+        console.log("Extension updated from version", details.previousVersion);
+    }
 });
 
 export {};
@@ -150,6 +150,81 @@ Read the full model in [Introduction](./introduction).
     <Entrypoint/>
 </Details>
 
+## Manifest Output
+
+Background entrypoints generate the extension background runtime.
+In Manifest V3 builds, Addon Bone emits the background service worker.
+In Manifest V2 builds, it emits the background page configuration.
+
+Background manifest options can also affect the generated manifest:
+
+- `persistent` controls Manifest V2 background page persistence.
+- `permissions` are aggregated with other background context entrypoints.
+- `optionalPermissions`, `hostPermissions`, and `optionalHostPermissions` are mapped to the correct Manifest V2/V3 fields.
+
+<DocHeading level={3} id="manifest-v3-output" toc={false}>Manifest V3</DocHeading>
+
+<Tabs>
+<Tab label="Generated Manifest">
+```json title="manifest.json"
+{
+  "manifest_version": 3,
+  "background": {
+    "service_worker": "background.js"
+  },
+  "permissions": ["storage"],
+  "host_permissions": ["https://api.example.com/*"]
+}
+```
+</Tab>
+<Tab label="Background Source">
+```ts title="src/background.ts"
+import {defineBackground} from "adnbn";
+
+export default defineBackground({
+    manifestVersion: 3,
+    permissions: ["storage"],
+    hostPermissions: ["https://api.example.com/*"],
+    main() {
+        console.log("Background started");
+    },
+});
+```
+</Tab>
+</Tabs>
+
+<DocHeading level={3} id="manifest-v2-output" toc={false}>Manifest V2</DocHeading>
+
+<Tabs>
+<Tab label="Generated Manifest">
+```json title="manifest.json"
+{
+  "manifest_version": 2,
+  "background": {
+    "scripts": ["background.js"],
+    "persistent": true
+  },
+  "permissions": ["storage", "https://api.example.com/*"]
+}
+```
+</Tab>
+<Tab label="Background Source">
+```ts title="src/background.ts"
+import {defineBackground} from "adnbn";
+
+export default defineBackground({
+    manifestVersion: 2,
+    persistent: true,
+    permissions: ["storage"],
+    hostPermissions: ["https://api.example.com/*"],
+    main() {
+        console.log("Background started");
+    },
+});
+```
+</Tab>
+</Tabs>
+
 ## Multi-App Structure
 
 Use this structure when one project builds several extension apps from the same codebase.
@@ -175,10 +250,10 @@ The app files can add background behavior that only one app needs; they do not n
 import {defineConfig, Workspace} from "adnbn";
 
 export default defineConfig({
-	workspace: Workspace.Multi,
+    workspace: Workspace.Multi,
 
-	// Merges shared background and app background
-	mergeBackground: true,
+    // Merges shared background and app background
+    mergeBackground: true,
 });
 ```
 

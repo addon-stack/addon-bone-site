@@ -1,0 +1,12 @@
+src
+├── shared // offscreen APIs used by every app
+│   └── thumbnail.offscreen.ts
+├── apps
+│   ├── clipper
+│   │   └── offscreens // extra offscreen APIs for clipper
+│   │       ├── article-preview.offscreen.ts
+│   │       └── image-crop.offscreen.ts
+│   └── screenshotter
+│       └── screenshot-overlay.offscreen.ts // extra offscreen API for screenshotter
+adnbn.config.ts
+package.json

@@ -20,18 +20,18 @@ You do not need to describe the manifest command manually or wire it to runtime 
 
 Create a command entrypoint and export `defineCommand`.
 
-```ts title="src/open.command.ts"
+```ts title="src/command.ts"
 import {defineCommand} from "adnbn";
 
 export default defineCommand({
-	defaultKey: "Ctrl+Shift+Y",
-	execute(tab) {
-		console.log("Open command executed", tab);
-	},
+    defaultKey: "Ctrl+Shift+Y",
+    execute(tab) {
+        console.log("Command executed", tab);
+    },
 });
 ```
 
-Addon Bone discovers the file, generates the command name from `open.command.ts`, adds the shortcut to `manifest.commands`, and connects `execute` to the browser command event.
+Addon Bone discovers the file, generates the command name from `command.ts`, adds the shortcut to `manifest.commands`, and connects `execute` to the browser command event.
 
 ## File Structure
 
@@ -95,11 +95,11 @@ Switch between tabs below to see each format in code:
 
 <Tabs>
     <Tab label="Recommended">
-        ```ts file="../../../../code/command.recommended.ts" title="src/open.command.ts"
+        ```ts file="../../../../code/command.recommended.ts" title="src/open-dashboard.command.ts"
         ```
     </Tab>
     <Tab label="Advanced">
-        ```ts file="../../../../code/command.advanced.ts" title="src/open.command.ts"
+        ```ts file="../../../../code/command.advanced.ts" title="src/open-dashboard.command.ts"
         ```
     </Tab>
 </Tabs>
@@ -112,15 +112,15 @@ Both formats support the same command options, background options, and common en
 `execute` is the runtime handler for the command.
 Addon Bone registers it in the generated background context and calls it when the browser command fires.
 
-```ts
+```ts title="src/command.ts"
 import {defineCommand} from "adnbn";
 
 export default defineCommand({
-	defaultKey: "Ctrl+Shift+Y",
-	execute(tab, options) {
-		console.log(tab?.id);
-		console.log(options.name);
-	},
+    defaultKey: "Ctrl+Shift+Y",
+    execute(tab, options) {
+        console.log(tab?.id);
+        console.log(options.name);
+    },
 });
 ```
 
@@ -135,16 +135,34 @@ The second argument contains the resolved command options, including `name`, sho
 Use `defineExecuteActionCommand` when you want to handle clicks on the extension action button instead of a named keyboard shortcut.
 Addon Bone maps it to the browser-reserved `_execute_action` command and registers an action click listener.
 
+<Tabs>
+<Tab label="Recommended">
 ```ts title="src/action.command.ts"
 import {defineExecuteActionCommand} from "adnbn";
 
 export default defineExecuteActionCommand({
-	defaultKey: "Ctrl+Shift+U",
-	execute(tab) {
-		console.log("Action command executed", tab);
-	},
+    defaultKey: "Ctrl+Shift+U",
+    execute(tab) {
+        console.log("Action command executed", tab);
+    },
 });
 ```
+</Tab>
+<Tab label="Advanced">
+```ts title="src/action.command.ts"
+import {CommandExecuteActionName} from "adnbn";
+
+// This reserved command name tells Addon Bone to handle extension action clicks.
+// You can also write it directly: export const name = "_execute_action";
+export const name = CommandExecuteActionName;
+export const defaultKey = "Ctrl+Shift+U";
+
+export default (tab) => {
+    console.log("Action command executed", tab);
+};
+```
+</Tab>
+</Tabs>
 
 This is useful for extensions whose action button performs logic directly.
 If your extension action opens a popup, the popup owns the click interaction, so use `_execute_action` only for action buttons without popup behavior.
@@ -195,18 +213,20 @@ Read the full model in [Introduction](./introduction).
 Addon Bone converts command options into `manifest.commands`.
 
 - `name` becomes the command key.
-- `description` becomes the command label. If omitted, Addon Bone uses the command name.
+- `description` becomes the command label. Locale keys are converted to browser message references. If omitted, Addon Bone uses the command name.
 - `defaultKey`, `windowsKey`, `macKey`, `chromeosKey`, and `linuxKey` become `suggested_key`.
 - `global` becomes the manifest command `global` field.
 - Permission options are aggregated with other background context entrypoints and written to the proper Manifest V2/V3 fields.
 
-Example output:
+Example output with a plain text `description`:
 
+<Tabs>
+<Tab label="Generated Manifest">
 ```json title="manifest.json"
 {
   "commands": {
     "open-dashboard": {
-      "description": "open-dashboard",
+      "description": "Open dashboard",
       "suggested_key": {
         "default": "Ctrl+Shift+Y"
       }
@@ -214,6 +234,66 @@ Example output:
   }
 }
 ```
+</Tab>
+<Tab label="Command Source">
+```ts title="src/open-dashboard.command.ts"
+import {defineCommand} from "adnbn";
+
+export default defineCommand({
+    name: "open-dashboard",
+    description: "Open dashboard",
+    defaultKey: "Ctrl+Shift+Y",
+    execute(tab) {
+        console.log("Open dashboard", tab);
+    },
+});
+```
+</Tab>
+</Tabs>
+
+<DocHeading level={3} id="description-and-localization" toc={false}>Description and Localization</DocHeading>
+
+Use `description` when the command needs a human-readable label.
+It can be a plain string or a locale key.
+Addon Bone converts locale keys to browser message references in the generated manifest.
+At runtime, the command receives the resolved description through `options.description`.
+
+<Tabs>
+<Tab label="Command Source">
+```ts title="src/open-dashboard.command.ts"
+import {defineCommand} from "adnbn";
+
+export default defineCommand({
+    name: "open-dashboard",
+    description: "@commands.openDashboard",
+    defaultKey: "Ctrl+Shift+Y",
+    execute(tab) {
+        console.log("Open dashboard", tab);
+    },
+});
+```
+</Tab>
+<Tab label="Locale">
+```yaml title="src/locales/en.yaml"
+commands:
+    openDashboard: Open dashboard
+```
+</Tab>
+<Tab label="Generated Manifest">
+```json title="manifest.json"
+{
+  "commands": {
+    "open-dashboard": {
+      "description": "__MSG_commands_openDashboard__",
+      "suggested_key": {
+        "default": "Ctrl+Shift+Y"
+      }
+    }
+  }
+}
+```
+</Tab>
+</Tabs>
 
 ## Multi-App Structure
 
@@ -240,10 +320,10 @@ The app files can add commands that only one app needs; they do not need to repe
 import {defineConfig, Workspace} from "adnbn";
 
 export default defineConfig({
-	workspace: Workspace.Multi,
+    workspace: Workspace.Multi,
 
-	// Merges shared commands and app commands
-	mergeCommands: true,
+    // Merges shared commands and app commands
+    mergeCommands: true,
 });
 ```
 

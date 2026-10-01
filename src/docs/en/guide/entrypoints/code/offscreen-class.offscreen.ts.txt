@@ -1,0 +1,20 @@
+import {defineOffscreen, OffscreenReason} from "adnbn";
+
+class Offscreen {
+	public status(): string {
+		return this._statusText();
+	}
+
+	// Runtime helper, hidden from the generated contract.
+	public _statusText(): string {
+		return "ready";
+	}
+}
+
+export default defineOffscreen({
+	reasons: OffscreenReason.Blobs,
+
+	init() {
+		return new Offscreen();
+	},
+});

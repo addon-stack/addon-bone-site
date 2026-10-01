@@ -1,0 +1,10 @@
+src
+└── offscreens // organize all offscreen entrypoints in one place
+    ├── offscreen.ts
+    ├── thumbnail.offscreen.ts
+    ├── offscreen
+    │   └── index.ts
+    └── image-tools.offscreen/
+        └── index.ts
+adnbn.config.ts
+package.json

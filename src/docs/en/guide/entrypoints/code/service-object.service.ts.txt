@@ -1,0 +1,10 @@
+export default () => ({
+	status(): string {
+		return this._statusText();
+	},
+
+	// Runtime helper, hidden from the generated contract.
+	_statusText(): string {
+		return "ready";
+	},
+});
