@@ -16,8 +16,9 @@ export default (props: EntrypointSpecProps) => {
 			header={
 				<>
 					{manifest && <ManifestBadge />}
+					{manifest && target && " "}
 					{target && <TargetBadge />}
-					{header}
+					{header && <> {header}</>}
 				</>
 			}
 		/>

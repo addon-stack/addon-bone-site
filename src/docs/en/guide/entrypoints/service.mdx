@@ -1,0 +1,653 @@
+---
+description: "Move shared extension logic into a Service and call it from a popup, content scripts, and other parts of your extension with TypeScript hints."
+---
+
+# Service
+
+import {Tab, Tabs} from "@rspress/core/theme";
+import Details from "@components/Details";
+import DocHeading from "@components/DocHeading";
+import Service, {ServiceBackgroundOptions} from "@en/components/entrypoints/Service";
+import PermissionOptions from "@en/components/entrypoints/PermissionOptions";
+import Entrypoint from "@en/components/entrypoints/Entrypoint";
+
+Service lets you move shared extension logic into the background and call it from a popup, content scripts, and other parts of your extension.
+Use it when several parts of your extension need the same operations or when an action needs to run in the background context.
+
+Define the operations as methods of a regular object or class, then call them through `getService(name)`.
+Addon Bone connects those calls to your background code and provides TypeScript hints for methods, arguments, and results.
+The framework handles messaging between the parts of your extension.
+
+## Quick Start
+
+Let's display a list of open tabs on a page.
+The content script requests their titles from the `tabs` service, which runs in the background: the Tabs API is not available directly in a content script.
+
+<Tabs>
+    <Tab label="Service">
+```ts title="src/tabs.service.ts"
+import {defineService} from "adnbn";
+import {queryTabs} from "adnbn/browser";
+
+export default defineService({
+    permissions: ["tabs"],
+    init() {
+        return {
+            async list(): Promise<string[]> {
+                const tabs = await queryTabs();
+                return tabs.map(tab => tab.title ?? "Untitled tab");
+            },
+        };
+    },
+});
+```
+    </Tab>
+    <Tab label="Content script">
+```ts title="src/content.ts"
+import {defineContentScript, getService} from "adnbn";
+
+const tabs = getService("tabs");
+
+export default defineContentScript({
+    matches: ["http://*/*", "https://*/*"],
+    container: "pre",
+    prepare: () => tabs.list(),
+    render: ({data}) => `Open tabs:\n${data.join("\n")}`,
+});
+```
+    </Tab>
+</Tabs>
+
+Add these two files to an Addon Bone project, build the extension, and load it in your browser.
+Open or reload a regular HTTP or HTTPS page.
+The page will show `Open tabs:` followed by the titles of the tabs available to your extension.
+Reload the page to update the list.
+
+The service gets tab titles through `queryTabs` and returns an array of strings.
+In the content script, `prepare` waits for the list and passes it to `render` through `data`.
+`render` returns the text, and Addon Bone creates a `<pre>` container and displays the result inside it on the page.
+
+Addon Bone creates the background and connects the service to it automatically.
+You do not need a separate `background.ts`.
+
+The `tabs` permission is needed to read tab titles, while `matches` determines which pages the content script runs on.
+In your extension, set `matches` to the sites you need.
+Browser pages such as `chrome://extensions` cannot be used to test this example.
+Learn more about [Tabs API access and permissions](https://developer.chrome.com/docs/extensions/reference/api/tabs).
+
+## File Structure
+
+Place a service in a `*.service.ts` file or a `*.service/` directory with an `index.ts` file.
+Addon Bone finds it by name and connects it to the background during the build.
+You can also define a single service in `service.ts` or `service/index.ts`.
+
+<Tabs>
+    <Tab label="Default structure">
+```tree
+src
+├── tabs.service.ts
+├── diagnostics.service/
+│   └── index.ts
+└── content.ts
+adnbn.config.ts
+package.json
+```
+    </Tab>
+    <Tab label="Grouped services">
+```tree
+src
+├── services/
+│   ├── tabs.service.ts
+│   └── diagnostics.service/
+│       └── index.ts
+└── content.ts
+adnbn.config.ts
+package.json
+```
+    </Tab>
+</Tabs>
+
+You can keep services directly in `src` or group them in a `services/` folder.
+The following paths are supported for TypeScript files:
+
+- `service.ts` and `*.service.ts`;
+- `service/index.ts` and `*.service/index.ts`;
+- `services/service.ts` and `services/*.service.ts`;
+- `services/service/index.ts` and `services/*.service/index.ts`.
+
+:::warning Discovery scope
+If Addon Bone finds services in `services/`, it uses that folder instead of service files at the top level of the same source scope.
+For example, if `services/diagnostics.service.ts` exists, a `tabs.service.ts` file next to the `services/` folder will not be included in the build.
+Move all services in that scope into `services/` if you choose to group them.
+
+In a multi-app project, this rule applies separately to the shared layer and the current app.
+The folder is selected before browser, app, and manifest-version filters are checked: excluding files through filters does not return discovery to the top level.
+:::
+
+<DocHeading level={3} id="service-names" toc={false}>Service names</DocHeading>
+
+| File | Default name |
+| --- | --- |
+| `service.ts` or `service/index.ts` | `service` |
+| `tabs.service.ts` or `tabs.service/index.ts` | `tabs` |
+| `services/tabs.service.ts` | `tabs` |
+
+Use this name in `getService(name)`.
+If calls need to keep working after you rename the file, set the name explicitly through the `name` option.
+
+An explicit name starts with a letter, `_`, or `$`; the remaining characters can be letters, digits, `_`, or `$`.
+Unicode letters are also allowed.
+Names derived from files follow different rules: for example, `user-settings.service.ts` produces `user-settings`, even though a hyphen is not allowed in an explicit `name`.
+
+:::warning Duplicate names
+If several local services have the name `settings`, Addon Bone registers them as `settings`, `settings1`, and `settings2`.
+One service does not replace another.
+Set unique names so calling code does not depend on which files are included in the build.
+For alternative implementations of one API, configure filters so only one implementation is included in a build.
+:::
+
+Addon Bone processes plugin services first, then shared services, then app services.
+Within each group, files are sorted lexicographically by path.
+This order affects numeric suffixes, but does not guarantee that asynchronous service preparation has finished.
+
+<DocHeading level={2} id="definition">Defining a Service</DocHeading>
+
+Define a service through `defineService`: TypeScript suggests the available options and checks their values.
+If you prefer separate exports for options, use the second format.
+
+<Tabs>
+    <Tab label="Recommended">
+```ts title="src/health.service.ts"
+import {defineService} from "adnbn";
+
+export default defineService({
+    name: "health",
+    init() {
+        return {
+            status(): string {
+                return "ok";
+            },
+        };
+    },
+});
+```
+    </Tab>
+    <Tab label="Named exports">
+```ts title="src/health.service.ts"
+export const name = "health";
+
+export default () => ({
+    status(): string {
+        return "ok";
+    },
+});
+```
+    </Tab>
+</Tabs>
+
+Both formats support permissions, build filters, and the other service options.
+In the second format, each option is declared through `export const`, and the function from `export default` serves as `init`.
+In the options reference, the `primary` badge marks the main option of the entrypoint.
+In the named-export format, that option receives the function from `export default`.
+
+<DocHeading level={3} id="writing-a-service" toc={false}>init and main</DocHeading>
+
+In `init(options)`, create and return the object, class instance, or function that calling code will use.
+`init` runs synchronously.
+If a method needs to get data asynchronously, wait for it inside the method, as `list()` does in the Quick Start.
+
+If the service needs to do work at startup, add `main(instance, options)`.
+Addon Bone calls it after registering the service and passes the created instance.
+You can subscribe to events or start preparing data here.
+
+```ts title="src/health.service.ts"
+import {defineService} from "adnbn";
+
+export default defineService({
+    init() {
+        return {
+            status(): string {
+                return "ok";
+            },
+        };
+    },
+    main(health) {
+        console.log(health.status());
+    },
+});
+```
+
+Once registered, the service can already receive calls.
+If `main` loads data asynchronously, that loading may still be in progress: Addon Bone does not wait for it to finish before calling methods.
+A method that needs this data must wait for the loading to finish.
+
+## Calling a Service
+
+To call a service from a popup, a content script, or another extension page, import `getService` from `adnbn`.
+The returned object is a proxy: you call its methods in your code, and Addon Bone runs them in the background and returns the result.
+
+```ts title="src/content.ts"
+import {getService} from "adnbn";
+
+const health = getService("health");
+const status = await health.status();
+
+console.log(status);
+
+export {};
+```
+
+Use `await` for calls through a proxy.
+Even if the service method is declared as `status(): string`, it returns `Promise<string>` in calling code because the result comes from another extension context.
+
+<DocHeading level={3} id="nested-methods-and-properties" toc={false}>Nested methods and properties</DocHeading>
+
+You can group related operations in nested objects: the path `health.status()` stays the same in calling code.
+Reading a property through a proxy also requires a call: get the value of `version` through `await diagnostics.version()`.
+
+<Tabs>
+    <Tab label="Service">
+```ts title="src/diagnostics.service.ts"
+export default () => ({
+    version: "1.0.0",
+    health: {
+        status(): string {
+            return "ok";
+        },
+    },
+});
+```
+    </Tab>
+    <Tab label="Call">
+```ts title="src/content.ts"
+import {getService} from "adnbn";
+
+const diagnostics = getService("diagnostics");
+
+console.log(await diagnostics.version());
+console.log(await diagnostics.health.status());
+
+export {};
+```
+    </Tab>
+</Tabs>
+
+<DocHeading level={3} id="data-and-errors" toc={false}>Data and errors</DocHeading>
+
+Pass arguments and return results that can be represented in JSON: strings, numbers, booleans, `null`, arrays, and plain objects.
+Arguments and results pass through messaging, which uses [JSON serialization](https://developer.chrome.com/docs/extensions/develop/concepts/messaging#serialization) in Chrome.
+If no result is needed, a method can return `void`.
+
+Keep `Blob`, `ArrayBuffer`, DOM nodes, functions, and class instances inside the service.
+For example, `init` can return a class instance: it will run in the background.
+But the result of a method called through a proxy must contain data that can be sent back to calling code.
+
+If a method throws an error, `await` in calling code also fails with an error.
+Handle it with `try` / `catch` to show a message to the user or retry the operation.
+
+```ts title="src/content.ts"
+import {getService} from "adnbn";
+
+try {
+    const tabs = getService("tabs");
+    console.log(await tabs.list());
+} catch (error) {
+    console.error("Could not load tabs", error);
+}
+
+export {};
+```
+
+## Background Access
+
+If calling code already runs in the background, import `getService` from `adnbn/service`.
+You get the service instance itself and can access its methods and properties directly.
+Synchronous methods remain synchronous, and asynchronous methods still require waiting for the result.
+
+```ts title="src/background.ts"
+import {defineBackground} from "adnbn";
+import {getService} from "adnbn/service";
+
+export default defineBackground({
+    async main() {
+        const tabs = getService("tabs");
+        console.log(await tabs.list());
+    },
+});
+```
+
+If you need to call several services at startup, do it in `background.main`.
+By that point, all services are registered and available through `getService`.
+Their asynchronous preparation may still be in progress, so methods must wait for the data they need.
+
+Other services may not yet be registered in an individual service's constructor, `init`, or `main`.
+Move those calls to `background.main` so startup does not depend on file registration order.
+
+## Lifecycle
+
+Service code runs in the background created by Addon Bone.
+In Chrome and other Chromium browsers, Manifest V3 uses a service worker: it has no `document` or other DOM APIs.
+If an operation needs the DOM, move it to an offscreen context and pass data through the service API.
+
+For Manifest V2, the service runs in a background page.
+In Firefox, Addon Bone uses background scripts for Manifest V3 as well.
+
+In Chrome Manifest V3, the browser can stop an inactive service worker and start it again on the next event.
+Addon Bone calls `init` and `main` again; values kept only in service fields or variables are lost.
+Save settings and other long-lived data in extension storage.
+Learn more about the [service worker lifecycle](https://developer.chrome.com/docs/extensions/develop/concepts/service-workers/lifecycle).
+
+Register browser event handlers synchronously at startup, before the first `await`.
+This allows Chrome to deliver an event to its handler as soon as the service worker starts.
+If you need settings from storage or data from the network, load them inside the event handler or after registering it.
+Learn more about [event registration in Chrome](https://developer.chrome.com/docs/extensions/develop/concepts/service-workers/events).
+
+<DocHeading level={2} id="generated-contracts">Typed Contract</DocHeading>
+
+Types for `getService` are generated during the build from the API you return from `init`.
+This generated contract lets TypeScript suggest the service name, available methods, their arguments, and their results.
+For proxy calls, synchronous method results become `Promise`, as with `status()` in the example above.
+
+The contract includes public methods and properties, nested objects, and inherited public class methods.
+For internal details, use `private`, `protected`, or a name starting with `_`: these members will not appear in the generated types.
+Static class members are also excluded.
+
+```ts title="src/health.service.ts"
+import {defineService} from "adnbn";
+
+class HealthService {
+    status(): string {
+        return this._statusText();
+    }
+    _statusText(): string {
+        return "ok";
+    }
+}
+
+export default defineService({
+    init() {
+        return new HealthService();
+    },
+});
+```
+
+Calling code can use `status()`, while `_statusText()` remains a helper method.
+The `_` prefix excludes it from the generated types, but does not itself restrict access to the method on the real instance.
+
+<DocHeading level={3} id="jsdoc-type-hints" toc={false}>Refining types with JSDoc</DocHeading>
+
+TypeScript parameter and result annotations are usually enough.
+If the generator could not preserve an external type or infer a complex result, add a JSDoc hint for the relevant API member.
+Supported tags are `@type`, `@param`, `@returns`, `@template`, and `@typedef` with `@property`.
+
+```ts title="src/article.service.ts"
+import {defineService} from "adnbn";
+import {ArticleParser, type ArticleSnapshot} from "@acme/article-parser";
+
+class ArticleService {
+    constructor(private readonly parser: ArticleParser) {}
+
+    /** @returns {Promise<import("@acme/article-parser").ArticleSnapshot>} */
+    parse(html: string): Promise<ArticleSnapshot> {
+        return this.parser.parse(html);
+    }
+}
+
+export default defineService({
+    init() {
+        return new ArticleService(new ArticleParser());
+    },
+});
+```
+
+Here, `@acme/article-parser` represents a hypothetical external SDK.
+The `@returns` hint preserves a reference to its `ArticleSnapshot` type in the generated contract.
+You do not need to install this package for the Quick Start.
+
+If TypeScript and JSDoc types differ, the generator uses the JSDoc hint.
+It only affects declarations: the method's result must still match the declared type and be JSON-compatible.
+
+## Sender Context
+
+If a method needs to know where a call came from, use `this.$sender`.
+For example, a call from a content script lets you get the tab ID.
+Addon Bone provides this information for the current proxy call.
+
+Sender access works for both regular objects and class instances.
+Choose the format that matches how your service is built:
+
+<Tabs>
+    <Tab label="Object">
+```ts title="src/tab.service.ts"
+import type {MessageSenderAware} from "adnbn/message";
+
+export default () => ({
+    currentTabId(this: MessageSenderAware): number | null {
+        return this.$sender?.tab?.id ?? null;
+    },
+});
+```
+    </Tab>
+    <Tab label="Class instance">
+```ts title="src/tab.service.ts"
+import type {MessageSender} from "adnbn/message";
+
+class TabService {
+    declare protected readonly $sender?: MessageSender;
+
+    currentTabId(): number | null {
+        return this.$sender?.tab?.id ?? null;
+    }
+}
+
+export default () => new TabService();
+```
+    </Tab>
+</Tabs>
+
+In the object example, `this: MessageSenderAware` provides hints for `$sender` inside the method.
+In a class, declare `$sender` once with `declare`: all regular methods can then access `this.$sender` without a separate `this` annotation.
+`declare` gives TypeScript the type without creating a field on the instance; Addon Bone provides sender information during a proxy call.
+The `protected` modifier keeps this property inside the class and excludes it from the generated API, while `readonly` prevents assignment in your code.
+
+The `this` parameter in the object example is also only needed by TypeScript and is excluded from the generated contract.
+In both formats, calling code uses the same method without arguments:
+
+```ts title="src/content.ts"
+import {getService} from "adnbn";
+
+const tab = getService("tab");
+console.log(await tab.currentTabId());
+
+export {};
+```
+
+Declare methods that need `$sender` with regular method syntax, such as `currentTabId() { ... }`.
+An arrow function in a class field or a method with `.bind(this)` binds `this` to the original instance, so it will not receive sender context when called through a proxy.
+
+For calls from a content script, `sender.tab.id` is usually available.
+Calls from a popup and other extension pages may not include `sender.tab`; check `sender.url` or `sender.origin` if you need information about their source.
+
+Use `$sender` only for the current request.
+If you save it in a service field, another concurrent call may receive someone else's sender information.
+Direct background calls through `adnbn/service` do not add this information because they do not go through a proxy.
+
+<DocHeading level={2} id="service-as-strategy">Multiple Implementations of One API</DocHeading>
+
+If an operation works differently in different browsers or manifest versions, define several service files with the same `name` and give them build filters.
+Calling code continues to use one name and one set of methods.
+
+In the example below, `screenshot.capture(windowId)` saves a screenshot of the visible part of a tab.
+The saving approach differs between Manifest V2 and Manifest V3, so each version has its own implementation.
+Both declare `name: "screenshot"`, and the `manifestVersion` filter selects one during the build.
+
+<Tabs>
+    <Tab label="Shared class">
+        ```ts file="../../../../code/services/AbstractScreenshotService.ts" title="src/services/AbstractScreenshotService.ts"
+        ```
+    </Tab>
+    <Tab label="Manifest V3">
+        ```ts file="../../../../code/services/screenshot-mv3.service.ts" title="src/services/screenshot-mv3.service.ts"
+        ```
+    </Tab>
+    <Tab label="Manifest V2">
+        ```ts file="../../../../code/services/screenshot-mv2.service.ts" title="src/services/screenshot-mv2.service.ts"
+        ```
+    </Tab>
+    <Tab label="Command">
+        ```ts file="../../../../code/action.command.ts" title="src/action.command.ts"
+        ```
+    </Tab>
+</Tabs>
+
+The command runs in the background, so it gets the service directly from `adnbn/service`.
+The Manifest V2 implementation uses `Blob` to save the screenshot, but the `Blob` stays inside the service.
+The `capture` method returns a numeric download ID; this result can also be passed through a proxy.
+Each implementation declares the `activeTab` and `downloads` permissions it needs.
+
+Configure filters so exactly one implementation is included in each build.
+If both are included, Addon Bone registers two services with different names: `screenshot` and `screenshot1`.
+
+## Options
+
+Use options to set the service name, the API factory, startup actions, and required permissions.
+If a file is needed only for a particular browser, app, or mode, add build filters.
+Addon Bone processes each file's options separately.
+
+<DocHeading level={3} id="service-options" toc={false}>Service Options</DocHeading>
+
+<Service />
+
+<DocHeading level={3} id="background-options" toc={false}>Background Options</DocHeading>
+
+For Manifest V2, use `persistent` to control whether the background page runs continuously.
+
+<Details title="Background Options">
+    <ServiceBackgroundOptions />
+</Details>
+
+<DocHeading level={3} id="permission-options" toc={false}>Permission Options</DocHeading>
+
+Declare permissions in the service that needs them.
+Addon Bone adds them to the manifest along with permissions from the other included entrypoints.
+
+<Details title="Permission Options">
+    <PermissionOptions />
+</Details>
+
+<DocHeading level={3} id="common-options" toc={false}>Common Options</DocHeading>
+
+All configured filters must match the current build.
+For example, a service with an `includeBrowser` filter for Chrome and `manifestVersion: 3` is included only in Chrome builds with Manifest V3.
+If a file is excluded, its API and permissions are excluded from that build too.
+
+<Details title="Common Options">
+    <Entrypoint />
+</Details>
+
+<DocHeading level={2} id="manifest-output">Build Output</DocHeading>
+
+As soon as a build includes a service, Addon Bone creates the background and declares it in the manifest.
+You do not need to define a separate `background.ts`.
+The browser starts the background, and Addon Bone registers the services inside it.
+Services use the `background` field; there is no separate `service` field in the manifest.
+
+For TypeScript hints, the framework also creates `.adnbn/service.d.ts` with the service contracts.
+
+The Quick Start manifest includes the following fields:
+
+<Tabs>
+    <Tab label="Manifest V3">
+```json title="manifest.json"
+{
+    "manifest_version": 3,
+    "background": {
+        "service_worker": "js/background.js"
+    },
+    "permissions": ["tabs"]
+}
+```
+    </Tab>
+    <Tab label="Manifest V2">
+```json title="manifest.json"
+{
+    "manifest_version": 2,
+    "background": {
+        "scripts": ["js/background.js"]
+    },
+    "permissions": ["tabs"]
+}
+```
+    </Tab>
+</Tabs>
+
+Only fields related to the service are shown; the full manifest also includes `content_scripts` for `content.ts` and the other extension settings.
+Your build may use a different filename instead of the illustrative `js/background.js` path.
+In Firefox Manifest V3, Addon Bone uses `background.scripts` and does not add `persistent`.
+
+Permissions from all included entrypoints are merged: for example, `tabs` is written once even if several services declare it.
+The other options keep their meaning for their own file; service definitions are not merged into one API.
+
+## Multi-App Structure
+
+To use a service in several apps, place it in `src/shared`.
+Keep services needed by one app in `src/apps/<app>`.
+In a single-app project, the regular `src` directory is enough.
+
+```tree
+src
+├── shared/
+│   └── settings.service.ts
+└── apps/
+    ├── app-a/
+    │   └── billing.service.ts
+    └── app-b/
+        └── catalog.service.ts
+adnbn.config.ts
+package.json
+```
+
+```ts title="adnbn.config.ts"
+import {defineConfig, Workspace} from "adnbn";
+
+export default defineConfig({
+    workspace: Workspace.Multi,
+    mergeService: true,
+});
+```
+
+`workspace: Workspace.Multi` enables the multi-app structure.
+To include both shared `settings` and app-specific `billing` when building `app-a`, set `mergeService: true`, as in the example.
+
+`mergeService` defaults to `false`:
+
+- **`true`:** Addon Bone includes services from the shared layer and the current app together.
+- **`false`:** if the app has service files, their entire set is used instead of shared services.
+- **The app has no service files:** shared services are used regardless of `mergeService`.
+
+Addon Bone selects app or shared files first, then checks each entrypoint's filters.
+For example, if `mergeService: false` is set and the app only has `billing.service.ts` with an `includeBrowser` filter for Chrome, a Firefox build excludes that service, but shared `settings` does not return in its place.
+Use `mergeService: true` if you need shared services alongside app services.
+
+If shared and app services have the same names, they receive numeric suffixes according to the usual naming rules.
+
+## Best Practices
+
+- **Save settings in storage.** Service fields are suitable for temporary data: their values are lost when the service worker stops.
+- **Keep permissions next to the code that uses them.** If a permission is declared only in another file, filters may exclude that file from the build.
+- **Declare argument and result types.** This gives calling code useful hints; for a proxy, choose JSON-compatible data.
+- **Set unique names.** Adding a new file may change the name a service is available under because of automatic suffixes.
+- **Coordinate services at startup in `background.main`.** All instances are already registered; leave waiting for required data to their methods.
+- **Subscribe to browser events before asynchronous work.** This makes handlers available to Chrome as soon as the service worker starts.
+- **Expose only the operations you need.** Keep helper methods internal so calling code can more easily choose the right method.
+
+## Debugging
+
+Choose a check based on what is not working:
+
+- **The service is missing from the build.** Check the file's name and location. If there are services in `services/`, move the required file there too. Then check filters and `mergeService` for the selected browser, app, and manifest version.
+- **The name is not accepted by `getService`.** Find the service in `.adnbn/service.d.ts`. If its name has a numeric suffix, set a unique `name` or exclude the extra implementation through filters.
+- **A call failed.** Handle the error in calling code and open the background DevTools to check the method's execution. Make sure the arguments and result are JSON-compatible.
+- **The error is related to the calling context.** Outside the background, import `getService` from `adnbn`; in the background, import it from `adnbn/service`.
+- **Method or type hints are missing.** Check the generated contract in `.adnbn/service.d.ts` and whether the project's TypeScript configuration includes the declarations. If the generator could not infer the type you need from `init`, specify it in TypeScript or refine it through JSDoc.
+- **A value is lost after a restart.** Check where it is stored. Data that needs to survive the service worker stopping belongs in storage rather than service fields.

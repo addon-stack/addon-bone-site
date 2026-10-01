@@ -1,83 +1,110 @@
 {
   "navGuide": {
-    "en": "Guide"
+    "en": "Guide",
+    "ru": "Руководство"
   },
   "navExamples": {
-    "en": "Examples"
+    "en": "Examples",
+    "ru": "Примеры"
   },
   "navPlugin": {
-    "en": "Plugin"
+    "en": "Plugin",
+    "ru": "Плагины"
   },
   "navAPI": {
-    "en": "API"
+    "en": "API",
+    "ru": "API"
   },
   "navShowcase": {
-    "en": "Showcase"
+    "en": "Showcase",
+    "ru": "Проекты"
   },
   "navBlog": {
-    "en": "Blog"
+    "en": "Blog",
+    "ru": "Блог"
   },
   "navVersions": {
-    "en": "Versions"
+    "en": "Versions",
+    "ru": "Версии"
   },
   "navChangelog": {
-    "en": "Changelog"
+    "en": "Changelog",
+    "ru": "История изменений"
   },
   "getStarted": {
-    "en": "Get started"
+    "en": "Get started",
+    "ru": "Начало работы"
   },
   "entrypoints": {
-    "en": "Entrypoints"
+    "en": "Entrypoints",
+    "ru": "Точки входа"
   },
   "pluginSystem": {
-    "en": "Plugin System"
+    "en": "Plugin System",
+    "ru": "Система плагинов"
   },
   "pluginList": {
-    "en": "Official Plugins"
+    "en": "Official Plugins",
+    "ru": "Официальные плагины"
   },
   "communityPlugins": {
-    "en": "Community Plugins"
+    "en": "Community Plugins",
+    "ru": "Плагины сообщества"
   },
   "configuration": {
-    "en": "Configuration"
+    "en": "Configuration",
+    "ru": "Конфигурация"
   },
   "essentials": {
-    "en": "Essentials"
+    "en": "Essentials",
+    "ru": "Основы"
   },
   "plugins": {
-    "en": "Plugins"
+    "en": "Plugins",
+    "ru": "Плагины"
   },
   "languagesFrameworks": {
-    "en": "Languages and Frameworks"
+    "en": "Languages and Frameworks",
+    "ru": "Языки и фреймворки"
   },
   "apiOverview": {
-    "en": "API Overview"
+    "en": "API Overview",
+    "ru": "Обзор API"
   },
   "resources": {
-    "en": "Resources"
+    "en": "Resources",
+    "ru": "Ресурсы"
   },
   "testing": {
-    "en": "Testing"
+    "en": "Testing",
+    "ru": "Тестирование"
   },
   "compare": {
-    "en": "Compare"
+    "en": "Compare",
+    "ru": "Сравнение"
   },
   "faq": {
-    "en": "FAQ"
+    "en": "FAQ",
+    "ru": "Частые вопросы"
   },
   "community": {
-    "en": "Community"
+    "en": "Community",
+    "ru": "Сообщество"
   },
   "migrate": {
-    "en": "Migrate to Addon Bone"
+    "en": "Migrate to Addon Bone",
+    "ru": "Переход на Addon Bone"
   },
   "required_badge": {
-    "en": "required"
+    "en": "required",
+    "ru": "обязательно"
   },
   "manifest_badge": {
-    "en": "manifest"
+    "en": "manifest",
+    "ru": "manifest"
   },
   "target_badge": {
-    "en": "target"
+    "en": "primary",
+    "ru": "primary"
   }
 }

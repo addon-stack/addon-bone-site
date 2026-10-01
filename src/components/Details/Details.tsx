@@ -20,6 +20,7 @@ export default ({title, defaultOpen = false, children}: DetailsProps) => {
 				/>
 				<span>{title}</span>
 			</summary>
+			{"\n\n"}
 			<div className={styles["rp-details__content"]}>{children}</div>
 		</details>
 	);

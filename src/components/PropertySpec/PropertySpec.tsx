@@ -43,10 +43,14 @@ export default (props: PropertySpecProps) => {
 				</DocHeading>
 				<code className={styles["rp-property-spec__type"]}>{type}</code>
 				{required && (
-					<PropertyBadge type="danger" text={t("required_badge")} outline />
+					<>
+						{" "}
+						<PropertyBadge type="danger" text={t("required_badge")} outline />
+					</>
 				)}
-				{header}
+				{header && <> {header}</>}
 			</div>
+			{"\n\n"}
 			<p className={styles["rp-property-spec__content"]}>{children}</p>
 		</div>
 	);

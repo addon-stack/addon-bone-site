@@ -6,7 +6,8 @@
     "baseUrl": ".",
     "paths": {
       "@components/*": ["src/components/*"],
-      "@en/*": ["src/en/*"]
+      "@en/*": ["src/docs/en/*"],
+      "@ru/*": ["src/docs/ru/*"]
     },
     "noEmit": true,
     "skipLibCheck": true,

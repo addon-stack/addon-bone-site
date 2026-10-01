@@ -1,18 +1,19 @@
 import * as path from "node:path";
+import {pathToFileURL} from "node:url";
 import {pluginSass as sass} from "@rsbuild/plugin-sass";
 import {defineConfig} from "@rspress/core";
 
 import fileTree from "rspress-plugin-file-tree";
 
 export default defineConfig({
-	root: path.join(__dirname, "src"),
+	root: path.join(__dirname, "src/docs"),
 	llms: true,
 	route: {
-		exclude: ["components/**", "en/components/**", "code/**"],
+		exclude: ["*/components/**", "**/entrypoints/fragments/**"],
 	},
 	outDir: "dist",
 	title: "Addon Bone",
-	icon: "/favicon.png",
+	icon: pathToFileURL(path.join(__dirname, "src/public/favicon.png")).href,
 	logo: {
 		light: "/logo-light.svg",
 		dark: "/logo-dark.svg",
@@ -24,6 +25,10 @@ export default defineConfig({
 			lang: "en",
 			label: "English",
 		},
+		{
+			lang: "ru",
+			label: "Русский",
+		},
 	],
 	themeConfig: {
 		llmsUI: true,
@@ -31,6 +36,10 @@ export default defineConfig({
 			{
 				lang: "en",
 				label: "English",
+			},
+			{
+				lang: "ru",
+				label: "Русский",
 			},
 		],
 		socialLinks: [
@@ -49,6 +58,11 @@ export default defineConfig({
 	plugins: [fileTree()],
 	builderConfig: {
 		plugins: [sass()],
+		server: {
+			publicDir: {
+				name: path.join(__dirname, "src/public"),
+			},
+		},
 		output: {
 			cssModules: {
 				auto: /src\/components\/.*\.scss$/i,
@@ -57,7 +71,8 @@ export default defineConfig({
 		resolve: {
 			alias: {
 				"@components": path.join(__dirname, "src/components"),
-				"@en": path.join(__dirname, "src/en"),
+				"@en": path.join(__dirname, "src/docs/en"),
+				"@ru": path.join(__dirname, "src/docs/ru"),
 			},
 		},
 	},
