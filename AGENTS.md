@@ -81,10 +81,20 @@ Keep the tone calm, direct, and precise.
 - Use the `primary` badge for the main entrypoint option that receives a bare
   `export default` value in the named-export format. Keep this mapping explicit
   beside the declaration examples; do not call the badge `target` or `prime`.
+- In named-export examples with a primary handler or factory, declare options
+  with `export const` and export the function directly as an arrow function:
+  `export default () => ...` or `export default async () => ...`. Do not add an
+  intermediate handler variable or import a handler type just to annotate the
+  example. Add inline parameter types only when the example needs them.
 - Put a concise explanation next to the code it explains. Show necessary setup
   and the result; do not make the reader infer missing files or resources.
 - Keep primary examples and alternative implementations visible. Use tabs for
   related files or alternatives and `Details` for large reused option groups.
+- Label declaration-format tabs by the syntax they show. In Russian, use
+  `Через defineBackground` and `Именованные экспорты`; in English, use
+  `Using defineBackground` and `Named exports`. Substitute the actual helper
+  name, such as `defineService` or `defineCommand`. Do not label these syntax
+  alternatives `Recommended` or `Advanced`; explain any recommendation in prose.
 - Give source and configuration code fences a file title. Use Addon Bone public
   aliases such as `adnbn/browser` and `adnbn/storage` where wrappers exist.
 - Preserve technical facts when simplifying wording: runtime context, async
