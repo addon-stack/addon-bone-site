@@ -1,28 +1,28 @@
 ---
-description: "Configure the Addon Bone background entrypoint: file patterns, main definition, options, multi-app merging, and debugging."
+description: "Handle browser events, run startup actions, and coordinate services with the Background entrypoint in Addon Bone."
 ---
 
 # Background
 
 import {Tab, Tabs} from "@rspress/core/theme";
-
 import Details from "@components/Details";
 import DocHeading from "@components/DocHeading";
-import {Background, Entrypoint} from "@en/components/entrypoints";
-import EntrypointDefinitionAdvanced from "./fragments/entrypoint-definition-advanced.mdx";
-import EntrypointExportNote from "./fragments/entrypoint-export-note.mdx";
+import Background from "@en/components/entrypoints/Background";
+import PermissionOptions from "@en/components/entrypoints/PermissionOptions";
+import Entrypoint from "@en/components/entrypoints/Entrypoint";
 
-`background` is the backend entrypoint of your browser extension in Addon Bone.
-It runs in the background without a visible UI and acts as the central hub of your extension.
-Addon Bone automatically generates the background service worker (MV3) or background page (MV2) from your source files — you just write the logic, and the framework handles manifest configuration, file merging, and build output.
+Background is the entrypoint for your extension's background logic.
+This code runs without its own interface and can respond to browser events even when the popup and other extension pages are closed.
+Use Background for startup actions, handling extension installs and updates, subscribing to browser events, and coordinating services.
 
-Use `background` for startup logic, browser event listeners, command handling, messaging orchestration, and privileged extension APIs.
+Create `background.ts` and write the logic you need.
+Addon Bone finds the file, creates a background context for the selected browser and manifest version, and registers it in `manifest.json`.
+You do not need to register the background manually.
 
 ## Quick Start
 
-Create `background.ts` and write your first extension logic directly at the top level.
-
-This is the quickest way to get started with Addon Bone background: no boilerplate, no extra setup, just a real background module that starts doing useful work immediately.
+Start with a console message so you can see when the background starts.
+Create `src/background.ts`:
 
 ```ts title="src/background.ts"
 console.log("Background started");
@@ -30,9 +30,14 @@ console.log("Background started");
 export {};
 ```
 
-<EntrypointExportNote/>
+Build the extension and load it in your browser.
+Then open its background console.
+In Chrome, go to `chrome://extensions`, enable Developer mode, and click the service worker link on your extension's card.
+You will see `Background started` each time the background starts.
 
-Here is a more practical example — listening for the extension install event using [browser API wrappers](/guide/extension-apis):
+Next, log when the extension is installed or updated.
+Use `onInstalled` for this.
+Replace the contents of the same file:
 
 ```ts title="src/background.ts"
 import {onInstalled} from "adnbn/browser";
@@ -50,260 +55,297 @@ onInstalled((details) => {
 export {};
 ```
 
+When the extension is first installed, you will see the installation message.
+When it is updated, you will see a message with the previous version.
+Both examples work without additional permissions.
+
 ## File Structure
 
-Addon Bone auto-discovers background entrypoints by file naming patterns — no manual registration or manifest editing is required.
-Use the default flat structure for most projects. If you have many background files, group them in `backgrounds/` to separate concerns and organize logic by feature.
+For a single background file, use `background.ts` or `background/index.ts`.
+If you have several tasks, split them between `*.background.ts` files or `*.background/` directories with an `index.ts` file.
+Addon Bone finds them by name and includes them in the same background context.
 
 <Tabs>
-    <Tab label="Default">
-        ```tree file="./code/background.default.tree"
-        ```
+    <Tab label="Default structure">
+```tree
+src
+├── menu.background.ts
+└── startup.background/
+    └── index.ts
+adnbn.config.ts
+package.json
+```
     </Tab>
-    <Tab label="Grouped">
-        ```tree file="./code/background.group.tree"
-        ```
+    <Tab label="Grouped files">
+```tree
+src
+└── backgrounds/
+    ├── menu.background.ts
+    └── startup.background/
+        └── index.ts
+adnbn.config.ts
+package.json
+```
     </Tab>
 </Tabs>
 
-Supported patterns include:
+Keep files directly in `src` or group them in `backgrounds/`.
+The following paths are supported for TypeScript files:
 
-- `background.ts`
-- `*.background.ts`
-- `background/index.ts`
-- `*.background/index.ts`
-- `backgrounds/background.ts`
-- `backgrounds/*.background.ts`
-- `backgrounds/background/index.ts`
-- `backgrounds/*.background/index.ts`
+- `background.ts` and `*.background.ts`;
+- `background/index.ts` and `*.background/index.ts`;
+- `backgrounds/background.ts` and `backgrounds/*.background.ts`;
+- `backgrounds/background/index.ts` and `backgrounds/*.background/index.ts`.
 
-:::warning Scope rule
-If a `backgrounds/` directory contains background entrypoints, Addon Bone scans only that directory for background entrypoints in the same scope and does not merge them with root-level background files.
+:::warning Discovery scope
+If Addon Bone finds background entrypoints in `backgrounds/`, it uses only those files for that source scope.
+Root-level files in the same scope are not included.
+This rule applies separately to app sources and the shared layer, before filtering by browser, app, or manifest version.
 :::
 
-During build, Addon Bone merges all discovered background entrypoints into a single service worker (MV3) or background script (MV2).
-You can split logic into multiple files, and the framework will combine them automatically.
+Each included file runs its own module code and its own `main`, if defined.
+The name `menu.background.ts` helps organize your sources; it does not create a separate background or a callable API named `menu`.
 
-Merge order:
+Files are included in this order: plugin entrypoints, the shared layer, then the app.
+Within each group, files are sorted lexicographically by path.
+This order does not mean that asynchronous work in one `main` finishes before another starts.
+If actions depend on each other, run them sequentially in a single startup handler.
 
-1. **External entrypoints** — provided by plugins.
-2. **Shared entrypoints** — from the configured shared layer (in multi-app mode).
-3. **App-specific entrypoints** — from the current app directory.
+<DocHeading level={2} id="definition">Defining Background</DocHeading>
 
-Within the same priority level, files are sorted by lexicographic path comparison.
-
-:::info
-Options are not merged between files into a single object. Each file is processed independently.
-Only aggregate manifest fields (such as `permissions`) are combined in the final output.
-:::
-
-## Definition
-
-`main` is a framework-provided execution function for the `background` entrypoint — it is not part of the browser API, but a convention introduced by Addon Bone. It is not required.
-You can define only options (for example `permissions`) and keep top-level logic without declaring `main`.
-
-Use `main` when you want a dedicated entry function for background startup logic.
-It can be both sync and async — no additional `try-catch` wrapping is needed.
-Addon Bone invokes `main` in a protected execution flow and logs runtime errors, so one failing handler does not break the entire background startup pipeline.
-
-Background can be declared in two formats:
-
-:::tip Recommended
-Use `defineBackground` as the default format.
-It provides strict TypeScript declarations: autocomplete, full option hints, and inline type validation while you write.
-:::
-
-<EntrypointDefinitionAdvanced/>
-
-Switch between tabs below to see each format in code:
+Use `defineBackground` when you need to set options or run actions when the background starts.
+The function provides option hints and type checking.
+Alternatively, declare options as named exports and export the startup handler through `export default`.
 
 <Tabs>
-    <Tab label="Recommended">
-        ```ts file="../../../../code/background.recommended.ts" title="src/background.ts"
-        ```
+    <Tab label="Using defineBackground">
+```ts title="src/background.ts"
+import {defineBackground} from "adnbn";
+import {queryTabs} from "adnbn/browser";
+
+export default defineBackground({
+    permissions: ["tabs"],
+    async main() {
+        const tabs = await queryTabs();
+        console.log(tabs.map((tab) => tab.title ?? "Untitled tab"));
+    },
+});
+```
     </Tab>
-    <Tab label="Advanced">
-        ```ts file="../../../../code/background.advanced.ts" title="src/background.ts"
-        ```
+    <Tab label="Named exports">
+```ts title="src/background.ts"
+import {queryTabs} from "adnbn/browser";
+
+export const permissions = ["tabs"];
+
+export default async () => {
+    const tabs = await queryTabs();
+    console.log(tabs.map((tab) => tab.title ?? "Untitled tab"));
+};
+```
     </Tab>
 </Tabs>
+
+Both formats support the same options and build filters.
+In the named-export format, declare options through `export const`; a function exported through `export default` becomes `main`.
+The `primary` badge next to an option marks this mapping.
+In this example, `main` gets the open tabs and logs their titles in the background console.
+The `tabs` permission allows reading tab titles; Addon Bone adds it to the manifest.
+
+`main` is optional.
+The Quick Start runs code at module level, without a separate startup handler.
+
+## Module Code and main
+
+A background file can contain module code and a `main` handler.
+Both run each time the background context starts.
+You can perform actions and register browser event listeners in either place.
+
+<DocHeading level={3} id="module-code" toc={false}>Module Code</DocHeading>
+
+This code runs when the file loads.
+Use it for actions needed as soon as the background loads, such as registering a listener.
+Registration creates a subscription; the handler runs when the browser dispatches the event.
+
+<DocHeading level={3} id="main-handler" toc={false}>Actions in main</DocHeading>
+
+Addon Bone calls `main` as the background entrypoint's startup handler.
+Use it, for example, to read saved settings or get data through a browser API.
+The declaration example uses it to get the titles of open tabs.
+You can perform synchronous actions or use `async` / `await`.
+
+`main(options)` receives the options declared in the current file, such as `permissions`.
+Options from other background files are not combined into this object.
+The handler is optional: if module code and event handlers do all the work, you do not need to define `main`.
+
+You can also register listeners in `main`.
+For example, read settings first, then subscribe to events if an extension feature is enabled.
+If the subscription is only needed after data is ready, you can `await` that data before registering the listener.
+Until registration, this handler does not receive events.
+
+<DocHeading level={3} id="listener-registration" toc={false}>Registering Listeners in Chrome</DocHeading>
+
+For Manifest V3, Chrome recommends registering listeners synchronously at module level when the background script starts.
+This lets the browser deliver an event as soon as the service worker starts.
+If an event needs to wake the worker and be handled at startup, do not delay registration until asynchronous preparation finishes.
+Register the listener immediately and get the data you need inside the handler.
+See [Chrome's event registration guidance](https://developer.chrome.com/docs/extensions/develop/concepts/service-workers/events).
+
+<DocHeading level={3} id="startup-errors" toc={false}>Startup Errors</DocHeading>
+
+If `main` throws an error or returns a rejected promise, Addon Bone logs the error in the background console.
+Other `main` handlers start independently: an error in one does not cancel the others.
+The framework does not retry failed operations automatically.
+
+Handle errors inside `main` when you need to recover state or choose another way to perform an action.
+Handle event errors inside their callbacks: they run separately from `main`.
+Startup error handling does not cover errors in imports or module code.
+
+## Lifecycle
+
+The browser controls when the background starts and stops.
+Its behavior depends on the browser and manifest version.
+
+<DocHeading level={3} id="manifest-v3-lifecycle" toc={false}>Manifest V3</DocHeading>
+
+In Chrome and other Chromium browsers, Background runs as a service worker.
+The browser can stop an idle worker and start it again when an event needs handling.
+On each new start, module code and `main` run again, and in-memory variables are recreated.
+A call to `main` does not mean the extension was just installed or the user just opened the browser.
+
+Keep settings and other long-lived data in extension storage.
+A new start should restore the state you need rather than repeat one-time actions.
+For scheduled tasks, use the Alarms API: a regular `setInterval` stops with the worker and cannot wake it again.
+See the [service worker lifecycle](https://developer.chrome.com/docs/extensions/develop/concepts/service-workers/lifecycle) and [Alarms API](https://developer.chrome.com/docs/extensions/reference/api/alarms).
+
+A service worker has no `window`, `document`, or `localStorage`.
+
+<DocHeading level={3} id="background-pages" toc={false}>Background Pages</DocHeading>
+
+In Manifest V2, Background runs in a background page.
+In Firefox, Addon Bone also uses a background page for Manifest V3; the browser can unload it when idle.
+A background page has a DOM, but code shared with Chrome Manifest V3 must account for service worker limitations.
+See the [background documentation](https://developer.mozilla.org/en-US/docs/Mozilla/Add-ons/WebExtensions/manifest.json/background) for differences between environments.
 
 ## Options
 
-Options are declarative settings recognized by Addon Bone at build time.
-They control how the entrypoint is included in the build and what fields are added to `manifest.json` — you never need to edit the manifest manually.
-For manifest-related fields, Addon Bone aggregates compatible values across discovered background entrypoints and deduplicates repeated items in the final manifest output.
+Options apply to a specific file and are processed at build time.
+They set the startup handler, permissions, and conditions for including the file in the extension.
 
 <DocHeading level={3} id="background-options" toc={false}>Background Options</DocHeading>
 
-These options are specific to the `background` entrypoint.
-They define background-specific manifest behavior and runtime startup handling.
+<Background />
 
-<Background/>
+<DocHeading level={3} id="permission-options" toc={false}>Permission Options</DocHeading>
+
+Declare permissions alongside the code that needs them.
+Addon Bone adds them to the manifest together with permissions from other included entrypoints.
+
+<Details title="Permission Options">
+    <PermissionOptions />
+</Details>
 
 <DocHeading level={3} id="common-options" toc={false}>Common Options</DocHeading>
 
-These options are shared by all entrypoints (build filters, mode targeting, and manifest constraints).
-Read the full model in [Introduction](./introduction).
+All declared filters must match the current build.
+For example, a file with `includeBrowser` set to Chrome and `manifestVersion: 3` is included only in Chrome builds with Manifest V3.
+If a file is excluded, its code, `main`, and permissions are excluded from that build too.
 
 <Details title="Common Options">
-    <Entrypoint/>
+    <Entrypoint />
 </Details>
 
 ## Manifest Output
 
-Background entrypoints generate the extension background runtime.
-In Manifest V3 builds, Addon Bone emits the background service worker.
-In Manifest V2 builds, it emits the background page configuration.
+Addon Bone bundles the included background files into a single background and registers it in the manifest.
 
-Background manifest options can also affect the generated manifest:
-
-- `persistent` controls Manifest V2 background page persistence.
-- `permissions` are aggregated with other background context entrypoints.
-- `optionalPermissions`, `hostPermissions`, and `optionalHostPermissions` are mapped to the correct Manifest V2/V3 fields.
-
-<DocHeading level={3} id="manifest-v3-output" toc={false}>Manifest V3</DocHeading>
+For the Quick Start, the manifest contains these fields:
 
 <Tabs>
-<Tab label="Generated Manifest">
+    <Tab label="Manifest V3">
 ```json title="manifest.json"
 {
-  "manifest_version": 3,
-  "background": {
-    "service_worker": "background.js"
-  },
-  "permissions": ["storage"],
-  "host_permissions": ["https://api.example.com/*"]
+    "manifest_version": 3,
+    "background": {
+        "service_worker": "js/background.js"
+    }
 }
 ```
-</Tab>
-<Tab label="Background Source">
-```ts title="src/background.ts"
-import {defineBackground} from "adnbn";
-
-export default defineBackground({
-    manifestVersion: 3,
-    permissions: ["storage"],
-    hostPermissions: ["https://api.example.com/*"],
-    main() {
-        console.log("Background started");
-    },
-});
-```
-</Tab>
-</Tabs>
-
-<DocHeading level={3} id="manifest-v2-output" toc={false}>Manifest V2</DocHeading>
-
-<Tabs>
-<Tab label="Generated Manifest">
+    </Tab>
+    <Tab label="Manifest V2">
 ```json title="manifest.json"
 {
-  "manifest_version": 2,
-  "background": {
-    "scripts": ["background.js"],
-    "persistent": true
-  },
-  "permissions": ["storage", "https://api.example.com/*"]
+    "manifest_version": 2,
+    "background": {
+        "scripts": ["js/background.js"]
+    }
 }
 ```
-</Tab>
-<Tab label="Background Source">
-```ts title="src/background.ts"
-import {defineBackground} from "adnbn";
-
-export default defineBackground({
-    manifestVersion: 2,
-    persistent: true,
-    permissions: ["storage"],
-    hostPermissions: ["https://api.example.com/*"],
-    main() {
-        console.log("Background started");
-    },
-});
-```
-</Tab>
+    </Tab>
 </Tabs>
+
+Only fields related to the example are shown; the full manifest also contains the name, version, and other extension settings.
+The path `js/background.js` is illustrative: the actual filename depends on the build mode and may contain a hash.
+For Firefox builds with Manifest V3, Addon Bone uses `background.scripts` instead of `background.service_worker`.
+
+Permissions from included entrypoints are combined and deduplicated.
+In Manifest V2, `persistent: true` in any included background file applies to the shared background page.
+If no file sets this value, the `persistent` field is omitted; Manifest V2 uses a persistent background page by default.
+The `persistent` field is omitted in Manifest V3.
 
 ## Multi-App Structure
 
-Use this structure when one project builds several extension apps from the same codebase.
+In a project with several apps, put shared background files in `src/shared` and app-specific files in `src/apps/<app>`.
+For a single-app project, use the regular `src` directory; you do not need a separate shared layer.
 
-Shared background logic lives in `src/shared`.
-Use it for code that every app needs, such as install/update handlers, shared browser events, API clients, or common permissions.
-
-App-specific background logic lives in `src/apps/<app>`.
-Use it for behavior that belongs only to one app, such as product-specific events, permissions, integrations, or startup logic.
-
-In a single-app project, you do not need this structure.
-Addon Bone works with your normal `src` files directly.
-
-```tree file="./code/background.multi-app.tree"
+```tree
+src
+├── shared/
+│   └── menu.background.ts
+└── apps/
+    ├── app-a/
+    │   └── startup.background.ts
+    └── app-b/
+        └── startup.background.ts
+adnbn.config.ts
+package.json
 ```
 
-Background naming patterns work the same way in both layers: `src/shared` and `src/apps/<app>`.
-The app files can add background behavior that only one app needs; they do not need to repeat the shared filenames.
-
-<DocHeading level={3} id="multi-app-configuration" toc={false}>Configuration</DocHeading>
+To include shared files and the current app's files in the same background, enable `mergeBackground`:
 
 ```ts title="adnbn.config.ts"
 import {defineConfig, Workspace} from "adnbn";
 
 export default defineConfig({
     workspace: Workspace.Multi,
-
-    // Merges shared background and app background
     mergeBackground: true,
 });
 ```
 
-<DocHeading level={3} id="multi-app-merge" toc={false}><code>mergeBackground</code> behavior</DocHeading>
+`mergeBackground` defaults to `false`:
 
-`workspace: Workspace.Multi` enables the shared/app source layout.
-`mergeBackground` controls what happens when the shared layer and the current app both provide background entrypoints.
+- With `true`, shared background files and the current app's background files are included together.
+- With `false`, if the app has its own background files, the entire app file set replaces the shared set.
+- If the app has no background files, the shared set is used.
 
-- `mergeBackground: true`  
-  Shared and app background entrypoints are included together.
-- `mergeBackground: false`  
-  App background entrypoints replace shared background entrypoints when the app has its own files.  
-  If the app has no background entrypoints, shared background entrypoints are used as a fallback.
+The app/shared selection happens before entrypoint filters are applied.
+If an app file is found but then excluded, for example by `includeBrowser`, shared files are not restored automatically.
+Enable `mergeBackground` to run shared and app-specific handlers together.
 
-This lets you keep a shared background baseline and add app-specific behavior only where an app needs it.
+This combines files, rather than merging their options or handlers into a single definition.
+Each file keeps its own options and `main`.
 
 ## Best Practices
 
-<DocHeading level={3} id="best-practices-critical" toc={false}>Critical</DocHeading>
-
-- **Use one structure style per scope: root-level or `backgrounds/`.**  
-  If `backgrounds/` contains background entrypoints in a scope, only that directory is used, and root-level background files in the same scope are ignored.
-
-- **Each entrypoint should be self-sufficient for critical fields.**  
-  Declare critical fields (`permissions`, `hostPermissions`, optional permissions) in each entrypoint that needs them.  
-  Entrypoints can be excluded by developer-defined build filters (for example `excludeApp`, `excludeBrowser`, `includeApp`, `includeBrowser`), so relying on another file to "provide" those fields can break the final manifest.
-
-- **Account for build filters** (`includeBrowser`, `excludeBrowser`, `includeApp`, `excludeApp`, `mode`, `debug`, `manifestVersion`).  
-  If an entrypoint can be excluded, critical options should also be declared in fallback entrypoints.
-
-<DocHeading level={3} id="best-practices-recommended" toc={false}>Recommended</DocHeading>
-
-- Keep options close to the background logic that uses them.  
-  If a module relies on `tabs`, `storage`, or host access, declare the corresponding options in the same entrypoint.
-
-- In multi-app mode, treat `shared` as the baseline and `apps/*` as app-specific layers.  
-  Keep shared logic in `shared`, and put differences/overrides in each app.
-
-- Prefer [`defineBackground`](#definition) as the default style for new modules.  
-  It provides stronger TypeScript typing, better autocomplete, and fewer option-related mistakes.
+- **Account for listener registration in Chrome Manifest V3.** For events that need to wake the worker, register listeners synchronously at module level. Get any required data inside the handler.
+- **Keep long-lived data outside memory.** When the background stops and starts again, in-memory variables are recreated.
+- **Run dependent actions sequentially.** Multiple asynchronous `main` handlers do not form a queue; coordinate dependent operations in one place.
+- **Keep permissions close to the code.** If a filter excludes a file, its permissions are excluded from the build too.
 
 ## Debugging
 
-To inspect and debug the background entrypoint:
-
-1. Open `chrome://extensions` (or the equivalent in your browser).
-2. Make sure **Developer mode** is enabled.
-3. Find your extension and click **Inspect views → service worker** (MV3) or **Inspect views → background page** (MV2).
-4. This opens a dedicated DevTools window where you can see console output, set breakpoints, and inspect network requests from the background context.
-
-:::tip
-If the service worker is inactive, triggering any registered event (for example, clicking the extension icon) will restart it and attach the debugger.
-:::
+1. **The file does not run.** Check its name and location, build filters, and `mergeBackground`. Make sure `backgrounds/` has not changed the discovery scope, and check the `background` field in the final manifest.
+2. **Console messages are missing.** Open the background DevTools: in Chrome, the service worker link is on the extension's card at `chrome://extensions` with Developer mode enabled. In Firefox, use the extension debugger at `about:debugging`.
+3. **An event is not handled after the worker stops.** In Chrome Manifest V3, check that the listener is registered synchronously when the script starts, before asynchronous preparation. Then trigger the event the code actually subscribes to.
+4. **An action repeats unexpectedly.** Check whether a one-time operation is in `main` or module code. Each new background start runs that code again.
+5. **State disappears or a timer stops.** Check that required state is saved in storage and that tasks which must survive worker shutdown use the Alarms API.
