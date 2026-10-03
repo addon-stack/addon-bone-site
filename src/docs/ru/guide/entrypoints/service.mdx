@@ -25,35 +25,11 @@ Content script запросит их названия у сервиса `tabs`, 
 
 <Tabs>
     <Tab label="Код сервиса">
-```ts title="src/tabs.service.ts"
-import {defineService} from "adnbn";
-import {queryTabs} from "adnbn/browser";
-
-export default defineService({
-    permissions: ["tabs"],
-    init() {
-        return {
-            async list(): Promise<string[]> {
-                const tabs = await queryTabs();
-                return tabs.map(tab => tab.title ?? "Untitled tab");
-            },
-        };
-    },
-});
+```ts file="../../../../code/entrypoints/service/tabs.service.ts" title="src/tabs.service.ts"
 ```
     </Tab>
     <Tab label="Код content script">
-```ts title="src/content.ts"
-import {defineContentScript, getService} from "adnbn";
-
-const tabs = getService("tabs");
-
-export default defineContentScript({
-    matches: ["http://*/*", "https://*/*"],
-    container: "pre",
-    prepare: () => tabs.list(),
-    render: ({data}) => `Open tabs:\n${data.join("\n")}`,
-});
+```ts file="../../../../code/entrypoints/service/tabs.content.ts" title="src/content.ts"
 ```
     </Tab>
 </Tabs>
@@ -83,26 +59,11 @@ Addon Bone найдёт его по имени и подключит к backgrou
 
 <Tabs>
     <Tab label="Обычная структура">
-```tree
-src
-├── tabs.service.ts
-├── diagnostics.service/
-│   └── index.ts
-└── content.ts
-adnbn.config.ts
-package.json
+```tree file="../../../../code/entrypoints/service/default.tree"
 ```
     </Tab>
     <Tab label="Группировка сервисов">
-```tree
-src
-├── services/
-│   ├── tabs.service.ts
-│   └── diagnostics.service/
-│       └── index.ts
-└── content.ts
-adnbn.config.ts
-package.json
+```tree file="../../../../code/entrypoints/service/grouped.tree"
 ```
     </Tab>
 </Tabs>
@@ -157,30 +118,11 @@ package.json
 
 <Tabs>
     <Tab label="Через defineService">
-```ts title="src/health.service.ts"
-import {defineService} from "adnbn";
-
-export default defineService({
-    name: "health",
-    init() {
-        return {
-            status(): string {
-                return "ok";
-            },
-        };
-    },
-});
+```ts file="../../../../code/entrypoints/service/health.service.ts" title="src/health.service.ts"
 ```
     </Tab>
     <Tab label="Именованные экспорты">
-```ts title="src/health.service.ts"
-export const name = "health";
-
-export default () => ({
-    status(): string {
-        return "ok";
-    },
-});
+```ts file="../../../../code/entrypoints/service/health.named-exports.service.ts" title="src/health.service.ts"
 ```
     </Tab>
 </Tabs>
@@ -200,21 +142,7 @@ export default () => ({
 Addon Bone вызовет его после регистрации сервиса и передаст созданный экземпляр.
 Здесь можно подписаться на события или запустить подготовку данных.
 
-```ts title="src/health.service.ts"
-import {defineService} from "adnbn";
-
-export default defineService({
-    init() {
-        return {
-            status(): string {
-                return "ok";
-            },
-        };
-    },
-    main(health) {
-        console.log(health.status());
-    },
-});
+```ts file="../../../../code/entrypoints/service/health-startup.service.ts" title="src/health.service.ts"
 ```
 
 После регистрации сервис уже принимает вызовы.
@@ -226,15 +154,7 @@ export default defineService({
 Чтобы вызвать сервис из popup, content script или другой страницы расширения, импортируйте `getService` из `adnbn`.
 Полученный объект — proxy: вы вызываете его методы в своём коде, а Addon Bone выполняет их в background и возвращает результат.
 
-```ts title="src/content.ts"
-import {getService} from "adnbn";
-
-const health = getService("health");
-const status = await health.status();
-
-console.log(status);
-
-export {};
+```ts file="../../../../code/entrypoints/service/health.content.ts" title="src/content.ts"
 ```
 
 Используйте `await` для вызовов через proxy.
@@ -247,27 +167,11 @@ export {};
 
 <Tabs>
     <Tab label="Код сервиса">
-```ts title="src/diagnostics.service.ts"
-export default () => ({
-    version: "1.0.0",
-    health: {
-        status(): string {
-            return "ok";
-        },
-    },
-});
+```ts file="../../../../code/entrypoints/service/diagnostics.service.ts" title="src/diagnostics.service.ts"
 ```
     </Tab>
     <Tab label="Код content script">
-```ts title="src/content.ts"
-import {getService} from "adnbn";
-
-const diagnostics = getService("diagnostics");
-
-console.log(await diagnostics.version());
-console.log(await diagnostics.health.status());
-
-export {};
+```ts file="../../../../code/entrypoints/service/diagnostics.content.ts" title="src/content.ts"
 ```
     </Tab>
 </Tabs>
@@ -285,17 +189,7 @@ export {};
 Если метод выбросит ошибку, `await` в вызывающем коде тоже завершится ошибкой.
 Обработайте её через `try` / `catch`, чтобы показать сообщение пользователю или повторить операцию.
 
-```ts title="src/content.ts"
-import {getService} from "adnbn";
-
-try {
-    const tabs = getService("tabs");
-    console.log(await tabs.list());
-} catch (error) {
-    console.error("Could not load tabs", error);
-}
-
-export {};
+```ts file="../../../../code/entrypoints/service/tabs-errors.content.ts" title="src/content.ts"
 ```
 
 ## Прямой доступ из background
@@ -304,16 +198,7 @@ export {};
 Вы получите сам экземпляр сервиса и сможете обращаться к его методам и свойствам напрямую.
 Синхронные методы останутся синхронными, а асинхронные по-прежнему потребуют ожидания результата.
 
-```ts title="src/background.ts"
-import {defineBackground} from "adnbn";
-import {getService} from "adnbn/service";
-
-export default defineBackground({
-    async main() {
-        const tabs = getService("tabs");
-        console.log(await tabs.list());
-    },
-});
+```ts file="../../../../code/entrypoints/service/tabs.background.ts" title="src/background.ts"
 ```
 
 Если при запуске нужно обратиться к нескольким сервисам, делайте это в `background.main`.
@@ -352,23 +237,7 @@ Addon Bone заново вызовет `init` и `main`; значения, ко�
 Для внутренних деталей используйте `private`, `protected` или имя с начальным `_`: такие члены не попадут в сгенерированные типы.
 Статические члены класса тоже не включаются.
 
-```ts title="src/health.service.ts"
-import {defineService} from "adnbn";
-
-class HealthService {
-    status(): string {
-        return this._statusText();
-    }
-    _statusText(): string {
-        return "ok";
-    }
-}
-
-export default defineService({
-    init() {
-        return new HealthService();
-    },
-});
+```ts file="../../../../code/entrypoints/service/health.class.service.ts" title="src/health.service.ts"
 ```
 
 Вызывающему коду доступен `status()`, а `_statusText()` остаётся вспомогательным методом.
@@ -380,24 +249,7 @@ export default defineService({
 Если генератор не смог сохранить внешний тип или вывести сложный результат, добавьте подсказку JSDoc для нужного члена API.
 Поддерживаются `@type`, `@param`, `@returns`, `@template` и `@typedef` с `@property`.
 
-```ts title="src/article.service.ts"
-import {defineService} from "adnbn";
-import {ArticleParser, type ArticleSnapshot} from "@acme/article-parser";
-
-class ArticleService {
-    constructor(private readonly parser: ArticleParser) {}
-
-    /** @returns {Promise<import("@acme/article-parser").ArticleSnapshot>} */
-    parse(html: string): Promise<ArticleSnapshot> {
-        return this.parser.parse(html);
-    }
-}
-
-export default defineService({
-    init() {
-        return new ArticleService(new ArticleParser());
-    },
-});
+```ts file="../../../../code/entrypoints/service/article.service.ts" title="src/article.service.ts"
 ```
 
 Здесь `@acme/article-parser` обозначает условный внешний SDK.
@@ -418,29 +270,11 @@ Addon Bone передаёт эти сведения на время текуще
 
 <Tabs>
     <Tab label="Объект">
-```ts title="src/tab.service.ts"
-import type {MessageSenderAware} from "adnbn/message";
-
-export default () => ({
-    currentTabId(this: MessageSenderAware): number | null {
-        return this.$sender?.tab?.id ?? null;
-    },
-});
+```ts file="../../../../code/entrypoints/service/tab.object.service.ts" title="src/tab.service.ts"
 ```
     </Tab>
     <Tab label="Экземпляр класса">
-```ts title="src/tab.service.ts"
-import type {MessageSender} from "adnbn/message";
-
-class TabService {
-    declare protected readonly $sender?: MessageSender;
-
-    currentTabId(): number | null {
-        return this.$sender?.tab?.id ?? null;
-    }
-}
-
-export default () => new TabService();
+```ts file="../../../../code/entrypoints/service/tab.class.service.ts" title="src/tab.service.ts"
 ```
     </Tab>
 </Tabs>
@@ -453,13 +287,7 @@ export default () => new TabService();
 Параметр `this` в примере с объектом тоже нужен только TypeScript и не входит в сгенерированный контракт.
 В обоих вариантах вызывающий код использует один и тот же метод без аргументов:
 
-```ts title="src/content.ts"
-import {getService} from "adnbn";
-
-const tab = getService("tab");
-console.log(await tab.currentTabId());
-
-export {};
+```ts file="../../../../code/entrypoints/service/tab.content.ts" title="src/content.ts"
 ```
 
 Объявляйте методы, которым нужен `$sender`, обычным синтаксисом `currentTabId() { ... }`.
@@ -483,19 +311,19 @@ export {};
 
 <Tabs>
     <Tab label="Код общего класса">
-        ```ts file="../../../../code/services/AbstractScreenshotService.ts" title="src/services/AbstractScreenshotService.ts"
+        ```ts file="../../../../code/entrypoints/service/screenshot/AbstractScreenshotService.ts" title="src/services/AbstractScreenshotService.ts"
         ```
     </Tab>
     <Tab label="Код сервиса: Manifest V3">
-        ```ts file="../../../../code/services/screenshot-mv3.service.ts" title="src/services/screenshot-mv3.service.ts"
+        ```ts file="../../../../code/entrypoints/service/screenshot/screenshot-mv3.service.ts" title="src/services/screenshot-mv3.service.ts"
         ```
     </Tab>
     <Tab label="Код сервиса: Manifest V2">
-        ```ts file="../../../../code/services/screenshot-mv2.service.ts" title="src/services/screenshot-mv2.service.ts"
+        ```ts file="../../../../code/entrypoints/service/screenshot/screenshot-mv2.service.ts" title="src/services/screenshot-mv2.service.ts"
         ```
     </Tab>
     <Tab label="Код команды">
-        ```ts file="../../../../code/action.command.ts" title="src/action.command.ts"
+        ```ts file="../../../../code/entrypoints/service/screenshot/action.command.ts" title="src/action.command.ts"
         ```
     </Tab>
 </Tabs>
@@ -558,25 +386,11 @@ Addon Bone добавит их в манифест вместе с разреш�
 
 <Tabs>
     <Tab label="Сгенерированный Manifest V3">
-```json title="manifest.json"
-{
-    "manifest_version": 3,
-    "background": {
-        "service_worker": "js/background.js"
-    },
-    "permissions": ["tabs"]
-}
+```json file="../../../../code/entrypoints/service/manifest-v3.json" title="manifest.json"
 ```
     </Tab>
     <Tab label="Сгенерированный Manifest V2">
-```json title="manifest.json"
-{
-    "manifest_version": 2,
-    "background": {
-        "scripts": ["js/background.js"]
-    },
-    "permissions": ["tabs"]
-}
+```json file="../../../../code/entrypoints/service/manifest-v2.json" title="manifest.json"
 ```
     </Tab>
 </Tabs>
@@ -594,26 +408,10 @@ Addon Bone добавит их в манифест вместе с разреш�
 Сервисы, нужные одному приложению, храните в `src/apps/<app>`.
 В проекте с одним приложением достаточно обычного `src`.
 
-```tree
-src
-├── shared/
-│   └── settings.service.ts
-└── apps/
-    ├── app-a/
-    │   └── billing.service.ts
-    └── app-b/
-        └── catalog.service.ts
-adnbn.config.ts
-package.json
+```tree file="../../../../code/entrypoints/service/multi-app.tree"
 ```
 
-```ts title="adnbn.config.ts"
-import {defineConfig, Workspace} from "adnbn";
-
-export default defineConfig({
-    workspace: Workspace.Multi,
-    mergeService: true,
-});
+```ts file="../../../../code/entrypoints/service/multi-app.config.ts" title="adnbn.config.ts"
 ```
 
 `workspace: Workspace.Multi` включает структуру с несколькими приложениями.

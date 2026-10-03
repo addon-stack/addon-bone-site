@@ -1,0 +1,14 @@
+{
+  "manifest_version": 3,
+  "background": {
+    "service_worker": "js/background.js"
+  },
+  "commands": {
+    "command": {
+      "description": "command",
+      "suggested_key": {
+        "default": "Ctrl+Shift+Y"
+      }
+    }
+  }
+}

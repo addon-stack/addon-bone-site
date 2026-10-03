@@ -109,6 +109,24 @@ Keep the tone calm, direct, and precise.
   keep the actual filename in the code-fence title.
 - Give source and configuration code fences a file title. Use Addon Bone public
   aliases such as `adnbn/browser` and `adnbn/storage` where wrappers exist.
+- Extract examples shared across documentation languages into separate files
+  under `src/code/`, regardless of their length, and reuse the same file through
+  the code fence's `file` attribute in every locale. For entrypoint examples,
+  use `src/code/entrypoints/<entrypoint>/`. This includes source code,
+  configuration, generated manifests, locale-file examples, and file trees.
+  Keep the root of `src/code/` for guidance and snippet configuration. Group
+  related files for a larger scenario under its documentation topic, such as
+  `src/code/entrypoints/service/screenshot/`. Remove obsolete examples after
+  verifying that no documentation page or source file references them.
+- Create separate versions only when the example itself contains localized
+  content that differs between documentation languages, such as comments,
+  user-facing strings, or translation values. Translated surrounding prose,
+  tab labels, and code-fence titles do not justify duplicating an example.
+- Keep shared TypeScript examples as `.ts` files in the `src/code/tsconfig.json`
+  project, which uses `noCheck` for documentation excerpts. Keep `src/code/`
+  excluded from the site's typecheck. Do not add mock framework types, install
+  example dependencies, or add suppression comments to displayed code just to
+  remove editor diagnostics. Preserve existing localized `.ts.txt` snippets.
 - Preserve technical facts when simplifying wording: runtime context, async
   behavior, permissions, serialization limits, filters, and generated output.
 - Verify framework behavior against the current sibling `addon-bone` source and

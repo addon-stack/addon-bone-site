@@ -1,0 +1,10 @@
+src
+├── shared/
+│   └── settings.service.ts
+└── apps/
+    ├── app-a/
+    │   └── billing.service.ts
+    └── app-b/
+        └── catalog.service.ts
+adnbn.config.ts
+package.json

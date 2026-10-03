@@ -22,15 +22,7 @@ Addon Bone добавит команду в манифест и подключи
 
 Создадим команду, которая по сочетанию клавиш выводит сообщение и текущую вкладку в фоновую консоль.
 
-```ts title="src/command.ts"
-import {defineCommand} from "adnbn";
-
-export default defineCommand({
-    defaultKey: "Ctrl+Shift+Y",
-    execute(tab) {
-        console.log("Command executed", tab);
-    },
-});
+```ts file="../../../../code/entrypoints/command/command.ts" title="src/command.ts"
 ```
 
 Добавьте файл в проект Addon Bone, соберите расширение и загрузите его в браузер.
@@ -49,26 +41,11 @@ Addon Bone находит команды по именам файлов и ка�
 
 <Tabs>
     <Tab label="Обычная структура">
-```tree
-src
-├── command.ts
-├── open.command.ts
-└── toggle.command/
-    └── index.ts
-adnbn.config.ts
-package.json
+```tree file="../../../../code/entrypoints/command/default.tree"
 ```
     </Tab>
     <Tab label="Группировка команд">
-```tree
-src
-└── commands/
-    ├── command.ts
-    ├── open.command.ts
-    └── toggle.command/
-        └── index.ts
-adnbn.config.ts
-package.json
+```tree file="../../../../code/entrypoints/command/grouped.tree"
 ```
     </Tab>
 </Tabs>
@@ -113,28 +90,11 @@ package.json
 
 <Tabs>
     <Tab label="Через defineCommand">
-```ts title="src/show-tab.command.ts"
-import {defineCommand} from "adnbn";
-
-export default defineCommand({
-    name: "show-tab",
-    description: "Show current tab",
-    defaultKey: "Ctrl+Shift+Y",
-    execute(tab) {
-        console.log("Current tab", tab?.id);
-    },
-});
+```ts file="../../../../code/entrypoints/command/show-tab.command.ts" title="src/show-tab.command.ts"
 ```
     </Tab>
     <Tab label="Именованные экспорты">
-```ts title="src/show-tab.command.ts"
-export const name = "show-tab";
-export const description = "Show current tab";
-export const defaultKey = "Ctrl+Shift+Y";
-
-export default (tab?: chrome.tabs.Tab) => {
-    console.log("Current tab", tab?.id);
-};
+```ts file="../../../../code/entrypoints/command/show-tab.named-exports.command.ts" title="src/show-tab.command.ts"
 ```
     </Tab>
 </Tabs>
@@ -149,16 +109,7 @@ export default (tab?: chrome.tabs.Tab) => {
 Обработчик работает в background и может вызывать браузерные API.
 Он выполняется при нажатии сочетания клавиш, а не при каждом запуске фонового контекста.
 
-```ts title="src/command.ts"
-import {defineCommand} from "adnbn";
-
-export default defineCommand({
-    defaultKey: "Ctrl+Shift+Y",
-    execute(tab, options) {
-        console.log("Command", options.name);
-        console.log("Current tab", tab?.id);
-    },
-});
+```ts file="../../../../code/entrypoints/command/command-options.command.ts" title="src/command.ts"
 ```
 
 Первый аргумент — активная вкладка, если браузер её передал.
@@ -267,25 +218,11 @@ Chrome позволяет объявить не более четырёх пре
 
 <Tabs>
     <Tab label="Через defineExecuteActionCommand">
-```ts title="src/action.command.ts"
-import {defineExecuteActionCommand} from "adnbn";
-
-export default defineExecuteActionCommand({
-    defaultKey: "Ctrl+Shift+U",
-    execute(tab) {
-        console.log("Action command executed", tab);
-    },
-});
+```ts file="../../../../code/entrypoints/command/action.command.ts" title="src/action.command.ts"
 ```
     </Tab>
     <Tab label="Именованные экспорты">
-```ts title="src/action.command.ts"
-export const name = "_execute_action";
-export const defaultKey = "Ctrl+Shift+U";
-
-export default (tab?: chrome.tabs.Tab) => {
-    console.log("Action command executed", tab);
-};
+```ts file="../../../../code/entrypoints/command/action.named-exports.command.ts" title="src/action.command.ts"
 ```
     </Tab>
 </Tabs>
@@ -356,39 +293,11 @@ Addon Bone добавляет команды в `manifest.commands` и вклю�
 
 <Tabs>
     <Tab label="Сгенерированный Manifest V3">
-```json title="manifest.json"
-{
-    "manifest_version": 3,
-    "background": {
-        "service_worker": "js/background.js"
-    },
-    "commands": {
-        "command": {
-            "description": "command",
-            "suggested_key": {
-                "default": "Ctrl+Shift+Y"
-            }
-        }
-    }
-}
+```json file="../../../../code/entrypoints/command/command.manifest-v3.json" title="manifest.json"
 ```
     </Tab>
     <Tab label="Сгенерированный Manifest V2">
-```json title="manifest.json"
-{
-    "manifest_version": 2,
-    "background": {
-        "scripts": ["js/background.js"]
-    },
-    "commands": {
-        "command": {
-            "description": "command",
-            "suggested_key": {
-                "default": "Ctrl+Shift+Y"
-            }
-        }
-    }
-}
+```json file="../../../../code/entrypoints/command/command.manifest-v2.json" title="manifest.json"
 ```
     </Tab>
 </Tabs>
@@ -400,43 +309,11 @@ Addon Bone добавляет команды в `manifest.commands` и вклю�
 
 <Tabs>
     <Tab label="Сгенерированный Manifest V3">
-```json title="manifest.json"
-{
-    "manifest_version": 3,
-    "background": {
-        "service_worker": "js/background.js"
-    },
-    "action": {
-        "default_title": "My extension"
-    },
-    "commands": {
-        "_execute_action": {
-            "suggested_key": {
-                "default": "Ctrl+Shift+U"
-            }
-        }
-    }
-}
+```json file="../../../../code/entrypoints/command/action.manifest-v3.json" title="manifest.json"
 ```
     </Tab>
     <Tab label="Сгенерированный Manifest V2">
-```json title="manifest.json"
-{
-    "manifest_version": 2,
-    "background": {
-        "scripts": ["js/background.js"]
-    },
-    "browser_action": {
-        "default_title": "My extension"
-    },
-    "commands": {
-        "_execute_browser_action": {
-            "suggested_key": {
-                "default": "Ctrl+Shift+U"
-            }
-        }
-    }
-}
+```json file="../../../../code/entrypoints/command/action.manifest-v2.json" title="manifest.json"
 ```
     </Tab>
 </Tabs>
@@ -465,36 +342,15 @@ Addon Bone использует имя расширения для `default_titl
 
 <Tabs>
     <Tab label="Код команды">
-```ts title="src/show-tab.command.ts"
-import {defineCommand} from "adnbn";
-
-export default defineCommand({
-    description: "@commands.showTab",
-    defaultKey: "Ctrl+Shift+Y",
-    execute(tab) {
-        console.log("Current tab", tab?.id);
-    },
-});
+```ts file="../../../../code/entrypoints/command/show-tab.localized.command.ts" title="src/show-tab.command.ts"
 ```
     </Tab>
     <Tab label="Файл локализации">
-```yaml title="src/locales/en.yaml"
-commands:
-    showTab: Show current tab
+```yaml file="../../../../code/entrypoints/command/commands.en.yaml" title="src/locales/en.yaml"
 ```
     </Tab>
     <Tab label="Сгенерированный манифест">
-```json title="manifest.json"
-{
-    "commands": {
-        "show-tab": {
-            "description": "__MSG_commands_showTab__",
-            "suggested_key": {
-                "default": "Ctrl+Shift+Y"
-            }
-        }
-    }
-}
+```json file="../../../../code/entrypoints/command/show-tab.localized.manifest.json" title="manifest.json"
 ```
     </Tab>
 </Tabs>
@@ -507,28 +363,12 @@ Addon Bone преобразует ключ в ссылку на сообщени
 В проекте с несколькими приложениями поместите общие команды в `src/shared`, а команды конкретного приложения — в `src/apps/<app>`.
 В single-app проекте используйте обычный `src`; отдельный shared-слой не требуется.
 
-```tree
-src
-├── shared/
-│   └── open.command.ts
-└── apps/
-    ├── app-a/
-    │   └── toggle.command.ts
-    └── app-b/
-        └── search.command.ts
-adnbn.config.ts
-package.json
+```tree file="../../../../code/entrypoints/command/multi-app.tree"
 ```
 
 Чтобы подключить общие команды и команды текущего приложения, включите `mergeCommands`:
 
-```ts title="adnbn.config.ts"
-import {defineConfig, Workspace} from "adnbn";
-
-export default defineConfig({
-    workspace: Workspace.Multi,
-    mergeCommands: true,
-});
+```ts file="../../../../code/entrypoints/command/multi-app.config.ts" title="adnbn.config.ts"
 ```
 
 `mergeCommands` по умолчанию равен `false`:

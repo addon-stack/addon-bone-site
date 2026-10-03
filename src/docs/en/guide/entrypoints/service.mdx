@@ -25,35 +25,11 @@ The content script requests their titles from the `tabs` service, which runs in 
 
 <Tabs>
     <Tab label="Service source">
-```ts title="src/tabs.service.ts"
-import {defineService} from "adnbn";
-import {queryTabs} from "adnbn/browser";
-
-export default defineService({
-    permissions: ["tabs"],
-    init() {
-        return {
-            async list(): Promise<string[]> {
-                const tabs = await queryTabs();
-                return tabs.map(tab => tab.title ?? "Untitled tab");
-            },
-        };
-    },
-});
+```ts file="../../../../code/entrypoints/service/tabs.service.ts" title="src/tabs.service.ts"
 ```
     </Tab>
     <Tab label="Content script source">
-```ts title="src/content.ts"
-import {defineContentScript, getService} from "adnbn";
-
-const tabs = getService("tabs");
-
-export default defineContentScript({
-    matches: ["http://*/*", "https://*/*"],
-    container: "pre",
-    prepare: () => tabs.list(),
-    render: ({data}) => `Open tabs:\n${data.join("\n")}`,
-});
+```ts file="../../../../code/entrypoints/service/tabs.content.ts" title="src/content.ts"
 ```
     </Tab>
 </Tabs>
@@ -83,26 +59,11 @@ You can also define a single service in `service.ts` or `service/index.ts`.
 
 <Tabs>
     <Tab label="Default structure">
-```tree
-src
-├── tabs.service.ts
-├── diagnostics.service/
-│   └── index.ts
-└── content.ts
-adnbn.config.ts
-package.json
+```tree file="../../../../code/entrypoints/service/default.tree"
 ```
     </Tab>
     <Tab label="Grouped services">
-```tree
-src
-├── services/
-│   ├── tabs.service.ts
-│   └── diagnostics.service/
-│       └── index.ts
-└── content.ts
-adnbn.config.ts
-package.json
+```tree file="../../../../code/entrypoints/service/grouped.tree"
 ```
     </Tab>
 </Tabs>
@@ -157,30 +118,11 @@ If you prefer separate exports for options, use the second format.
 
 <Tabs>
     <Tab label="Using defineService">
-```ts title="src/health.service.ts"
-import {defineService} from "adnbn";
-
-export default defineService({
-    name: "health",
-    init() {
-        return {
-            status(): string {
-                return "ok";
-            },
-        };
-    },
-});
+```ts file="../../../../code/entrypoints/service/health.service.ts" title="src/health.service.ts"
 ```
     </Tab>
     <Tab label="Named exports">
-```ts title="src/health.service.ts"
-export const name = "health";
-
-export default () => ({
-    status(): string {
-        return "ok";
-    },
-});
+```ts file="../../../../code/entrypoints/service/health.named-exports.service.ts" title="src/health.service.ts"
 ```
     </Tab>
 </Tabs>
@@ -200,21 +142,7 @@ If the service needs to do work at startup, add `main(instance, options)`.
 Addon Bone calls it after registering the service and passes the created instance.
 You can subscribe to events or start preparing data here.
 
-```ts title="src/health.service.ts"
-import {defineService} from "adnbn";
-
-export default defineService({
-    init() {
-        return {
-            status(): string {
-                return "ok";
-            },
-        };
-    },
-    main(health) {
-        console.log(health.status());
-    },
-});
+```ts file="../../../../code/entrypoints/service/health-startup.service.ts" title="src/health.service.ts"
 ```
 
 Once registered, the service can already receive calls.
@@ -226,15 +154,7 @@ A method that needs this data must wait for the loading to finish.
 To call a service from a popup, a content script, or another extension page, import `getService` from `adnbn`.
 The returned object is a proxy: you call its methods in your code, and Addon Bone runs them in the background and returns the result.
 
-```ts title="src/content.ts"
-import {getService} from "adnbn";
-
-const health = getService("health");
-const status = await health.status();
-
-console.log(status);
-
-export {};
+```ts file="../../../../code/entrypoints/service/health.content.ts" title="src/content.ts"
 ```
 
 Use `await` for calls through a proxy.
@@ -247,27 +167,11 @@ Reading a property through a proxy also requires a call: get the value of `versi
 
 <Tabs>
     <Tab label="Service source">
-```ts title="src/diagnostics.service.ts"
-export default () => ({
-    version: "1.0.0",
-    health: {
-        status(): string {
-            return "ok";
-        },
-    },
-});
+```ts file="../../../../code/entrypoints/service/diagnostics.service.ts" title="src/diagnostics.service.ts"
 ```
     </Tab>
     <Tab label="Content script source">
-```ts title="src/content.ts"
-import {getService} from "adnbn";
-
-const diagnostics = getService("diagnostics");
-
-console.log(await diagnostics.version());
-console.log(await diagnostics.health.status());
-
-export {};
+```ts file="../../../../code/entrypoints/service/diagnostics.content.ts" title="src/content.ts"
 ```
     </Tab>
 </Tabs>
@@ -285,17 +189,7 @@ But the result of a method called through a proxy must contain data that can be 
 If a method throws an error, `await` in calling code also fails with an error.
 Handle it with `try` / `catch` to show a message to the user or retry the operation.
 
-```ts title="src/content.ts"
-import {getService} from "adnbn";
-
-try {
-    const tabs = getService("tabs");
-    console.log(await tabs.list());
-} catch (error) {
-    console.error("Could not load tabs", error);
-}
-
-export {};
+```ts file="../../../../code/entrypoints/service/tabs-errors.content.ts" title="src/content.ts"
 ```
 
 ## Background Access
@@ -304,16 +198,7 @@ If calling code already runs in the background, import `getService` from `adnbn/
 You get the service instance itself and can access its methods and properties directly.
 Synchronous methods remain synchronous, and asynchronous methods still require waiting for the result.
 
-```ts title="src/background.ts"
-import {defineBackground} from "adnbn";
-import {getService} from "adnbn/service";
-
-export default defineBackground({
-    async main() {
-        const tabs = getService("tabs");
-        console.log(await tabs.list());
-    },
-});
+```ts file="../../../../code/entrypoints/service/tabs.background.ts" title="src/background.ts"
 ```
 
 If you need to call several services at startup, do it in `background.main`.
@@ -352,23 +237,7 @@ The contract includes public methods and properties, nested objects, and inherit
 For internal details, use `private`, `protected`, or a name starting with `_`: these members will not appear in the generated types.
 Static class members are also excluded.
 
-```ts title="src/health.service.ts"
-import {defineService} from "adnbn";
-
-class HealthService {
-    status(): string {
-        return this._statusText();
-    }
-    _statusText(): string {
-        return "ok";
-    }
-}
-
-export default defineService({
-    init() {
-        return new HealthService();
-    },
-});
+```ts file="../../../../code/entrypoints/service/health.class.service.ts" title="src/health.service.ts"
 ```
 
 Calling code can use `status()`, while `_statusText()` remains a helper method.
@@ -380,24 +249,7 @@ TypeScript parameter and result annotations are usually enough.
 If the generator could not preserve an external type or infer a complex result, add a JSDoc hint for the relevant API member.
 Supported tags are `@type`, `@param`, `@returns`, `@template`, and `@typedef` with `@property`.
 
-```ts title="src/article.service.ts"
-import {defineService} from "adnbn";
-import {ArticleParser, type ArticleSnapshot} from "@acme/article-parser";
-
-class ArticleService {
-    constructor(private readonly parser: ArticleParser) {}
-
-    /** @returns {Promise<import("@acme/article-parser").ArticleSnapshot>} */
-    parse(html: string): Promise<ArticleSnapshot> {
-        return this.parser.parse(html);
-    }
-}
-
-export default defineService({
-    init() {
-        return new ArticleService(new ArticleParser());
-    },
-});
+```ts file="../../../../code/entrypoints/service/article.service.ts" title="src/article.service.ts"
 ```
 
 Here, `@acme/article-parser` represents a hypothetical external SDK.
@@ -418,29 +270,11 @@ Choose the format that matches how your service is built:
 
 <Tabs>
     <Tab label="Object">
-```ts title="src/tab.service.ts"
-import type {MessageSenderAware} from "adnbn/message";
-
-export default () => ({
-    currentTabId(this: MessageSenderAware): number | null {
-        return this.$sender?.tab?.id ?? null;
-    },
-});
+```ts file="../../../../code/entrypoints/service/tab.object.service.ts" title="src/tab.service.ts"
 ```
     </Tab>
     <Tab label="Class instance">
-```ts title="src/tab.service.ts"
-import type {MessageSender} from "adnbn/message";
-
-class TabService {
-    declare protected readonly $sender?: MessageSender;
-
-    currentTabId(): number | null {
-        return this.$sender?.tab?.id ?? null;
-    }
-}
-
-export default () => new TabService();
+```ts file="../../../../code/entrypoints/service/tab.class.service.ts" title="src/tab.service.ts"
 ```
     </Tab>
 </Tabs>
@@ -453,13 +287,7 @@ The `protected` modifier keeps this property inside the class and excludes it fr
 The `this` parameter in the object example is also only needed by TypeScript and is excluded from the generated contract.
 In both formats, calling code uses the same method without arguments:
 
-```ts title="src/content.ts"
-import {getService} from "adnbn";
-
-const tab = getService("tab");
-console.log(await tab.currentTabId());
-
-export {};
+```ts file="../../../../code/entrypoints/service/tab.content.ts" title="src/content.ts"
 ```
 
 Declare methods that need `$sender` with regular method syntax, such as `currentTabId() { ... }`.
@@ -483,19 +311,19 @@ Both declare `name: "screenshot"`, and the `manifestVersion` filter selects one 
 
 <Tabs>
     <Tab label="Shared class source">
-        ```ts file="../../../../code/services/AbstractScreenshotService.ts" title="src/services/AbstractScreenshotService.ts"
+        ```ts file="../../../../code/entrypoints/service/screenshot/AbstractScreenshotService.ts" title="src/services/AbstractScreenshotService.ts"
         ```
     </Tab>
     <Tab label="Service source: Manifest V3">
-        ```ts file="../../../../code/services/screenshot-mv3.service.ts" title="src/services/screenshot-mv3.service.ts"
+        ```ts file="../../../../code/entrypoints/service/screenshot/screenshot-mv3.service.ts" title="src/services/screenshot-mv3.service.ts"
         ```
     </Tab>
     <Tab label="Service source: Manifest V2">
-        ```ts file="../../../../code/services/screenshot-mv2.service.ts" title="src/services/screenshot-mv2.service.ts"
+        ```ts file="../../../../code/entrypoints/service/screenshot/screenshot-mv2.service.ts" title="src/services/screenshot-mv2.service.ts"
         ```
     </Tab>
     <Tab label="Command source">
-        ```ts file="../../../../code/action.command.ts" title="src/action.command.ts"
+        ```ts file="../../../../code/entrypoints/service/screenshot/action.command.ts" title="src/action.command.ts"
         ```
     </Tab>
 </Tabs>
@@ -558,25 +386,11 @@ For the Quick Start, Addon Bone generates a manifest with these fields:
 
 <Tabs>
     <Tab label="Generated Manifest V3">
-```json title="manifest.json"
-{
-    "manifest_version": 3,
-    "background": {
-        "service_worker": "js/background.js"
-    },
-    "permissions": ["tabs"]
-}
+```json file="../../../../code/entrypoints/service/manifest-v3.json" title="manifest.json"
 ```
     </Tab>
     <Tab label="Generated Manifest V2">
-```json title="manifest.json"
-{
-    "manifest_version": 2,
-    "background": {
-        "scripts": ["js/background.js"]
-    },
-    "permissions": ["tabs"]
-}
+```json file="../../../../code/entrypoints/service/manifest-v2.json" title="manifest.json"
 ```
     </Tab>
 </Tabs>
@@ -594,26 +408,10 @@ To use a service in several apps, place it in `src/shared`.
 Keep services needed by one app in `src/apps/<app>`.
 In a single-app project, the regular `src` directory is enough.
 
-```tree
-src
-├── shared/
-│   └── settings.service.ts
-└── apps/
-    ├── app-a/
-    │   └── billing.service.ts
-    └── app-b/
-        └── catalog.service.ts
-adnbn.config.ts
-package.json
+```tree file="../../../../code/entrypoints/service/multi-app.tree"
 ```
 
-```ts title="adnbn.config.ts"
-import {defineConfig, Workspace} from "adnbn";
-
-export default defineConfig({
-    workspace: Workspace.Multi,
-    mergeService: true,
-});
+```ts file="../../../../code/entrypoints/service/multi-app.config.ts" title="adnbn.config.ts"
 ```
 
 `workspace: Workspace.Multi` enables the multi-app structure.

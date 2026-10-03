@@ -24,10 +24,7 @@ Addon Bone найдёт файл, создаст фоновый контекст
 Начнём с сообщения в консоли, чтобы увидеть, когда запускается background.
 Создайте `src/background.ts`:
 
-```ts title="src/background.ts"
-console.log("Background started");
-
-export {};
+```ts file="../../../../code/entrypoints/background/startup.background.ts" title="src/background.ts"
 ```
 
 Соберите расширение и загрузите его в браузер.
@@ -39,20 +36,7 @@ export {};
 Для этого используем `onInstalled`.
 Замените содержимое того же файла:
 
-```ts title="src/background.ts"
-import {onInstalled} from "adnbn/browser";
-
-onInstalled((details) => {
-    if (details.reason === "install") {
-        console.log("Extension installed for the first time");
-    }
-
-    if (details.reason === "update") {
-        console.log("Extension updated from version", details.previousVersion);
-    }
-});
-
-export {};
+```ts file="../../../../code/entrypoints/background/installed.background.ts" title="src/background.ts"
 ```
 
 При первой установке расширения вы увидите сообщение об установке.
@@ -67,24 +51,11 @@ Addon Bone найдёт их по именам и подключит к одно
 
 <Tabs>
     <Tab label="Обычная структура">
-```tree
-src
-├── menu.background.ts
-└── startup.background/
-    └── index.ts
-adnbn.config.ts
-package.json
+```tree file="../../../../code/entrypoints/background/default.tree"
 ```
     </Tab>
     <Tab label="Группировка файлов">
-```tree
-src
-└── backgrounds/
-    ├── menu.background.ts
-    └── startup.background/
-        └── index.ts
-adnbn.config.ts
-package.json
+```tree file="../../../../code/entrypoints/background/grouped.tree"
 ```
     </Tab>
 </Tabs>
@@ -119,29 +90,11 @@ package.json
 
 <Tabs>
     <Tab label="Через defineBackground">
-```ts title="src/background.ts"
-import {defineBackground} from "adnbn";
-import {queryTabs} from "adnbn/browser";
-
-export default defineBackground({
-    permissions: ["tabs"],
-    async main() {
-        const tabs = await queryTabs();
-        console.log(tabs.map((tab) => tab.title ?? "Untitled tab"));
-    },
-});
+```ts file="../../../../code/entrypoints/background/tabs.background.ts" title="src/background.ts"
 ```
     </Tab>
     <Tab label="Именованные экспорты">
-```ts title="src/background.ts"
-import {queryTabs} from "adnbn/browser";
-
-export const permissions = ["tabs"];
-
-export default async () => {
-    const tabs = await queryTabs();
-    console.log(tabs.map((tab) => tab.title ?? "Untitled tab"));
-};
+```ts file="../../../../code/entrypoints/background/tabs.named-exports.background.ts" title="src/background.ts"
 ```
     </Tab>
 </Tabs>
@@ -263,23 +216,11 @@ Addon Bone собирает включённые фоновые файлы в о
 
 <Tabs>
     <Tab label="Сгенерированный Manifest V3">
-```json title="manifest.json"
-{
-    "manifest_version": 3,
-    "background": {
-        "service_worker": "js/background.js"
-    }
-}
+```json file="../../../../code/entrypoints/background/manifest-v3.json" title="manifest.json"
 ```
     </Tab>
     <Tab label="Сгенерированный Manifest V2">
-```json title="manifest.json"
-{
-    "manifest_version": 2,
-    "background": {
-        "scripts": ["js/background.js"]
-    }
-}
+```json file="../../../../code/entrypoints/background/manifest-v2.json" title="manifest.json"
 ```
     </Tab>
 </Tabs>
@@ -298,28 +239,12 @@ Addon Bone собирает включённые фоновые файлы в о
 В проекте с несколькими приложениями поместите общие фоновые файлы в `src/shared`, а файлы конкретного приложения — в `src/apps/<app>`.
 В single-app проекте используйте обычный `src`; отдельный shared-слой не требуется.
 
-```tree
-src
-├── shared/
-│   └── menu.background.ts
-└── apps/
-    ├── app-a/
-    │   └── startup.background.ts
-    └── app-b/
-        └── startup.background.ts
-adnbn.config.ts
-package.json
+```tree file="../../../../code/entrypoints/background/multi-app.tree"
 ```
 
 Чтобы подключить к одному background общие файлы и файлы текущего приложения, включите `mergeBackground`:
 
-```ts title="adnbn.config.ts"
-import {defineConfig, Workspace} from "adnbn";
-
-export default defineConfig({
-    workspace: Workspace.Multi,
-    mergeBackground: true,
-});
+```ts file="../../../../code/entrypoints/background/multi-app.config.ts" title="adnbn.config.ts"
 ```
 
 `mergeBackground` по умолчанию равен `false`:

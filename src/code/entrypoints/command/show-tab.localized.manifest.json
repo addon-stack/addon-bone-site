@@ -1,0 +1,10 @@
+{
+  "commands": {
+    "show-tab": {
+      "description": "__MSG_commands_showTab__",
+      "suggested_key": {
+        "default": "Ctrl+Shift+Y"
+      }
+    }
+  }
+}

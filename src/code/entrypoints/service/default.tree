@@ -1,0 +1,7 @@
+src
+├── tabs.service.ts
+├── diagnostics.service/
+│   └── index.ts
+└── content.ts
+adnbn.config.ts
+package.json

@@ -1,0 +1,10 @@
+src
+├── shared/
+│   └── open.command.ts
+└── apps/
+    ├── app-a/
+    │   └── toggle.command.ts
+    └── app-b/
+        └── search.command.ts
+adnbn.config.ts
+package.json

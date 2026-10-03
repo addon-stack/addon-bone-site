@@ -22,15 +22,7 @@ You do not need to create a separate `background.ts` or register a command event
 
 Let's create a command that logs a message and the current tab to the background console when you press a shortcut.
 
-```ts title="src/command.ts"
-import {defineCommand} from "adnbn";
-
-export default defineCommand({
-    defaultKey: "Ctrl+Shift+Y",
-    execute(tab) {
-        console.log("Command executed", tab);
-    },
-});
+```ts file="../../../../code/entrypoints/command/command.ts" title="src/command.ts"
 ```
 
 Add the file to your Addon Bone project, build the extension, and load it in the browser.
@@ -49,26 +41,11 @@ Place them in `src`, or group them in `commands/` if that makes your project eas
 
 <Tabs>
     <Tab label="Default structure">
-```tree
-src
-├── command.ts
-├── open.command.ts
-└── toggle.command/
-    └── index.ts
-adnbn.config.ts
-package.json
+```tree file="../../../../code/entrypoints/command/default.tree"
 ```
     </Tab>
     <Tab label="Grouped commands">
-```tree
-src
-└── commands/
-    ├── command.ts
-    ├── open.command.ts
-    └── toggle.command/
-        └── index.ts
-adnbn.config.ts
-package.json
+```tree file="../../../../code/entrypoints/command/grouped.tree"
 ```
     </Tab>
 </Tabs>
@@ -113,28 +90,11 @@ Alternatively, use named exports for the options and `export default` for the ha
 
 <Tabs>
     <Tab label="Using defineCommand">
-```ts title="src/show-tab.command.ts"
-import {defineCommand} from "adnbn";
-
-export default defineCommand({
-    name: "show-tab",
-    description: "Show current tab",
-    defaultKey: "Ctrl+Shift+Y",
-    execute(tab) {
-        console.log("Current tab", tab?.id);
-    },
-});
+```ts file="../../../../code/entrypoints/command/show-tab.command.ts" title="src/show-tab.command.ts"
 ```
     </Tab>
     <Tab label="Named exports">
-```ts title="src/show-tab.command.ts"
-export const name = "show-tab";
-export const description = "Show current tab";
-export const defaultKey = "Ctrl+Shift+Y";
-
-export default (tab?: chrome.tabs.Tab) => {
-    console.log("Current tab", tab?.id);
-};
+```ts file="../../../../code/entrypoints/command/show-tab.named-exports.command.ts" title="src/show-tab.command.ts"
 ```
     </Tab>
 </Tabs>
@@ -149,16 +109,7 @@ In `execute`, implement the action to perform when the command is called.
 The handler runs in the background and can call browser APIs.
 It runs when the shortcut is pressed, rather than each time the background context starts.
 
-```ts title="src/command.ts"
-import {defineCommand} from "adnbn";
-
-export default defineCommand({
-    defaultKey: "Ctrl+Shift+Y",
-    execute(tab, options) {
-        console.log("Command", options.name);
-        console.log("Current tab", tab?.id);
-    },
-});
+```ts file="../../../../code/entrypoints/command/command-options.command.ts" title="src/command.ts"
 ```
 
 The first argument is the active tab, if the browser provided one.
@@ -267,25 +218,11 @@ The user can trigger it by clicking the button or pressing its assigned shortcut
 
 <Tabs>
     <Tab label="Using defineExecuteActionCommand">
-```ts title="src/action.command.ts"
-import {defineExecuteActionCommand} from "adnbn";
-
-export default defineExecuteActionCommand({
-    defaultKey: "Ctrl+Shift+U",
-    execute(tab) {
-        console.log("Action command executed", tab);
-    },
-});
+```ts file="../../../../code/entrypoints/command/action.command.ts" title="src/action.command.ts"
 ```
     </Tab>
     <Tab label="Named exports">
-```ts title="src/action.command.ts"
-export const name = "_execute_action";
-export const defaultKey = "Ctrl+Shift+U";
-
-export default (tab?: chrome.tabs.Tab) => {
-    console.log("Action command executed", tab);
-};
+```ts file="../../../../code/entrypoints/command/action.named-exports.command.ts" title="src/action.command.ts"
 ```
     </Tab>
 </Tabs>
@@ -356,39 +293,11 @@ For the Quick Start, the manifest will contain these fields:
 
 <Tabs>
     <Tab label="Generated Manifest V3">
-```json title="manifest.json"
-{
-    "manifest_version": 3,
-    "background": {
-        "service_worker": "js/background.js"
-    },
-    "commands": {
-        "command": {
-            "description": "command",
-            "suggested_key": {
-                "default": "Ctrl+Shift+Y"
-            }
-        }
-    }
-}
+```json file="../../../../code/entrypoints/command/command.manifest-v3.json" title="manifest.json"
 ```
     </Tab>
     <Tab label="Generated Manifest V2">
-```json title="manifest.json"
-{
-    "manifest_version": 2,
-    "background": {
-        "scripts": ["js/background.js"]
-    },
-    "commands": {
-        "command": {
-            "description": "command",
-            "suggested_key": {
-                "default": "Ctrl+Shift+Y"
-            }
-        }
-    }
-}
+```json file="../../../../code/entrypoints/command/command.manifest-v2.json" title="manifest.json"
 ```
     </Tab>
 </Tabs>
@@ -400,43 +309,11 @@ In Manifest V3, these are `_execute_action` and `action`; in Manifest V2, they a
 
 <Tabs>
     <Tab label="Generated Manifest V3">
-```json title="manifest.json"
-{
-    "manifest_version": 3,
-    "background": {
-        "service_worker": "js/background.js"
-    },
-    "action": {
-        "default_title": "My extension"
-    },
-    "commands": {
-        "_execute_action": {
-            "suggested_key": {
-                "default": "Ctrl+Shift+U"
-            }
-        }
-    }
-}
+```json file="../../../../code/entrypoints/command/action.manifest-v3.json" title="manifest.json"
 ```
     </Tab>
     <Tab label="Generated Manifest V2">
-```json title="manifest.json"
-{
-    "manifest_version": 2,
-    "background": {
-        "scripts": ["js/background.js"]
-    },
-    "browser_action": {
-        "default_title": "My extension"
-    },
-    "commands": {
-        "_execute_browser_action": {
-            "suggested_key": {
-                "default": "Ctrl+Shift+U"
-            }
-        }
-    }
-}
+```json file="../../../../code/entrypoints/command/action.manifest-v2.json" title="manifest.json"
 ```
     </Tab>
 </Tabs>
@@ -465,36 +342,15 @@ The third tab shows how Addon Bone writes the key to the generated manifest:
 
 <Tabs>
     <Tab label="Command source">
-```ts title="src/show-tab.command.ts"
-import {defineCommand} from "adnbn";
-
-export default defineCommand({
-    description: "@commands.showTab",
-    defaultKey: "Ctrl+Shift+Y",
-    execute(tab) {
-        console.log("Current tab", tab?.id);
-    },
-});
+```ts file="../../../../code/entrypoints/command/show-tab.localized.command.ts" title="src/show-tab.command.ts"
 ```
     </Tab>
     <Tab label="Locale file">
-```yaml title="src/locales/en.yaml"
-commands:
-    showTab: Show current tab
+```yaml file="../../../../code/entrypoints/command/commands.en.yaml" title="src/locales/en.yaml"
 ```
     </Tab>
     <Tab label="Generated manifest">
-```json title="manifest.json"
-{
-    "commands": {
-        "show-tab": {
-            "description": "__MSG_commands_showTab__",
-            "suggested_key": {
-                "default": "Ctrl+Shift+Y"
-            }
-        }
-    }
-}
+```json file="../../../../code/entrypoints/command/show-tab.localized.manifest.json" title="manifest.json"
 ```
     </Tab>
 </Tabs>
@@ -507,30 +363,14 @@ The example shows an English locale file. Add files for other languages if the c
 In a project with multiple apps, place shared commands in `src/shared` and app-specific commands in `src/apps/<app>`.
 In a single-app project, use the regular `src`; no separate shared layer is needed.
 
-```tree
-src
-├── shared/
-│   └── open.command.ts
-└── apps/
-    ├── app-a/
-    │   └── toggle.command.ts
-    └── app-b/
-        └── search.command.ts
-adnbn.config.ts
-package.json
+```tree file="../../../../code/entrypoints/command/multi-app.tree"
 ```
 
 <span id="multi-app-configuration" />
 
 To include both shared commands and the current app's commands, enable `mergeCommands`:
 
-```ts title="adnbn.config.ts"
-import {defineConfig, Workspace} from "adnbn";
-
-export default defineConfig({
-    workspace: Workspace.Multi,
-    mergeCommands: true,
-});
+```ts file="../../../../code/entrypoints/command/multi-app.config.ts" title="adnbn.config.ts"
 ```
 
 <span id="multi-app-merge" />

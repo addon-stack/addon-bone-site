@@ -38,7 +38,7 @@ Create an offscreen entrypoint that reads image dimensions in a hidden document.
 
 <Tabs>
     <Tab label="Offscreen">
-        ```ts file="../../../../code/offscreen.ts" title="src/offscreen.ts"
+        ```ts file="../../../../code/entrypoints/offscreen/image-size.offscreen.ts" title="src/offscreen.ts"
         ```
     </Tab>
     <Tab label="Popup">
@@ -82,11 +82,11 @@ If you have many offscreen APIs, group them in `offscreens/` to keep hidden docu
 
 <Tabs>
     <Tab label="Default">
-        ```tree file="./code/offscreen.default.tree"
+        ```tree file="./code/offscreen/default.tree"
         ```
     </Tab>
     <Tab label="Grouped">
-        ```tree file="./code/offscreen.group.tree"
+        ```tree file="./code/offscreen/grouped.tree"
         ```
     </Tab>
 </Tabs>
@@ -136,11 +136,11 @@ Switch between tabs below to see each format in code:
 
 <Tabs>
     <Tab label="Recommended">
-        ```ts file="../../../../code/offscreen.recommended.ts" title="src/ping.offscreen.ts"
+        ```ts file="../../../../code/entrypoints/offscreen/ping.offscreen.ts" title="src/ping.offscreen.ts"
         ```
     </Tab>
     <Tab label="Advanced">
-        ```ts file="../../../../code/offscreen.advanced.ts" title="src/ping.offscreen.ts"
+        ```ts file="../../../../code/entrypoints/offscreen/ping.named-exports.offscreen.ts" title="src/ping.offscreen.ts"
         ```
     </Tab>
 </Tabs>
@@ -155,7 +155,7 @@ The value returned from `init` becomes the offscreen API.
 It can be an object literal, a class instance, or any object whose public methods and nested objects make up the callable API.
 For image workflows that need canvas, keep the offscreen API small and return a browser-friendly value such as a `dataUrl`.
 
-```ts file="../../../../code/thumbnail.offscreen.ts" title="src/thumbnail.offscreen.ts"
+```ts file="../../../../code/entrypoints/offscreen/thumbnail.offscreen.ts" title="src/thumbnail.offscreen.ts"
 ```
 
 Use `main` for bootstrap work that should run after the offscreen API is registered.
@@ -191,11 +191,11 @@ export default defineOffscreen({
 
 <Tabs>
     <Tab label="Object Target">
-        ```ts file="./code/offscreen-object.offscreen.ts.txt" title="src/offscreen.ts"
+        ```ts file="./code/offscreen/status.object.offscreen.ts.txt" title="src/offscreen.ts"
         ```
     </Tab>
     <Tab label="Class Target">
-        ```ts file="./code/offscreen-class.offscreen.ts.txt" title="src/offscreen.ts"
+        ```ts file="./code/offscreen/status.class.offscreen.ts.txt" title="src/offscreen.ts"
         ```
     </Tab>
 </Tabs>
@@ -388,7 +388,7 @@ Use them when one app needs its own hidden document API, template, build filters
 In a single-app project, you do not need this structure.
 Addon Bone works with your normal `src` files directly.
 
-```tree file="./code/offscreen.multi-app.tree"
+```tree file="./code/offscreen/multi-app.tree"
 ```
 
 Offscreen naming patterns work the same way in both layers: `src/shared` and `src/apps/<app>`.

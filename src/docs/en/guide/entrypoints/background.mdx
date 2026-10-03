@@ -24,10 +24,7 @@ You do not need to register the background manually.
 Start with a console message so you can see when the background starts.
 Create `src/background.ts`:
 
-```ts title="src/background.ts"
-console.log("Background started");
-
-export {};
+```ts file="../../../../code/entrypoints/background/startup.background.ts" title="src/background.ts"
 ```
 
 Build the extension and load it in your browser.
@@ -39,20 +36,7 @@ Next, log when the extension is installed or updated.
 Use `onInstalled` for this.
 Replace the contents of the same file:
 
-```ts title="src/background.ts"
-import {onInstalled} from "adnbn/browser";
-
-onInstalled((details) => {
-    if (details.reason === "install") {
-        console.log("Extension installed for the first time");
-    }
-
-    if (details.reason === "update") {
-        console.log("Extension updated from version", details.previousVersion);
-    }
-});
-
-export {};
+```ts file="../../../../code/entrypoints/background/installed.background.ts" title="src/background.ts"
 ```
 
 When the extension is first installed, you will see the installation message.
@@ -67,24 +51,11 @@ Addon Bone finds them by name and includes them in the same background context.
 
 <Tabs>
     <Tab label="Default structure">
-```tree
-src
-├── menu.background.ts
-└── startup.background/
-    └── index.ts
-adnbn.config.ts
-package.json
+```tree file="../../../../code/entrypoints/background/default.tree"
 ```
     </Tab>
     <Tab label="Grouped files">
-```tree
-src
-└── backgrounds/
-    ├── menu.background.ts
-    └── startup.background/
-        └── index.ts
-adnbn.config.ts
-package.json
+```tree file="../../../../code/entrypoints/background/grouped.tree"
 ```
     </Tab>
 </Tabs>
@@ -119,29 +90,11 @@ Alternatively, declare options as named exports and export the startup handler t
 
 <Tabs>
     <Tab label="Using defineBackground">
-```ts title="src/background.ts"
-import {defineBackground} from "adnbn";
-import {queryTabs} from "adnbn/browser";
-
-export default defineBackground({
-    permissions: ["tabs"],
-    async main() {
-        const tabs = await queryTabs();
-        console.log(tabs.map((tab) => tab.title ?? "Untitled tab"));
-    },
-});
+```ts file="../../../../code/entrypoints/background/tabs.background.ts" title="src/background.ts"
 ```
     </Tab>
     <Tab label="Named exports">
-```ts title="src/background.ts"
-import {queryTabs} from "adnbn/browser";
-
-export const permissions = ["tabs"];
-
-export default async () => {
-    const tabs = await queryTabs();
-    console.log(tabs.map((tab) => tab.title ?? "Untitled tab"));
-};
+```ts file="../../../../code/entrypoints/background/tabs.named-exports.background.ts" title="src/background.ts"
 ```
     </Tab>
 </Tabs>
@@ -263,23 +216,11 @@ For the Quick Start, Addon Bone generates a manifest with these fields:
 
 <Tabs>
     <Tab label="Generated Manifest V3">
-```json title="manifest.json"
-{
-    "manifest_version": 3,
-    "background": {
-        "service_worker": "js/background.js"
-    }
-}
+```json file="../../../../code/entrypoints/background/manifest-v3.json" title="manifest.json"
 ```
     </Tab>
     <Tab label="Generated Manifest V2">
-```json title="manifest.json"
-{
-    "manifest_version": 2,
-    "background": {
-        "scripts": ["js/background.js"]
-    }
-}
+```json file="../../../../code/entrypoints/background/manifest-v2.json" title="manifest.json"
 ```
     </Tab>
 </Tabs>
@@ -298,28 +239,12 @@ The `persistent` field is omitted in Manifest V3.
 In a project with several apps, put shared background files in `src/shared` and app-specific files in `src/apps/<app>`.
 For a single-app project, use the regular `src` directory; you do not need a separate shared layer.
 
-```tree
-src
-├── shared/
-│   └── menu.background.ts
-└── apps/
-    ├── app-a/
-    │   └── startup.background.ts
-    └── app-b/
-        └── startup.background.ts
-adnbn.config.ts
-package.json
+```tree file="../../../../code/entrypoints/background/multi-app.tree"
 ```
 
 To include shared files and the current app's files in the same background, enable `mergeBackground`:
 
-```ts title="adnbn.config.ts"
-import {defineConfig, Workspace} from "adnbn";
-
-export default defineConfig({
-    workspace: Workspace.Multi,
-    mergeBackground: true,
-});
+```ts file="../../../../code/entrypoints/background/multi-app.config.ts" title="adnbn.config.ts"
 ```
 
 `mergeBackground` defaults to `false`:
