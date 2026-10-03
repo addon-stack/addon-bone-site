@@ -95,6 +95,18 @@ Keep the tone calm, direct, and precise.
   `Using defineBackground` and `Named exports`. Substitute the actual helper
   name, such as `defineService` or `defineCommand`. Do not label these syntax
   alternatives `Recommended` or `Advanced`; explain any recommendation in prose.
+- Label file and build-output tabs by their role, so readers can tell which
+  files they write and which artifacts Addon Bone generates. In Russian, use
+  `Код команды`, `Код сервиса`, `Код content script`, `Файл локализации`, and
+  `Сгенерированный манифест`; in English, use `Command source`, `Service source`,
+  `Content script source`, `Locale file`, and `Generated manifest`.
+  For generated manifests by version, use `Сгенерированный Manifest V3` /
+  `Generated Manifest V3` and the corresponding V2 labels. For source-code
+  implementations by version, use `Код сервиса: Manifest V3` /
+  `Service source: Manifest V3`, substituting the actual entrypoint and version.
+  Do not use a bare `Manifest V2` or `Manifest V3` label for either role.
+  Briefly introduce what the framework generates beside output examples;
+  keep the actual filename in the code-fence title.
 - Give source and configuration code fences a file title. Use Addon Bone public
   aliases such as `adnbn/browser` and `adnbn/storage` where wrappers exist.
 - Preserve technical facts when simplifying wording: runtime context, async
@@ -102,6 +114,24 @@ Keep the tone calm, direct, and precise.
 - Verify framework behavior against the current sibling `addon-bone` source and
   browser constraints against official documentation. Distinguish framework
   behavior, browser requirements, and recommendations.
+
+## Document current behavior, including bugs
+
+- Describe verified behavior in the current local framework, including known
+  bugs. Do not replace an observed defect with the intended behavior or omit it
+  to make the documentation look complete.
+- When a bug affects usage, add a visible warning beside the affected feature.
+  Identify it as a framework bug, state when it occurs and what the reader will
+  observe, and give a verified workaround when one exists. Keep browser
+  restrictions and intentional framework limitations distinct from bugs.
+- Report the affected source and reproduction evidence to the documentation
+  author so the issue can be found and fixed in the framework. Confirm a defect
+  before labeling it as a bug; investigate uncertain behavior first.
+- After a local framework fix, verify the implementation and affected examples
+  or generated output, then update the prose and option descriptions to the
+  corrected behavior. Remove warnings and workarounds that no longer apply.
+  Document the current result without retaining the history of the fixed bug
+  unless that history is needed for migration.
 
 ## Organize the page table of contents
 

@@ -1,0 +1,562 @@
+---
+description: "Запускайте действия расширения сочетанием клавиш или кнопкой на панели браузера. Объявляйте команды, обработчики и разрешения в Addon Bone."
+---
+
+# Command
+
+import {Tab, Tabs} from "@rspress/core/theme";
+import Details from "@components/Details";
+import DocHeading from "@components/DocHeading";
+import Command, {CommandBackgroundOptions} from "@ru/components/entrypoints/Command";
+import PermissionOptions from "@ru/components/entrypoints/PermissionOptions";
+import Entrypoint from "@ru/components/entrypoints/Entrypoint";
+
+Command позволяет запускать действия расширения сочетанием клавиш: например, открыть страницу, переключить настройку или выполнить операцию для текущей вкладки.
+Для кнопки расширения на панели браузера есть отдельный вариант — `defineExecuteActionCommand`.
+
+Создайте файл команды, задайте сочетание клавиш и опишите действие в `execute`.
+Addon Bone добавит команду в манифест и подключит обработчик к фоновому контексту.
+Отдельно создавать `background.ts` или подписываться на событие команды не нужно.
+
+## Быстрый старт
+
+Создадим команду, которая по сочетанию клавиш выводит сообщение и текущую вкладку в фоновую консоль.
+
+```ts title="src/command.ts"
+import {defineCommand} from "adnbn";
+
+export default defineCommand({
+    defaultKey: "Ctrl+Shift+Y",
+    execute(tab) {
+        console.log("Command executed", tab);
+    },
+});
+```
+
+Добавьте файл в проект Addon Bone, соберите расширение и загрузите его в браузер.
+В Chrome откройте `chrome://extensions`, включите режим разработчика и перейдите по ссылке на service worker на карточке расширения.
+Вернитесь к обычной вкладке и нажмите `Ctrl+Shift+Y`; на macOS — `Command+Shift+Y`.
+В фоновой консоли появится `Command executed` и вкладка, если браузер её передал.
+
+Addon Bone возьмёт имя `command` из имени файла и зарегистрирует сочетание клавиш.
+Для этого примера дополнительные разрешения не нужны.
+Если сочетание не срабатывает, проверьте его назначение в `chrome://extensions/shortcuts`: оно может быть занято браузером, системой или другим расширением.
+
+## Структура файлов
+
+Addon Bone находит команды по именам файлов и каталогов.
+Размещайте их в `src` или группируйте в `commands/`, если так удобнее организовать проект.
+
+<Tabs>
+    <Tab label="Обычная структура">
+```tree
+src
+├── command.ts
+├── open.command.ts
+└── toggle.command/
+    └── index.ts
+adnbn.config.ts
+package.json
+```
+    </Tab>
+    <Tab label="Группировка команд">
+```tree
+src
+└── commands/
+    ├── command.ts
+    ├── open.command.ts
+    └── toggle.command/
+        └── index.ts
+adnbn.config.ts
+package.json
+```
+    </Tab>
+</Tabs>
+
+Для файлов TypeScript поддерживаются следующие пути:
+
+- `command.ts` и `*.command.ts`;
+- `command/index.ts` и `*.command/index.ts`;
+- `commands/command.ts` и `commands/*.command.ts`;
+- `commands/command/index.ts` и `commands/*.command/index.ts`.
+
+:::warning Область поиска
+Если в `commands/` найдены команды, Addon Bone использует только их для этой области исходников.
+Файлы на верхнем уровне той же области не добавляются.
+Правило применяется отдельно к исходникам приложения и shared-слою, до фильтрации по браузеру, приложению или версии манифеста.
+:::
+
+<DocHeading level={3} id="command-names" toc={false}>Имена команд</DocHeading>
+
+Имя команды попадает в `manifest.commands` и связывает сочетание клавиш с обработчиком.
+Если не задать `name`, Addon Bone возьмёт имя из файла или каталога:
+
+| Файл | Имя по умолчанию |
+| --- | --- |
+| `command.ts` или `command/index.ts` | `command` |
+| `open.command.ts` или `open.command/index.ts` | `open` |
+| `commands/open.command.ts` | `open` |
+
+Задайте `name` явно, если имя должно сохраниться после переименования файла.
+Это также помогает сохранить пользовательское назначение сочетания клавиш.
+
+:::warning Совпадающие имена
+Имена включённых команд должны быть уникальны.
+При совпадении Addon Bone остановит сборку и укажет оба файла; числовые суффиксы не добавляются.
+Это относится и к командам из shared-слоя и плагинов.
+:::
+
+## Объявление команды
+
+Используйте `defineCommand`, чтобы получить подсказки опций и проверку типов.
+Вместо него можно задать опции именованными экспортами, а обработчик — через `export default`.
+
+<Tabs>
+    <Tab label="Через defineCommand">
+```ts title="src/show-tab.command.ts"
+import {defineCommand} from "adnbn";
+
+export default defineCommand({
+    name: "show-tab",
+    description: "Show current tab",
+    defaultKey: "Ctrl+Shift+Y",
+    execute(tab) {
+        console.log("Current tab", tab?.id);
+    },
+});
+```
+    </Tab>
+    <Tab label="Именованные экспорты">
+```ts title="src/show-tab.command.ts"
+export const name = "show-tab";
+export const description = "Show current tab";
+export const defaultKey = "Ctrl+Shift+Y";
+
+export default (tab?: chrome.tabs.Tab) => {
+    console.log("Current tab", tab?.id);
+};
+```
+    </Tab>
+</Tabs>
+
+Оба формата поддерживают одни и те же опции, разрешения и фильтры сборки.
+В формате с именованными экспортами задавайте опции через `export const`; обычный `export default` соответствует `execute`.
+Метка `primary` рядом с опцией обозначает именно это соответствие.
+
+## Обработчик execute
+
+В `execute` опишите действие, которое нужно выполнить при вызове команды.
+Обработчик работает в background и может вызывать браузерные API.
+Он выполняется при нажатии сочетания клавиш, а не при каждом запуске фонового контекста.
+
+```ts title="src/command.ts"
+import {defineCommand} from "adnbn";
+
+export default defineCommand({
+    defaultKey: "Ctrl+Shift+Y",
+    execute(tab, options) {
+        console.log("Command", options.name);
+        console.log("Current tab", tab?.id);
+    },
+});
+```
+
+Первый аргумент — активная вкладка, если браузер её передал.
+Он может быть `undefined`; проверяйте наличие вкладки и её `id`, если действие от них зависит.
+Сам объект вкладки не гарантирует доступ к её URL или названию: для чтения этих полей нужны соответствующие разрешения.
+
+Второй аргумент содержит опции текущей команды, включая имя, определённое при сборке.
+Опции других файлов в этот объект не объединяются.
+
+Для асинхронной работы объявите `async execute` и используйте `await` внутри него.
+Повторное нажатие может запустить следующий вызов до завершения предыдущего: Addon Bone не ставит вызовы в очередь.
+Если действие не должно выполняться параллельно, контролируйте это в своём коде.
+
+Если `execute` выбросит ошибку или вернёт отклонённый promise, Addon Bone запишет ошибку в фоновую консоль.
+Фреймворк не повторяет действие автоматически.
+Обрабатывайте ошибку внутри `execute`, когда нужно выбрать другой способ выполнить действие или сообщить пользователю о результате.
+
+Команда использует жизненный цикл background.
+В Chrome Manifest V3 браузер может остановить неактивный service worker, поэтому состояние в памяти не сохраняется между запусками.
+Долговременные данные храните в хранилище расширения; подробнее — [жизненный цикл Background](./background#жизненный-цикл).
+
+## Сочетания клавиш
+
+`defaultKey` задаёт сочетание для платформ, у которых нет отдельного значения.
+Чтобы выбрать другое сочетание для конкретной системы, используйте `windowsKey`, `macKey`, `chromeosKey` или `linuxKey`.
+Если заданы только платформенные значения, на остальных системах команда останется без назначенного сочетания.
+
+Addon Bone требует хотя бы одну из этих опций для каждой команды, включая команду кнопки расширения.
+Браузер допускает команды без начального сочетания, но текущая проверка Addon Bone такие определения не принимает.
+
+<DocHeading level={3} id="shortcut-format" toc={false}>Формат сочетания</DocHeading>
+
+Записывайте сочетание без пробелов, разделяя клавиши знаком `+`: например, `Ctrl+Shift+Y` или `Alt+U`.
+Укажите модификаторы первыми, а клавишу — последней.
+Не повторяйте один и тот же модификатор.
+Для Chrome и Firefox используйте не больше двух модификаторов и одной клавиши.
+
+Для Chrome и Firefox доступны буквы `A`–`Z`, цифры `0`–`9`, а также `Comma`, `Period`, `Home`, `End`, `PageUp`, `PageDown`, `Space`, `Insert`, `Delete`, `Up`, `Down`, `Left` и `Right`.
+Названия чувствительны к регистру.
+Медиаклавиши `MediaNextTrack`, `MediaPlayPause`, `MediaPrevTrack` и `MediaStop` указываются отдельно, без модификаторов.
+
+<DocHeading level={4} id="chromium-shortcuts" toc={false}>Chrome, Chromium, Edge и Opera</DocHeading>
+
+При сборке для Chrome, Chromium, Edge и Opera используйте `Ctrl` или `Alt` и, при необходимости, `Shift`.
+В `macKey` также доступны `Command`, `MacCtrl` и `Option`, а в `chromeosKey` — `Search`: например, `Search+Y` или `Search+Shift+Y`.
+На macOS браузер трактует `Ctrl` как `Command`; для клавиши Control используйте `macKey` с `MacCtrl`.
+
+Эти браузеры также принимают `Tab`, но не принимают `F1`–`F12`.
+
+В Chromium нельзя сочетать `Alt` или `Option` с `Ctrl`, `Command`, `MacCtrl` или `Search`.
+Addon Bone проверяет и эквивалентные модификаторы macOS: например, `Command+Option+Y` остановит сборку, как и `Ctrl+Alt+Y`.
+Это ограничение связано с конфликтом с клавишей `AltGr`; подробнее — [правила Chrome](https://developer.chrome.com/docs/extensions/reference/api/commands#key-combination-requirements) и [проверка сочетаний в Chromium](https://github.com/chromium/chromium/blob/main/ui/base/accelerators/command.cc).
+
+Для `chromeosKey` также используйте не больше двух модификаторов: настольные версии Chromium проверяют сочетания всех платформ.
+Поэтому `Search+Shift+Y` проходит проверку, а `Search+Ctrl+Shift+Y` — нет.
+
+<DocHeading level={4} id="firefox-shortcuts" toc={false}>Firefox</DocHeading>
+
+В Firefox можно использовать `Ctrl`, `Alt`, `Command` и `MacCtrl`, а вторым модификатором выбрать `Shift` или другой модификатор из этого списка.
+Например, `Ctrl+Alt+Y` подходит для сборки Firefox.
+`Ctrl` и `Command` обозначают один модификатор Firefox, поэтому их нельзя сочетать друг с другом.
+
+Здесь также доступны `F1`–`F12`, в том числе без модификатора: `F12` или `Shift+F12`.
+`Option` и `Tab` для Firefox не подходят; подробнее — [формат сочетаний Firefox](https://developer.mozilla.org/en-US/docs/Mozilla/Add-ons/WebExtensions/manifest.json/commands#shortcut_values).
+
+При сборке Firefox значение `chromeosKey` не проверяется на совместимость с Firefox: браузер не использует его на своих платформах.
+
+<DocHeading level={3} id="shortcut-validation" toc={false}>Проверка при сборке</DocHeading>
+
+Если сочетание не подходит, сборка остановится с указанием файла и опции.
+Исправьте пробелы, неизвестные названия клавиш и ошибки порядка даже в файлах, исключённых фильтрами: Addon Bone проверяет общий формат до фильтрации.
+
+Совместимость с браузером проверяется только для команд, включённых в сборку.
+Для сочетаний, доступных только в одном браузере, задайте `includeBrowser`, например `includeBrowser: ["firefox"]` для команды с `Ctrl+Alt+Y`.
+
+<DocHeading level={3} id="global-shortcuts" toc={false}>Глобальные сочетания</DocHeading>
+
+По умолчанию сочетание действует, когда браузер в фокусе.
+В Chrome, Chromium, Edge и Opera `global: true` позволяет запускать команду и из другого приложения.
+
+Для обычных глобальных сочетаний используйте `Ctrl+Shift+0`–`Ctrl+Shift+9`; в `macKey` также подходит `Command+Shift+0`–`Command+Shift+9`.
+Addon Bone проверяет сочетание, которое будет использоваться на каждой настольной платформе: отдельное значение или `defaultKey`, если отдельного нет.
+Медиаклавиши не требуют этого числового формата.
+
+Chrome на ChromeOS не поддерживает [глобальные команды](https://developer.chrome.com/docs/extensions/reference/api/commands#scope).
+Не задавайте `chromeosKey` вместе с `global: true`: Addon Bone остановит такую сборку для Chromium.
+Для обычной команды на ChromeOS используйте `chromeosKey` без `global: true`.
+
+Firefox и Safari не поддерживают глобальные команды.
+Если указать `global: true`, Addon Bone выведет предупреждение и продолжит сборку, но сочетание будет действовать только в браузере.
+
+<DocHeading level={3} id="shortcut-assignment" toc={false}>Настройка сочетаний в браузере</DocHeading>
+
+Сочетание в исходниках задаёт начальное значение, которое пользователь может изменить в настройках браузера.
+Если его уже использует браузер или другое расширение, команда может остаться без сочетания клавиш.
+В Chrome настройки доступны в `chrome://extensions/shortcuts`, в Firefox — через управление сочетаниями расширений в `about:addons`.
+
+Chrome позволяет объявить не более четырёх предложенных сочетаний для одного расширения.
+Учитывайте общий набор включённых команд, в том числе из shared-слоя и плагинов.
+Правила браузеров описаны в [Commands API Chrome](https://developer.chrome.com/docs/extensions/reference/api/commands) и [документации MDN](https://developer.mozilla.org/en-US/docs/Mozilla/Add-ons/WebExtensions/manifest.json/commands).
+
+## Кнопка расширения
+
+Используйте `defineExecuteActionCommand`, если кнопка на панели браузера должна выполнять действие.
+Пользователь сможет вызвать его нажатием кнопки или назначенным сочетанием клавиш.
+
+<Tabs>
+    <Tab label="Через defineExecuteActionCommand">
+```ts title="src/action.command.ts"
+import {defineExecuteActionCommand} from "adnbn";
+
+export default defineExecuteActionCommand({
+    defaultKey: "Ctrl+Shift+U",
+    execute(tab) {
+        console.log("Action command executed", tab);
+    },
+});
+```
+    </Tab>
+    <Tab label="Именованные экспорты">
+```ts title="src/action.command.ts"
+export const name = "_execute_action";
+export const defaultKey = "Ctrl+Shift+U";
+
+export default (tab?: chrome.tabs.Tab) => {
+    console.log("Action command executed", tab);
+};
+```
+    </Tab>
+</Tabs>
+
+В исходниках и в `options.name` обработчика команда кнопки имеет имя `_execute_action`.
+Addon Bone подключает `execute` к событию нажатия кнопки и выбирает поля манифеста по его версии:
+
+| Версия манифеста | Имя в `commands` | Поле кнопки |
+| --- | --- | --- |
+| Manifest V3 | `_execute_action` | `action` |
+| Manifest V2 | `_execute_browser_action` | `browser_action` |
+
+Используйте тот же `defineExecuteActionCommand` или именованные экспорты с `name = "_execute_action"` для обеих версий.
+Если кнопка ещё не объявлена, она появится в сгенерированном манифесте.
+В одной сборке может быть только одна такая команда; второй файл с этим именем остановит сборку.
+
+Если для кнопки задан popup, браузер откроет его и не вызовет этот `execute`.
+Если нужны и popup, и сочетание для действия, объявите отдельную обычную команду через `defineCommand`.
+Это поведение описано в [документации Action API](https://developer.chrome.com/docs/extensions/reference/api/action#popup).
+
+Иконку и подсказку кнопки можно настроить через [`action` в `adnbn.config.ts`](../configuration/config.mdx#кнопка-расширения).
+Это настройки внешнего вида; сама команда задаёт выполняемое действие.
+
+## Опции
+
+Опции относятся к конкретному файлу и обрабатываются при сборке.
+Они задают имя команды, сочетания клавиш, обработчик, разрешения и условия включения файла в расширение.
+
+<DocHeading level={3} id="command-options" toc={false}>Опции Command</DocHeading>
+
+<Command />
+
+<DocHeading level={3} id="background-options" toc={false}>Опции background</DocHeading>
+
+Команда выполняется в общем background, поэтому может задавать настройку фонового контекста.
+
+<Details title="Опции background">
+    <CommandBackgroundOptions />
+</Details>
+
+<DocHeading level={3} id="permission-options" toc={false}>Опции разрешений</DocHeading>
+
+Объявляйте разрешения рядом с командой, которой они нужны.
+Addon Bone добавит их в манифест вместе с разрешениями остальных включённых точек входа.
+
+<Details title="Опции разрешений">
+    <PermissionOptions />
+</Details>
+
+<DocHeading level={3} id="common-options" toc={false}>Общие опции</DocHeading>
+
+Все заданные фильтры должны подходить текущей сборке.
+Если файл исключён, его команда, обработчик и разрешения в эту сборку не попадут.
+
+<Details title="Общие опции">
+    <Entrypoint />
+</Details>
+
+## Результат сборки
+
+Addon Bone добавляет команды в `manifest.commands` и включает их обработчики в background.
+Фоновый контекст создаётся и без отдельного `background.ts`.
+Вкладки ниже показывают фрагменты манифеста, которые Addon Bone создаёт при сборке из опций команды.
+
+<DocHeading level={3} id="regular-command-output" toc={false}>Обычная команда</DocHeading>
+
+Для Quick Start манифест будет содержать следующие поля:
+
+<Tabs>
+    <Tab label="Сгенерированный Manifest V3">
+```json title="manifest.json"
+{
+    "manifest_version": 3,
+    "background": {
+        "service_worker": "js/background.js"
+    },
+    "commands": {
+        "command": {
+            "description": "command",
+            "suggested_key": {
+                "default": "Ctrl+Shift+Y"
+            }
+        }
+    }
+}
+```
+    </Tab>
+    <Tab label="Сгенерированный Manifest V2">
+```json title="manifest.json"
+{
+    "manifest_version": 2,
+    "background": {
+        "scripts": ["js/background.js"]
+    },
+    "commands": {
+        "command": {
+            "description": "command",
+            "suggested_key": {
+                "default": "Ctrl+Shift+Y"
+            }
+        }
+    }
+}
+```
+    </Tab>
+</Tabs>
+
+<DocHeading level={3} id="action-command-output" toc={false}>Команда кнопки расширения</DocHeading>
+
+Для `src/action.command.ts` из раздела «Кнопка расширения» Addon Bone добавит команду и саму кнопку.
+В Manifest V3 это `_execute_action` и `action`, а в Manifest V2 — `_execute_browser_action` и `browser_action`:
+
+<Tabs>
+    <Tab label="Сгенерированный Manifest V3">
+```json title="manifest.json"
+{
+    "manifest_version": 3,
+    "background": {
+        "service_worker": "js/background.js"
+    },
+    "action": {
+        "default_title": "My extension"
+    },
+    "commands": {
+        "_execute_action": {
+            "suggested_key": {
+                "default": "Ctrl+Shift+U"
+            }
+        }
+    }
+}
+```
+    </Tab>
+    <Tab label="Сгенерированный Manifest V2">
+```json title="manifest.json"
+{
+    "manifest_version": 2,
+    "background": {
+        "scripts": ["js/background.js"]
+    },
+    "browser_action": {
+        "default_title": "My extension"
+    },
+    "commands": {
+        "_execute_browser_action": {
+            "suggested_key": {
+                "default": "Ctrl+Shift+U"
+            }
+        }
+    }
+}
+```
+    </Tab>
+</Tabs>
+
+В этих фрагментах расширение называется `My extension`.
+Addon Bone использует имя расширения для `default_title`, если подсказка кнопки не задана отдельно.
+
+В обоих примерах показаны только поля, связанные с командой; полный манифест содержит также название, версию и другие настройки расширения.
+Для наглядности показан путь `js/background.js`: фактическое имя файла зависит от режима сборки и может содержать хеш.
+В Firefox с Manifest V3 Addon Bone использует `background.scripts` вместо `background.service_worker`.
+
+Для обычной команды `name` становится ключом в `commands`, а опции сочетаний — полями `suggested_key`.
+Для команды кнопки Addon Bone выбирает ключ по версии манифеста, как описано выше.
+`global` записывается в одноимённое поле команды, если опция задана.
+Разрешения включённых точек входа объединяются и очищаются от повторов.
+
+<DocHeading level={3} id="description-and-localization" toc={false}>Описание и локализация</DocHeading>
+
+`description` помогает пользователю узнать команду в настройках сочетаний клавиш.
+Если не указать его для обычной команды, Addon Bone запишет её имя, как в Quick Start.
+Для `_execute_action` описание по умолчанию не добавляется.
+
+Можно задать обычный текст или ключ локализации.
+Для ключа добавьте описание в файл команды и перевод в файл локализации.
+Третья вкладка показывает, как Addon Bone запишет этот ключ в сгенерированный манифест:
+
+<Tabs>
+    <Tab label="Код команды">
+```ts title="src/show-tab.command.ts"
+import {defineCommand} from "adnbn";
+
+export default defineCommand({
+    description: "@commands.showTab",
+    defaultKey: "Ctrl+Shift+Y",
+    execute(tab) {
+        console.log("Current tab", tab?.id);
+    },
+});
+```
+    </Tab>
+    <Tab label="Файл локализации">
+```yaml title="src/locales/en.yaml"
+commands:
+    showTab: Show current tab
+```
+    </Tab>
+    <Tab label="Сгенерированный манифест">
+```json title="manifest.json"
+{
+    "commands": {
+        "show-tab": {
+            "description": "__MSG_commands_showTab__",
+            "suggested_key": {
+                "default": "Ctrl+Shift+Y"
+            }
+        }
+    }
+}
+```
+    </Tab>
+</Tabs>
+
+Addon Bone преобразует ключ в ссылку на сообщение браузера; текст команды браузер берёт из локализации расширения.
+В примере показан файл для английского языка. Добавьте файлы других языков, если команда должна иметь переведённое описание.
+
+## Multi-App Structure
+
+В проекте с несколькими приложениями поместите общие команды в `src/shared`, а команды конкретного приложения — в `src/apps/<app>`.
+В single-app проекте используйте обычный `src`; отдельный shared-слой не требуется.
+
+```tree
+src
+├── shared/
+│   └── open.command.ts
+└── apps/
+    ├── app-a/
+    │   └── toggle.command.ts
+    └── app-b/
+        └── search.command.ts
+adnbn.config.ts
+package.json
+```
+
+Чтобы подключить общие команды и команды текущего приложения, включите `mergeCommands`:
+
+```ts title="adnbn.config.ts"
+import {defineConfig, Workspace} from "adnbn";
+
+export default defineConfig({
+    workspace: Workspace.Multi,
+    mergeCommands: true,
+});
+```
+
+`mergeCommands` по умолчанию равен `false`:
+
+- При `true` в сборку входят команды shared-слоя и текущего приложения.
+- При `false`, если в приложении обнаружены свои команды, весь набор команд приложения используется вместо shared-набора.
+- Если файлов команд приложения нет, используется shared-набор.
+
+Выбор app/shared происходит до применения фильтров точки входа.
+Если команда приложения найдена, но затем исключена, например по `manifestVersion`, shared-команды автоматически не возвращаются.
+
+При объединении файлов каждая команда сохраняет собственные опции и `execute`.
+Совпадающие имена не заменяют общую команду локальной: они остановят сборку.
+Для разных реализаций одной команды задайте фильтры, при которых в сборку входит только один файл с этим именем.
+
+## Практические рекомендации
+
+- **Задавайте уникальные имена.** Явное `name` помогает сохранить команду и пользовательские назначения при переименовании файла.
+- **Проверяйте назначение сочетания в браузере.** Значение в исходниках не гарантирует, что сочетание свободно или что пользователь оставил его без изменений.
+- **Учитывайте отсутствие вкладки.** Проверяйте `tab` и нужные поля перед выполнением действия.
+- **Объявляйте разрешения рядом с командой.** Фильтры могут исключить другой файл, на разрешения которого вы рассчитывали.
+- **Учитывайте повторные вызовы.** Асинхронные обработчики могут выполняться одновременно; долговременное состояние храните вне памяти background.
+
+## Отладка
+
+1. **Команда не появилась.** Проверьте имя и расположение файла, фильтры сборки и `mergeCommands`. Убедитесь, что папка `commands/` не переключила область поиска, и найдите команду в `manifest.commands`.
+2. **Сборка сообщает о совпадении имён.** Проверьте оба указанных файла, включая shared-слой и плагины. Задайте разные имена или исключите одну реализацию фильтрами.
+3. **Сочетание не срабатывает.** Проверьте назначение в `chrome://extensions/shortcuts` или в настройках расширений Firefox. Попробуйте другое свободное сочетание и убедитесь, что браузер в фокусе, если команда не глобальная.
+4. **Не видно результата execute.** Откройте DevTools фонового контекста и проверьте сообщения и ошибки там. Консоль веб-страницы не показывает вывод обработчика команды.
+5. **Кнопка открывает popup вместо действия.** Если для текущей вкладки задан popup, `execute` команды кнопки не вызывается. Выполняйте нужное действие из popup или через отдельную обычную команду.
+6. **Вкладка или её поля отсутствуют.** Проверьте наличие `tab`, `tab.id` и разрешения, необходимые для чтения URL или названия. Не считайте эти поля доступными при каждом вызове.

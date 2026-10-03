@@ -24,7 +24,7 @@ Let's display a list of open tabs on a page.
 The content script requests their titles from the `tabs` service, which runs in the background: the Tabs API is not available directly in a content script.
 
 <Tabs>
-    <Tab label="Service">
+    <Tab label="Service source">
 ```ts title="src/tabs.service.ts"
 import {defineService} from "adnbn";
 import {queryTabs} from "adnbn/browser";
@@ -42,7 +42,7 @@ export default defineService({
 });
 ```
     </Tab>
-    <Tab label="Content script">
+    <Tab label="Content script source">
 ```ts title="src/content.ts"
 import {defineContentScript, getService} from "adnbn";
 
@@ -246,7 +246,7 @@ You can group related operations in nested objects: the path `health.status()` s
 Reading a property through a proxy also requires a call: get the value of `version` through `await diagnostics.version()`.
 
 <Tabs>
-    <Tab label="Service">
+    <Tab label="Service source">
 ```ts title="src/diagnostics.service.ts"
 export default () => ({
     version: "1.0.0",
@@ -258,7 +258,7 @@ export default () => ({
 });
 ```
     </Tab>
-    <Tab label="Call">
+    <Tab label="Content script source">
 ```ts title="src/content.ts"
 import {getService} from "adnbn";
 
@@ -482,19 +482,19 @@ The saving approach differs between Manifest V2 and Manifest V3, so each version
 Both declare `name: "screenshot"`, and the `manifestVersion` filter selects one during the build.
 
 <Tabs>
-    <Tab label="Shared class">
+    <Tab label="Shared class source">
         ```ts file="../../../../code/services/AbstractScreenshotService.ts" title="src/services/AbstractScreenshotService.ts"
         ```
     </Tab>
-    <Tab label="Manifest V3">
+    <Tab label="Service source: Manifest V3">
         ```ts file="../../../../code/services/screenshot-mv3.service.ts" title="src/services/screenshot-mv3.service.ts"
         ```
     </Tab>
-    <Tab label="Manifest V2">
+    <Tab label="Service source: Manifest V2">
         ```ts file="../../../../code/services/screenshot-mv2.service.ts" title="src/services/screenshot-mv2.service.ts"
         ```
     </Tab>
-    <Tab label="Command">
+    <Tab label="Command source">
         ```ts file="../../../../code/action.command.ts" title="src/action.command.ts"
         ```
     </Tab>
@@ -554,10 +554,10 @@ Services use the `background` field; there is no separate `service` field in the
 
 For TypeScript hints, the framework also creates `.adnbn/service.d.ts` with the service contracts.
 
-The Quick Start manifest includes the following fields:
+For the Quick Start, Addon Bone generates a manifest with these fields:
 
 <Tabs>
-    <Tab label="Manifest V3">
+    <Tab label="Generated Manifest V3">
 ```json title="manifest.json"
 {
     "manifest_version": 3,
@@ -568,7 +568,7 @@ The Quick Start manifest includes the following fields:
 }
 ```
     </Tab>
-    <Tab label="Manifest V2">
+    <Tab label="Generated Manifest V2">
 ```json title="manifest.json"
 {
     "manifest_version": 2,

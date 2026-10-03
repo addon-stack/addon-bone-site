@@ -1,0 +1,50 @@
+---
+description: "Настройте кнопку расширения на панели браузера: иконку, подсказку и приоритет опций popup в конфигурации Addon Bone."
+---
+
+# Конфигурация
+
+import DocHeading from "@components/DocHeading";
+
+## Кнопка расширения
+
+Используйте `action` в `adnbn.config.ts`, чтобы задать иконку и подсказку кнопки расширения на панели браузера.
+Для иконки укажите имя группы из каталога иконок — той же группы, которую можно выбрать в опции `icon` у popup.
+Для подсказки подойдёт обычный текст или ключ локализации, например `@action.title`.
+
+```ts title="adnbn.config.ts"
+import {defineConfig} from "adnbn";
+
+export default defineConfig({
+    icon: "default",
+    action: {
+        icon: "active",
+        title: "Run extension",
+    },
+});
+```
+
+Опция `icon` на верхнем уровне задаёт иконку расширения в `manifest.icons`.
+`action.icon` задаёт иконку кнопки в `action.default_icon` для Manifest V3 или `browser_action.default_icon` для Manifest V2.
+Addon Bone подставляет пути и размеры иконок из выбранной группы.
+
+<DocHeading level={3} id="popup-overrides" toc={false}>Приоритет опций popup</DocHeading>
+
+Popup с `apply: true` переопределяет каждое поле независимо:
+
+- Иконка: `popup.icon` → `config.action.icon` → `config.icon`.
+- Подсказка: `popup.title` → `config.action.title` → имя расширения.
+
+Например, если popup задаёт только `title`, кнопка сохраняет иконку из `config.action`.
+Popup с `apply: false` не влияет на исходные настройки кнопки.
+Поле `default_popup` добавляет сам popup; конфигурация `action` не создаёт HTML-страницу.
+
+<DocHeading level={3} id="declaring-a-button-without-a-popup" toc={false}>Кнопка без popup</DocHeading>
+
+Объект `action`, в том числе пустой `action: {}`, добавляет кнопку даже без popup или команды для кнопки расширения.
+Он задаёт внешний вид кнопки, но не создаёт команду, точку входа background или обработчик нажатия.
+Чтобы выполнить действие при нажатии, объявите [команду для кнопки расширения](../entrypoints/command.mdx#кнопка-расширения) или зарегистрируйте обработчик в background.
+
+Если `action` не задан, popup с `apply: true` или команда для кнопки расширения всё равно добавляет кнопку.
+Иконка и подсказка выбираются по тем же правилам приоритета.
+Если ни один из этих вариантов не используется, Addon Bone не добавляет кнопку в манифест.

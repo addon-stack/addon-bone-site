@@ -24,7 +24,7 @@ Addon Bone свяжет вызовы с фоновым кодом и предо�
 Content script запросит их названия у сервиса `tabs`, который работает в background: напрямую Tabs API в content script недоступен.
 
 <Tabs>
-    <Tab label="Service">
+    <Tab label="Код сервиса">
 ```ts title="src/tabs.service.ts"
 import {defineService} from "adnbn";
 import {queryTabs} from "adnbn/browser";
@@ -42,7 +42,7 @@ export default defineService({
 });
 ```
     </Tab>
-    <Tab label="Content script">
+    <Tab label="Код content script">
 ```ts title="src/content.ts"
 import {defineContentScript, getService} from "adnbn";
 
@@ -246,7 +246,7 @@ export {};
 Для чтения свойства через proxy тоже нужен вызов: значение `version` получите через `await diagnostics.version()`.
 
 <Tabs>
-    <Tab label="Service">
+    <Tab label="Код сервиса">
 ```ts title="src/diagnostics.service.ts"
 export default () => ({
     version: "1.0.0",
@@ -258,7 +258,7 @@ export default () => ({
 });
 ```
     </Tab>
-    <Tab label="Вызов">
+    <Tab label="Код content script">
 ```ts title="src/content.ts"
 import {getService} from "adnbn";
 
@@ -482,19 +482,19 @@ export {};
 Обе объявляют `name: "screenshot"`, а фильтр `manifestVersion` выбирает одну из них при сборке.
 
 <Tabs>
-    <Tab label="Общий класс">
+    <Tab label="Код общего класса">
         ```ts file="../../../../code/services/AbstractScreenshotService.ts" title="src/services/AbstractScreenshotService.ts"
         ```
     </Tab>
-    <Tab label="Manifest V3">
+    <Tab label="Код сервиса: Manifest V3">
         ```ts file="../../../../code/services/screenshot-mv3.service.ts" title="src/services/screenshot-mv3.service.ts"
         ```
     </Tab>
-    <Tab label="Manifest V2">
+    <Tab label="Код сервиса: Manifest V2">
         ```ts file="../../../../code/services/screenshot-mv2.service.ts" title="src/services/screenshot-mv2.service.ts"
         ```
     </Tab>
-    <Tab label="Команда">
+    <Tab label="Код команды">
         ```ts file="../../../../code/action.command.ts" title="src/action.command.ts"
         ```
     </Tab>
@@ -554,10 +554,10 @@ Addon Bone добавит их в манифест вместе с разреш�
 
 Для подсказок TypeScript фреймворк также создаёт `.adnbn/service.d.ts` с контрактами сервисов.
 
-Для быстрого старта манифест будет содержать следующие поля:
+Для быстрого старта Addon Bone сгенерирует манифест со следующими полями:
 
 <Tabs>
-    <Tab label="Manifest V3">
+    <Tab label="Сгенерированный Manifest V3">
 ```json title="manifest.json"
 {
     "manifest_version": 3,
@@ -568,7 +568,7 @@ Addon Bone добавит их в манифест вместе с разреш�
 }
 ```
     </Tab>
-    <Tab label="Manifest V2">
+    <Tab label="Сгенерированный Manifest V2">
 ```json title="manifest.json"
 {
     "manifest_version": 2,

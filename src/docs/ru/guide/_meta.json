@@ -4,5 +4,11 @@
     "name": "entrypoints",
     "label": "entrypoints",
     "collapsed": false
+  },
+  {
+    "type": "dir",
+    "name": "configuration",
+    "label": "configuration",
+    "collapsed": true
   }
 ]
