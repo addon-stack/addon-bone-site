@@ -1,0 +1,8 @@
+dist/myapp-chrome-mv3
+├── help.html
+├── js/
+│   ├── background.js
+│   └── help.page.js
+└── manifest.json
+.adnbn/
+└── page.d.ts

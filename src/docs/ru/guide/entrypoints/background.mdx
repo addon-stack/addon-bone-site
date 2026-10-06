@@ -9,6 +9,7 @@ import Details from "@components/Details";
 import DocHeading from "@components/DocHeading";
 import Background from "@ru/components/entrypoints/Background";
 import PermissionOptions from "@ru/components/entrypoints/PermissionOptions";
+import PermissionIntro from "@ru/components/entrypoints/PermissionIntro";
 import Entrypoint from "@ru/components/entrypoints/Entrypoint";
 
 Background — точка входа для фоновой логики расширения.
@@ -191,8 +192,7 @@ Addon Bone вызывает `main` как обработчик запуска ф
 
 <DocHeading level={3} id="permission-options" toc={false}>Опции разрешений</DocHeading>
 
-Объявляйте разрешения рядом с кодом, которому они нужны.
-Addon Bone добавит их в манифест вместе с разрешениями остальных включённых точек входа.
+<PermissionIntro />
 
 <Details title="Опции разрешений">
     <PermissionOptions />

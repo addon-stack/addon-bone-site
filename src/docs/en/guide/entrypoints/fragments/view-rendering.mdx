@@ -1,0 +1,17 @@
+`render` sets the page's content.
+Addon Bone creates a container, places it at the start of `document.body`, and mounts the result inside it.
+You do not need to add the container to the document or start the renderer yourself.
+
+The `render` function returns its result synchronously in both adapters.
+To load data, return the initial content, then update the DOM in Vanilla or component state in React.
+
+The file extension determines how the page renders:
+
+| File | Rendering |
+| --- | --- |
+| `.ts`, `.js` | Vanilla: DOM elements, strings, and numbers |
+| `.tsx`, `.jsx` | React: components, JSX, and hooks |
+
+Use `.ts` for plain TypeScript and `.tsx` for React.
+For JavaScript, use `.js` with Vanilla or `.jsx` with React.
+The built-in adapters are Vanilla and React.

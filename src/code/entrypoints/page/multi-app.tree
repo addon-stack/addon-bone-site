@@ -1,0 +1,10 @@
+src
+├── shared/
+│   └── help.page.ts
+└── apps/
+    ├── app-a/
+    │   └── dashboard.page.ts
+    └── app-b/
+        └── reports.page.ts
+adnbn.config.ts
+package.json

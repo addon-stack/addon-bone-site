@@ -1,1 +1,627 @@
+---
+description: "Create extension pages with Page in Addon Bone. Open them by name, build the UI with Vanilla or React, and configure the generated HTML."
+---
+
 # Page
+
+import {PackageManagerTabs, Tab, Tabs} from "@rspress/core/theme";
+import Details from "@components/Details";
+import DocHeading from "@components/DocHeading";
+import Page from "@en/components/entrypoints/Page";
+import PermissionOptions from "@en/components/entrypoints/PermissionOptions";
+import PermissionIntro from "@en/components/entrypoints/PermissionIntro";
+import View from "@en/components/entrypoints/View";
+import ViewRender from "@en/components/entrypoints/ViewRender";
+import Entrypoint from "@en/components/entrypoints/Entrypoint";
+import ViewRendering from "./fragments/view-rendering.mdx";
+import ViewAssets from "./fragments/view-assets.mdx";
+import ViewHtml from "./fragments/view-html.mdx";
+import reactInstallCommands from "../../../../code/entrypoints/page/install/commands.json";
+
+Page creates a separate extension page: help, a dashboard, or another interface that needs its own tab or window.
+You write the page in TypeScript, working with the DOM directly or using React.
+Addon Bone creates HTML and connects the required scripts.
+
+Place your code in `*.page.ts` or `*.page.tsx` and get the page URL through `getPageUrl(name)`.
+For JavaScript, the same names are available with `.js` and `.jsx` extensions.
+Open this URL in a new tab or use it in a link inside the extension.
+Your code decides when to open the page.
+
+## Quick Start
+
+Create a help page and open it with a keyboard shortcut.
+Page works well for help that the user can leave open in a separate tab.
+The command opens the page, and Page provides its content.
+
+<Tabs>
+    <Tab label="Page source">
+```ts file="../../../../code/entrypoints/page/help.page.ts" title="src/help.page.ts"
+```
+    </Tab>
+    <Tab label="Command source">
+```ts file="../../../../code/entrypoints/page/open-help.command.ts" title="src/open-help.command.ts"
+```
+    </Tab>
+</Tabs>
+
+Add these files to an Addon Bone project, build the extension, and load it in your browser.
+Press `Ctrl+Shift+Y` to open a tab titled `Help` with a welcome message.
+On macOS, the browser converts `Ctrl` to `Command`.
+If the shortcut is already in use, choose another in the browser's command settings, as described in the [Command guide](./command#keyboard-shortcuts).
+
+Addon Bone derives the name `help` from the filename.
+`getPageUrl("help")` returns the generated page's URL, and `createTab` opens it.
+`render` contains the text the framework places in the container.
+
+This example needs no additional files, React, or permissions.
+Opening a new tab does not require `tabs`: this permission is needed to read protected tab information, such as titles.
+See the [Tabs API permissions](https://developer.chrome.com/docs/extensions/reference/api/tabs#permissions).
+
+## File Structure
+
+Addon Bone discovers pages by file and directory names.
+Each included Page gets its own HTML; you do not need to list these pages in the manifest manually.
+
+<Tabs>
+    <Tab label="Default structure">
+```tree file="../../../../code/entrypoints/page/default.tree"
+```
+    </Tab>
+    <Tab label="Grouped pages">
+```tree file="../../../../code/entrypoints/page/grouped.tree"
+```
+    </Tab>
+</Tabs>
+
+The following paths are supported for TypeScript and React; `{ts,tsx}` represents the two file extensions:
+
+- `page.{ts,tsx}` and `*.page.{ts,tsx}`;
+- `page/index.{ts,tsx}` and `*.page/index.{ts,tsx}`;
+- `pages/page.{ts,tsx}` and `pages/*.page.{ts,tsx}`;
+- `pages/page/index.{ts,tsx}` and `pages/*.page/index.{ts,tsx}`.
+
+Use `.ts` for Vanilla and `.tsx` for React.
+For JavaScript, use the same paths with `.js` or `.jsx`: `.js` selects Vanilla, and `.jsx` selects React.
+
+:::warning Discovery scope
+If Addon Bone finds pages in `pages/`, it uses them instead of Page files at the top level of the same source scope.
+Move all pages in that scope to `pages/` if you choose grouping.
+
+In a multi-app project, this rule applies separately to the shared layer and the current app, before build filters are checked.
+If a page in `pages/` is then excluded by browser or manifest version, discovery does not fall back to the top level.
+:::
+
+<DocHeading level={3} id="page-names" toc={false}>Page Names and Filenames</DocHeading>
+
+| File | Name for `getPageUrl` | Default HTML |
+| --- | --- | --- |
+| `page.ts` or `page/index.ts` | `page` | `page.html` |
+| `help.page.ts` or `help.page/index.ts` | `help` | `help.html` |
+| `pages/help.page.ts` | `help` | `help.html` |
+
+`name` sets the name for `getPageUrl`, and `as` sets the HTML filename.
+For example, the following file creates `guide.html`, but you open it through `getPageUrl("help")`:
+
+```ts file="../../../../code/entrypoints/page/naming.page.ts" title="src/help.page.ts"
+```
+
+When names collide, Addon Bone adds numeric suffixes: `help`, `help1`, `help2`.
+One page does not replace another.
+Names for API calls and HTML files are assigned separately; check `.adnbn/page.d.ts` for the final name to use in `getPageUrl`.
+Set unique `name` and `as` values for stable links.
+
+## Defining Page
+
+Use `definePage` for option hints and type checking.
+Alternatively, declare options as named exports and export the content or rendering function through `export default`.
+
+<Tabs>
+    <Tab label="Using definePage">
+```ts file="../../../../code/entrypoints/page/help.page.ts" title="src/help.page.ts"
+```
+    </Tab>
+    <Tab label="Named exports">
+```ts file="../../../../code/entrypoints/page/help.named-exports.page.ts" title="src/help.page.ts"
+```
+    </Tab>
+</Tabs>
+
+Both formats support the same options and build filters.
+In the named-export format, declare options through `export const`; a plain `export default` becomes `render`.
+The **primary** badge in the option descriptions marks this mapping.
+
+For fixed text, pass a string directly, as in the example.
+Use a function when you need to create or compute the content at render time.
+
+`render` is optional.
+If all markup is in an HTML template, you can set only `template` and the other page options.
+
+## Opening a Page
+
+Get the URL through `getPageUrl(name)` from `adnbn` and pass it to `createTab` from `adnbn/browser`, as in the Quick Start.
+The function returns a string immediately: `await` is needed to open the tab, not to get the URL.
+
+In the extension's interface, you can use the same URL as a link destination:
+
+```ts file="../../../../code/entrypoints/page/link.page.ts" title="src/navigation.page.ts"
+```
+
+The Quick Start's `help.page.ts` must be included in the same build.
+Addon Bone maps the name to the actual HTML file, so the calling code does not need to guess the path or account for changes to `as`.
+
+`getPages()` from `adnbn` returns a `Map` of names and relative paths for all included Pages.
+Use it to build a menu of extension pages.
+For example, if the build includes `help.page.ts` from the Quick Start, `counter.page.ts` from the Vanilla section, and `navigation.page.ts` below, the result looks like this:
+
+```ts file="../../../../code/entrypoints/page/navigation/pages-map.ts" title="getPages()"
+```
+
+The key is the page name, and the value is the path to its HTML inside the built extension.
+Changing `as` or the output directory changes the path; `getPages()` returns the current value.
+The following Page creates a list of links to every page except itself:
+
+```ts file="../../../../code/entrypoints/page/navigation/navigation.page.ts" title="src/navigation.page.ts"
+```
+
+`getUrl(path)` from `adnbn/browser` turns the relative path into a full extension URL.
+In this example, the list contains links to `counter` and `help`; clicking one opens the selected page in the same tab.
+When you add another Page to the build, it appears in the menu automatically.
+`getPages()` and `getPageUrl()` work in extension contexts; a link navigation or your browser API call opens the page.
+
+Addon Bone creates `.adnbn/page.d.ts` with the included page names for TypeScript hints and argument checking in `getPageUrl`.
+
+If a name is not found at runtime, the function logs `Cannot find page` and builds a URL from the supplied string; it does not check whether a file exists at that address.
+
+<DocHeading level={3} id="external-access" toc={false}>Access from Websites</DocHeading>
+
+You do not need `matches` to open a Page from the extension itself.
+Set it when the HTML must be accessible from a website, for example through a link to the extension page:
+
+<Tabs>
+    <Tab label="Page source">
+```ts file="../../../../code/entrypoints/page/public.page.ts" title="src/help.page.ts"
+```
+    </Tab>
+    <Tab label="Generated Manifest V3">
+```json file="../../../../code/entrypoints/page/public-manifest-v3.json" title="manifest.json"
+```
+    </Tab>
+    <Tab label="Generated Manifest V2">
+```json file="../../../../code/entrypoints/page/public-manifest-v2.json" title="manifest.json"
+```
+    </Tab>
+</Tabs>
+
+The examples show the `web_accessible_resources` field that Addon Bone adds to the manifest.
+In Manifest V3, access is limited to the specified patterns; the browser checks their origin, so use the path `/*`.
+In Manifest V2, the field contains only a resource list and does not restrict sites through `matches`.
+This option makes the extension page accessible; it does not give your code permission to work with a site.
+See [Chrome's web-accessible resources documentation](https://developer.chrome.com/docs/extensions/reference/manifest/web-accessible-resources).
+
+## Page Content
+
+<ViewRendering />
+
+### Vanilla
+
+Pass a DOM element, a non-empty string, or a number directly to `render`, or return one from a function.
+For example, the counter creates a button, and Addon Bone places it in a `main` container:
+
+```ts file="../../../../code/entrypoints/page/counter.page.ts" title="src/counter.page.ts"
+```
+
+Strings render as text: `"<strong>Hello</strong>"` does not become HTML.
+For markup, create DOM elements, use an HTML template, or use React.
+An empty string, `null`, `undefined`, and booleans create neither content nor a container.
+The number `0` renders.
+
+Vanilla calls `render(options)` when the page loads and uses its synchronous result.
+To load data, return an element with initial content and update it from a separate asynchronous function.
+Handle errors in that function: Addon Bone does not await its execution.
+
+Changing a variable does not redraw the DOM by itself: the counter's handler updates the button text explicitly.
+
+### React
+
+Install `react` and `react-dom` if they are not already in the project.
+For TypeScript, you also need `@types/react` and `@types/react-dom`.
+Run the commands in the project directory; for JavaScript, only the first line is needed:
+
+<PackageManagerTabs command={reactInstallCommands} />
+
+Save the entrypoint as `counter.page.tsx`: the file extension selects React.
+For JavaScript with JSX, use `counter.page.jsx`; the examples below contain no TypeScript annotations and work in both formats.
+
+<Tabs>
+    <Tab label="Using definePage">
+```tsx file="../../../../code/entrypoints/page/counter.page.tsx" title="src/counter.page.tsx"
+```
+    </Tab>
+    <Tab label="Named exports">
+```tsx file="../../../../code/entrypoints/page/counter.named-exports.page.tsx" title="src/counter.page.tsx"
+```
+    </Tab>
+</Tabs>
+
+This version replaces `counter.page.ts` from the previous example.
+Clicking the button updates state through `useState`, and React displays the new value.
+Addon Bone creates the container and React root; you define the component in `render`.
+In the named-export format, export the component directly as an arrow function through `export default`.
+
+If the component is already declared separately, export it directly through `export default Counter`.
+Addon Bone passes the component to React and renders it in the container:
+
+```tsx file="../../../../code/entrypoints/page/counter.component.page.tsx" title="src/counter.page.tsx"
+```
+
+This is another implementation of the same page; choose one file variant.
+If you need options, add named exports, such as `export const title = "Counter"`.
+
+The `render` function runs as a React component, so hooks work as usual.
+Keep the `React` import from the example: the current JSX transform uses it at runtime.
+Load data through effects or your chosen data-loading library.
+Show the initial content, then update component state when the data is ready.
+The component itself must return its result synchronously.
+
+<DocHeading level={3} id="page-render-types" toc={false}>Render Types and Props</DocHeading>
+
+For a reusable function, import `ViewRenderHandler<PageProps>` from `adnbn`; for a React component, use `ViewRenderReactComponent<PageProps>`.
+`PageProps` describes the page options the function receives.
+Both contracts require a synchronous result.
+
+<Tabs>
+    <Tab label="Vanilla">
+```ts file="../../../../code/entrypoints/page/typed.page.ts" title="src/report.page.ts"
+```
+    </Tab>
+    <Tab label="React">
+```tsx file="../../../../code/entrypoints/page/typed.page.tsx" title="src/report.page.tsx"
+```
+    </Tab>
+</Tabs>
+
+An explicit annotation is optional: TypeScript also accepts a regular function with an inferred synchronous return type.
+In React 19, `React.FC` permits a Promise, so it cannot be passed directly to the strict `render` contract.
+Use `ViewRenderReactComponent<PageProps>`, an inferred type, or a synchronous JSX wrapper around an existing synchronous component.
+The wrapper does not add support for asynchronous client components.
+
+<DocHeading level={3} id="container-examples" toc={false}>The Content Container</DocHeading>
+
+`container` sets the outer element, and `render` sets what appears inside it.
+If you only need a tag, pass a string, such as `container: "main"`.
+To set a class or other element properties, pass an object:
+
+<Tabs>
+    <Tab label="Container properties">
+```ts file="../../../../code/entrypoints/page/container/options.page.ts" title="src/help.page.ts"
+```
+    </Tab>
+    <Tab label="Container factory">
+```ts file="../../../../code/entrypoints/page/container/factory.page.ts" title="src/help.page.ts"
+```
+    </Tab>
+</Tabs>
+
+The first version creates `main` with the `help-page` class, and `render` returns an `h1` heading inside it.
+In the second version, a function creates the same container and adds an `aria-label`, a region name for assistive technologies.
+Use a function when you need to call DOM methods or compute container properties from the page options.
+
+In Vanilla, Addon Bone calls the synchronous `render` function, then creates the container, adds it at the start of `body`, and places the returned content inside it.
+If you pass a value directly, Addon Bone uses it as-is.
+
+In React, Addon Bone prepares a React element, creates the container, adds it at the start of `body`, and passes the element to React for rendering.
+React calls a `render` function supplied as a component when it mounts; React also manages subsequent UI updates.
+
+Do not add the returned elements to `body` yourself.
+Both functions receive the page options without `render` and `container`; the examples use `title` for the heading and region name.
+The container function can also be asynchronous: Addon Bone awaits its result before mounting.
+
+<DocHeading level={3} id="page-lifecycle" toc={false}>Loading and Closing</DocHeading>
+
+Module code and initial rendering run each time a Page loads.
+Multiple open tabs of the same page have separate DOMs and state.
+Closing a tab loses its in-memory state; save any data you need in storage.
+
+When rebuilding the interface, Addon Bone first releases the previous result: it unmounts the React root, if one was created, and removes the container.
+Release React component subscriptions in the effect's cleanup function.
+
+## Styles and Modules
+
+<ViewAssets />
+
+You can keep components in separate files and import them into a Page.
+In this example, the counter component uses its own CSS Module, and the entrypoint passes the component to `render`:
+
+<Tabs>
+    <Tab label="Page source">
+```tsx file="../../../../code/entrypoints/page/styles/counter.page.tsx" title="src/counter.page.tsx"
+```
+    </Tab>
+    <Tab label="Counter component">
+```tsx file="../../../../code/entrypoints/page/styles/Counter.tsx" title="src/Counter.tsx"
+```
+    </Tab>
+    <Tab label="Stylesheet">
+```css file="../../../../code/entrypoints/page/styles/counter.css" title="src/counter.css"
+```
+    </Tab>
+    <Tab label="Generated HTML">
+```html file="../../../../code/entrypoints/page/styles/generated.html" title="counter.html"
+```
+    </Tab>
+</Tabs>
+
+Addon Bone processes CSS as CSS Modules: `styles.counter` contains the final class name.
+The button gets a blue background, white text, and spacing; clicking it increments the counter.
+The bundler includes the component and its CSS in the Page build and connects the required files to HTML.
+This version replaces the previous `counter.page.tsx` implementation; use the same React dependencies.
+For CSS with the original selector names, import with `?asis`, such as `import "./counter.css?asis"`.
+The output example uses simple filenames; your build's filenames may contain hashes.
+
+## HTML Configuration
+
+<ViewHtml />
+
+<DocHeading level={3} id="html-tags" toc={true}>Additional Resources and Meta Tags</DocHeading>
+
+Use these options to connect ready-to-use CSS or JavaScript separately from entrypoint imports, such as a script that has already been bundled.
+In this example, a string connects additional CSS, an object sets script attributes, and the `metas` array adds a page description and supported color schemes.
+Add both resources to `src/public`:
+
+<Tabs>
+    <Tab label="Page source">
+```ts file="../../../../code/entrypoints/page/html/help.page.ts" title="src/help.page.ts"
+```
+    </Tab>
+    <Tab label="Stylesheet">
+```css file="../../../../code/entrypoints/page/html/page.css" title="src/public/page.css"
+```
+    </Tab>
+    <Tab label="Additional script">
+```js file="../../../../code/entrypoints/page/html/page-extra.js" title="src/public/page-extra.js"
+```
+    </Tab>
+    <Tab label="Generated HTML">
+```html file="../../../../code/entrypoints/page/html/generated.html" title="help.html"
+```
+    </Tab>
+</Tabs>
+
+Addon Bone copies CSS and JavaScript from `src/public` and adds their tags to HTML.
+The page gets spacing and a system font, and the script sets `data-page="help"` on the `html` element.
+The `render` content appears when the page script runs, so it is not present in the generated HTML yet.
+
+For the same CSS and JavaScript, you can use the combined `tags` list:
+
+```ts file="../../../../code/entrypoints/page/html/tags.page.ts" title="src/help.page.ts"
+```
+
+This is an alternative way to declare resources.
+If you list the same files in both `tags` and `links` / `scripts`, they are connected twice.
+
+<DocHeading level={3} id="html-template" toc={true}>Custom Template</DocHeading>
+
+Use a template when some markup must be in the HTML before `render` runs.
+In this example, the template contains a footer, and `render` adds text in a `main` element before it:
+
+<Tabs>
+    <Tab label="Page source">
+```ts file="../../../../code/entrypoints/page/template/help.page.ts" title="src/help.page.ts"
+```
+    </Tab>
+    <Tab label="HTML template">
+```html file="../../../../code/entrypoints/page/template/help.html" title="src/help.html"
+```
+    </Tab>
+</Tabs>
+
+The `./help.html` path is resolved alongside `help.page.ts`.
+Do not add the entrypoint script to the template manually: Addon Bone connects the built file.
+If the template already contains all the content you need, you can omit `render`.
+
+<DocHeading level={3} id="page-csp" toc={true}>Content Security Policy</DocHeading>
+
+Use `csp` to set where the page can load resources from and which code it can execute.
+Addon Bone writes these rules to the manifest, and the browser checks resource loads against them.
+
+For example, an image-processing library may need WebAssembly, and a preview may need images from data URLs.
+Set `wasm: true` and add `CspSource.Data` to `sources.image`:
+
+<Tabs>
+    <Tab label="Page source">
+```ts file="../../../../code/entrypoints/page/csp.page.ts" title="src/help.page.ts"
+```
+    </Tab>
+    <Tab label="Generated Manifest V3">
+```json file="../../../../code/entrypoints/page/csp-manifest-v3.json" title="manifest.json"
+```
+    </Tab>
+    <Tab label="Generated Manifest V2">
+```json file="../../../../code/entrypoints/page/csp-manifest-v2.json" title="manifest.json"
+```
+    </Tab>
+</Tabs>
+
+The manifest tabs show the policy Addon Bone generates.
+These settings allow the required capabilities; implement image processing and display in the page's code.
+The policy is shared across extension pages: a setting in one Page also applies to the other included pages.
+Sandbox has its own separate policy.
+
+Use `CspSource` from `adnbn` for predefined values, and strings for specific addresses:
+
+| Value | What it adds to the policy |
+| --- | --- |
+| `CspSource.Self` | `'self'`: the extension's own resources |
+| `CspSource.None` | `'none'`: blocks resources for the selected directive; use it separately from other sources |
+| `CspSource.Data` | `data:`: for example, images from data URLs |
+| `CspSource.Blob` | `blob:`: for example, images from Blob URLs |
+| `CspSource.UnsafeInline` | `'unsafe-inline'`: for example, inline styles in `sources.style` |
+
+**Server requests and UI styles.** If the page gets data through `fetch` or WebSocket, list the server addresses in `sources.connect`.
+If a UI library adds styles directly to HTML, allow them through `CspSource.UnsafeInline` in `sources.style`.
+This policy allows fonts from files packaged with the extension:
+
+<Tabs>
+    <Tab label="Page source">
+```ts file="../../../../code/entrypoints/page/csp/network.page.ts" title="src/network.page.ts"
+```
+    </Tab>
+    <Tab label="Generated Manifest V3">
+```json file="../../../../code/entrypoints/page/csp/network-manifest-v3.json" title="manifest.json"
+```
+    </Tab>
+    <Tab label="Generated Manifest V2">
+```json file="../../../../code/entrypoints/page/csp/network-manifest-v2.json" title="manifest.json"
+```
+    </Tab>
+</Tabs>
+
+The output shows the server access and CSP fields that Addon Bone adds to the manifest.
+In Manifest V2, patterns from `hostPermissions` go into `permissions`; in Manifest V3, they go into `host_permissions`.
+Replace the example addresses with your server's addresses.
+Make the requests in the page's code; `csp` only sets the rules for loading them.
+For HTTP requests to an API, declare `hostPermissions` in the same Page, as in the example.
+`csp.sources.connect` takes a source, and `hostPermissions` takes a URL pattern with `/*`.
+These settings are independent: Addon Bone does not infer permissions from CSP or add CSP from permissions.
+`CspSource.Self` keeps access to the extension's own resources.
+Here, `CspSource.UnsafeInline` allows CSS in `style` tags and attributes; the JavaScript execution rule remains unchanged.
+
+**Image previews and background processing.** When a user selects a file for preview, you can display the image through a data URL or Blob URL.
+Add these sources to `sources.image`.
+For lengthy processing, you can use a Web Worker packaged with the extension; `sources.worker` sets where it loads from.
+If the interface does not need embedded pages in iframes, set `sources.frame` to `CspSource.None`:
+
+<Tabs>
+    <Tab label="Page source">
+```ts file="../../../../code/entrypoints/page/csp/workers.page.ts" title="src/workers.page.ts"
+```
+    </Tab>
+    <Tab label="Generated Manifest V3">
+```json file="../../../../code/entrypoints/page/csp/workers-manifest-v3.json" title="manifest.json"
+```
+    </Tab>
+</Tabs>
+
+This version allows previews from memory and a worker from extension files, and blocks iframe loading.
+Use `wasm: true` if the processor uses WebAssembly; you can omit it for a regular JavaScript worker.
+
+Option names differ from the directive names in the generated string:
+
+| Option in `sources` | CSP directive | Use |
+| --- | --- | --- |
+| `connect` | `connect-src` | `fetch` requests and WebSocket connections |
+| `style` | `style-src` | Stylesheets and styles in HTML |
+| `font` | `font-src` | Font loading |
+| `image` | `img-src` | Images |
+| `media` | `media-src` | Audio and video |
+| `worker` | `worker-src` | Web Worker |
+| `frame` | `frame-src` | Pages inside iframes |
+| `child` | `child-src` | Additional rules for nested contexts and workers |
+
+Addon Bone adds `script-src 'self'` and `object-src 'self'` automatically, and also adds `'wasm-unsafe-eval'` when `wasm: true`.
+Configure the `csp` object; the framework builds the final manifest string for you.
+
+Choose the settings your interface needs.
+If several included pages set `csp`, Addon Bone combines their sources and removes duplicates.
+For example, coordinate blocking iframes through `CspSource.None` with the other pages: a source they allow expands the shared policy.
+
+In Chrome Manifest V3, JavaScript code must be packaged with the extension: additional `scripts` do not allow remote code, inline handlers, or `eval`.
+`csp` also does not grant browser API permissions or site access.
+See [Chrome's CSP rules for extension pages](https://developer.chrome.com/docs/extensions/reference/manifest/content-security-policy).
+
+## Options
+
+Options apply to the current file: they set the page name, content, HTML settings, and conditions for inclusion in the build.
+
+<DocHeading level={3} id="page-options" toc={false}>Page Options</DocHeading>
+
+<Page />
+
+<DocHeading level={3} id="view-options" toc={false}>View Options</DocHeading>
+
+`render` and `container` control the content; the other options configure HTML and the resource policy.
+The formats for `tags`, `links`, `scripts`, `metas`, and `csp` are shown in the [HTML configuration examples](#html-configuration).
+
+<ViewRender primary />
+<View />
+
+<DocHeading level={3} id="page-permissions" toc={false}>Permissions</DocHeading>
+
+Page can access extension APIs directly.
+
+<PermissionIntro />
+
+<Details title="Permission Options">
+    <PermissionOptions />
+</Details>
+
+<DocHeading level={3} id="common-options" toc={false}>Common Options</DocHeading>
+
+All declared filters must match the current build.
+If a file is excluded, its HTML, script, and name for `getPageUrl` are excluded from that build; its permissions and CSP are not added either.
+A permission remains in the manifest if another included entrypoint needs it or it is declared in the extension configuration.
+
+<Details title="Common Options">
+    <Entrypoint />
+</Details>
+
+## Build Output
+
+Addon Bone creates HTML, scripts, and `.adnbn/page.d.ts` with the names of included pages.
+For the Quick Start, the main files for app `myapp` in Chrome Manifest V3 are arranged like this:
+
+```tree file="../../../../code/entrypoints/page/output.tree"
+```
+
+The example shows the main files with simple script names.
+The actual build may contain shared chunks and hashes in filenames; change the HTML path through `as` and the output directory configuration.
+
+Page does not create a separate `page` field in the manifest and does not open at build time.
+In the Quick Start, the command adds `commands` and the background that executes it.
+`matches` adds HTML to `web_accessible_resources`, `csp` adds resource policy settings, and permission options add extension permissions.
+
+## Multi-App Structure
+
+In a project with several apps, put shared pages in `src/shared` and app-specific pages in `src/apps/<app>`.
+For a single-app project, use the regular `src` directory; a separate shared layer is not required.
+
+```tree file="../../../../code/entrypoints/page/multi-app.tree"
+```
+
+To include both shared help and an app's own dashboard, enable `mergePages`:
+
+```ts file="../../../../code/entrypoints/page/multi-app.config.ts" title="adnbn.config.ts"
+```
+
+`mergePages` defaults to `false`:
+
+- With `true`, the build includes pages from the shared layer and the current app together.
+- With `false`, if the app has Page files, its entire file set replaces the shared set.
+- If the app has no Page files, the shared set is used regardless of `mergePages`.
+
+The app/shared selection happens before build filters are applied.
+If an app file is found but then excluded, for example by `includeBrowser`, shared pages are not restored automatically.
+Enable `mergePages` to use shared and app-specific pages together.
+Options from different files are not merged into one definition.
+
+## Best Practices
+
+- **Open pages through `getPageUrl`.** The name used by the call stays stable when `as` changes if you set a unique `name`.
+- **Choose the file extension for the renderer.** `.ts` / `.js` use Vanilla; `.tsx` / `.jsx` use React.
+- **Keep required state outside the tab.** Closing or reloading the page recreates its state.
+- **Add `matches` only for access from websites.** This option is not needed for navigation inside the extension.
+- **Package executable code with the extension.** Connecting a script through HTML does not override the browser's CSP requirements.
+
+## Debugging
+
+1. **HTML is missing from the build.** Check the filename, `pages/` directory, filters, and `mergePages`. Make sure the file is included in the selected page set.
+2. **`getPageUrl` reports `Cannot find page`.** Check the name in `.adnbn/page.d.ts` and the current build's filters. After renaming a file, set the previous `name` or update the calls.
+3. **The page opens without content.** Check the `render` result and the page's console. Vanilla needs a DOM element, a non-empty string, or a number; React needs a `.tsx` / `.jsx` file and installed dependencies.
+4. **Vanilla reports `Vanilla view render must be synchronous`.** Make sure `render` is not declared as `async` and does not return a Promise or an object with a `then` method. Addon Bone does not await this result or create a container. Return the initial content synchronously and load data separately.
+5. **HTML tags appear as text.** A string from `render` is displayed literally. Create DOM elements or use JSX or a template for markup.
+6. **CSS or an additional script does not load.** Check that the file is in the build and verify its path in `links`, `scripts`, or `tags`. Put ready-to-use resources in `src/public`; check the `template` path relative to the entrypoint.
+7. **A link from a website is blocked.** Check `matches` and `web_accessible_resources` in the final manifest. For Manifest V3, specify the site's origin with the path `/*`.
+8. **Page name hints are missing.** Check that `.adnbn/page.d.ts` exists and that the generated declarations are included in the project's TypeScript configuration.
+9. **A browser API is unavailable or returns incomplete data.** Check the permission in the final manifest's `permissions` and the conditions for including the Page. Reload the built extension after changing permissions.
+10. **A server request is blocked.** Check the address in `host_permissions` for Manifest V3 or `permissions` for Manifest V2, and the source in CSP `connect-src`. If site access is optional, get the user's approval first; a pattern in the manifest does not mean access has been granted.
+11. **A permission remains after excluding a Page.** Check other included entrypoints and the extension configuration: Addon Bone combines their requirements.

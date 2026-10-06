@@ -1,0 +1,7 @@
+Import your styles and modules in the entrypoint's source code.
+Addon Bone processes TypeScript, JSX, CSS, and SCSS and connects the files the page needs to its HTML.
+
+Nearby modules with components and functions become dependencies of this entrypoint.
+For another independent page, create a separate entrypoint file; each page gets its own HTML.
+The bundler may extract dependencies shared by several pages into separate files, called chunks.
+Addon Bone adds the required scripts and stylesheets to HTML automatically; you do not need to list chunks manually.

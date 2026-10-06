@@ -9,6 +9,7 @@ import Details from "@components/Details";
 import DocHeading from "@components/DocHeading";
 import Command, {CommandBackgroundOptions} from "@ru/components/entrypoints/Command";
 import PermissionOptions from "@ru/components/entrypoints/PermissionOptions";
+import PermissionIntro from "@ru/components/entrypoints/PermissionIntro";
 import Entrypoint from "@ru/components/entrypoints/Entrypoint";
 
 Command позволяет запускать действия расширения сочетанием клавиш: например, открыть страницу, переключить настройку или выполнить операцию для текущей вкладки.
@@ -265,8 +266,7 @@ Addon Bone подключает `execute` к событию нажатия кн�
 
 <DocHeading level={3} id="permission-options" toc={false}>Опции разрешений</DocHeading>
 
-Объявляйте разрешения рядом с командой, которой они нужны.
-Addon Bone добавит их в манифест вместе с разрешениями остальных включённых точек входа.
+<PermissionIntro />
 
 <Details title="Опции разрешений">
     <PermissionOptions />

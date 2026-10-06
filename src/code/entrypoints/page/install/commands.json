@@ -1,0 +1,6 @@
+{
+  "npm": "npm install react react-dom\nnpm install --save-dev @types/react @types/react-dom",
+  "pnpm": "pnpm add react react-dom\npnpm add --save-dev @types/react @types/react-dom",
+  "yarn": "yarn add react react-dom\nyarn add --dev @types/react @types/react-dom",
+  "bun": "bun add react react-dom\nbun add --dev @types/react @types/react-dom"
+}

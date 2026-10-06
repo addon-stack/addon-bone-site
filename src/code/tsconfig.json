@@ -3,6 +3,6 @@
   "compilerOptions": {
     "noCheck": true
   },
-  "include": ["entrypoints/**/*.ts"],
+  "include": ["entrypoints/**/*.ts", "entrypoints/**/*.tsx"],
   "exclude": []
 }

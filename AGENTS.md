@@ -109,6 +109,17 @@ Keep the tone calm, direct, and precise.
   keep the actual filename in the code-fence title.
 - Give source and configuration code fences a file title. Use Addon Bone public
   aliases such as `adnbn/browser` and `adnbn/storage` where wrappers exist.
+- Order example imports by group: Addon Bone and its public aliases first,
+  React next, then other dependencies, styles and assets, and local modules.
+  Separate these groups with one blank line.
+- Use examples that reflect a useful application task. Show imported components
+  or functions doing real work; do not add a separate module just to export a
+  constant used as placeholder content.
+- Do not leave an empty final line in any displayed code example, in any
+  documentation locale. End external snippets at the final code character,
+  without a terminal newline that creates an empty rendered line. Do not leave
+  blank lines before the closing fence of inline snippets. Recheck the rendered
+  final line after formatting examples.
 - Extract examples shared across documentation languages into separate files
   under `src/code/`, regardless of their length, and reuse the same file through
   the code fence's `file` attribute in every locale. For entrypoint examples,
@@ -122,11 +133,19 @@ Keep the tone calm, direct, and precise.
   content that differs between documentation languages, such as comments,
   user-facing strings, or translation values. Translated surrounding prose,
   tab labels, and code-fence titles do not justify duplicating an example.
-- Keep shared TypeScript examples as `.ts` files in the `src/code/tsconfig.json`
+- Keep shared TypeScript examples as `.ts` or `.tsx` files in the `src/code/tsconfig.json`
   project, which uses `noCheck` for documentation excerpts. Keep `src/code/`
   excluded from the site's typecheck. Do not add mock framework types, install
   example dependencies, or add suppression comments to displayed code just to
   remove editor diagnostics. Preserve existing localized `.ts.txt` snippets.
+- Reuse common page-rendering and HTML explanations for Page, Popup, Sidebar,
+  Offscreen, Sandbox, History, New Tab, and Options. Use `Опции страницы` for
+  the Russian View option group. Keep each entrypoint's own lifecycle and
+  primary-option mapping explicit; do not apply these shared lifecycle blocks
+  to Content Script, which has its own context and mounting API.
+- Show Vanilla and React examples for page UI. Explain the current file-extension
+  mapping and required dependencies; add plugin-provided adapters only after
+  their implementation is verified in the framework.
 - Preserve technical facts when simplifying wording: runtime context, async
   behavior, permissions, serialization limits, filters, and generated output.
 - Verify framework behavior against the current sibling `addon-bone` source and

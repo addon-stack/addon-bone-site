@@ -9,6 +9,7 @@ import Details from "@components/Details";
 import DocHeading from "@components/DocHeading";
 import Service, {ServiceBackgroundOptions} from "@ru/components/entrypoints/Service";
 import PermissionOptions from "@ru/components/entrypoints/PermissionOptions";
+import PermissionIntro from "@ru/components/entrypoints/PermissionIntro";
 import Entrypoint from "@ru/components/entrypoints/Entrypoint";
 
 Service позволяет вынести общую логику расширения в background и вызывать её из popup, content script и других частей расширения.
@@ -356,8 +357,7 @@ Addon Bone обрабатывает опции каждого файла отд�
 
 <DocHeading level={3} id="permission-options" toc={false}>Опции разрешений</DocHeading>
 
-Объявляйте разрешения в сервисе, которому они нужны.
-Addon Bone добавит их в манифест вместе с разрешениями остальных включённых точек входа.
+<PermissionIntro />
 
 <Details title="Опции разрешений">
     <PermissionOptions />

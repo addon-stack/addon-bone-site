@@ -1,0 +1,8 @@
+src
+├── pages/
+│   ├── help.page.ts
+│   └── dashboard.page/
+│       └── index.tsx
+└── open-help.command.ts
+adnbn.config.ts
+package.json

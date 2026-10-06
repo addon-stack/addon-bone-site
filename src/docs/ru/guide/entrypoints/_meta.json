@@ -1,1 +1,6 @@
-["background", "command", "service"]
+[
+  "background",
+  "command",
+  "service",
+  "page"
+]

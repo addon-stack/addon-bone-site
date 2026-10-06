@@ -1,0 +1,6 @@
+{
+  "host_permissions": ["https://api.example.com/*"],
+  "content_security_policy": {
+    "extension_pages": "script-src 'self'; object-src 'self'; connect-src 'self' https://api.example.com wss://socket.example.com; style-src 'self' 'unsafe-inline'; font-src 'self';"
+  }
+}

@@ -1,4 +1,5 @@
 import {defineService} from "adnbn";
+
 import {ArticleParser, type ArticleSnapshot} from "@acme/article-parser";
 
 class ArticleService {

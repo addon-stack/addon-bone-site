@@ -1,0 +1,22 @@
+Addon Bone creates HTML and connects the entrypoint's scripts and dependencies.
+Usually, you only need to set `title` and the content through `render`.
+
+For ready-to-use resources loaded separately from imports, use `links` and `scripts`; for additional meta tags, use `metas`.
+A string in `links` or `scripts` sets the resource path, an object with `path` lets you add `attributes`, and an array combines several entries.
+
+Use `metas` to add page information, such as its description or supported color schemes.
+Pass an object with `attributes`: set the meta tag's attributes there, such as `name` and `content`.
+Use an array of these objects for several meta tags.
+Addon Bone adds a separate `<meta>` for each object to the `<head>` of the generated HTML.
+Each entry must contain a non-empty `attributes` object.
+
+`tags` combines links and scripts in one list: for plain paths, Addon Bone chooses the tag type from the `.css` or `.js` extension.
+Use separate `links` and `scripts` when you need to specify the tag type explicitly, for example for an icon.
+
+Resource paths in these settings refer to files in the built extension.
+Put ready-to-use files in `src/public` so Addon Bone copies them into the build.
+These tags add references to ready-to-use files; import the page's own code and styles as shown above.
+
+For custom HTML markup, set `template`: the template path is resolved relative to the entrypoint file.
+Addon Bone connects the build's scripts itself.
+The `render` container is added at the start of `body`; existing template markup is preserved.
