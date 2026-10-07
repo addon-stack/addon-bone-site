@@ -26,7 +26,7 @@
     "noUnusedParameters": true
   },
   "exclude": ["src/code/**"],
-  "include": ["src", "theme", "rspress.config.ts"],
+  "include": ["src", "theme", "plugins", "rspress.config.ts"],
   "mdx": {
     "checkMdx": true
   }

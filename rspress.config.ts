@@ -5,6 +5,8 @@ import {defineConfig} from "@rspress/core";
 
 import fileTree from "rspress-plugin-file-tree";
 
+import {mdxSearchIndex} from "./plugins/mdx-search-index";
+
 export default defineConfig({
 	root: path.join(__dirname, "src/docs"),
 	llms: true,
@@ -55,7 +57,7 @@ export default defineConfig({
 			},
 		],
 	},
-	plugins: [fileTree()],
+	plugins: [fileTree(), mdxSearchIndex()],
 	builderConfig: {
 		plugins: [sass()],
 		server: {

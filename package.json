@@ -9,17 +9,20 @@
     "check": "biome check --write",
     "format": "biome format --write",
     "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test:search": "node --experimental-strip-types --test plugins/mdx-search-index/mdx-search-index.test.ts",
     "prepare": "husky"
   },
   "dependencies": {
-    "@rspress/core": "^2.0.1",
+    "@rspress/core": "2.0.2",
     "classnames": "^2.5.1"
   },
   "devDependencies": {
     "@biomejs/biome": "2.3.8",
     "@commitlint/cli": "^20.4.1",
     "@commitlint/config-conventional": "^20.4.1",
+    "@mdx-js/mdx": "3.1.1",
     "@rsbuild/plugin-sass": "^1.5.0",
+    "@types/mdast": "4.0.4",
     "@types/node": "^22.8.1",
     "@types/react": "^19.2.10",
     "@types/react-dom": "^19.2.3",
