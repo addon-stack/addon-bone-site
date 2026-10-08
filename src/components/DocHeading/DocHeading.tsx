@@ -1,5 +1,5 @@
 import cn from "classnames";
-import type {ComponentPropsWithoutRef} from "react";
+import {Children, type ComponentPropsWithoutRef} from "react";
 
 type BaseDocHeadingProps = {
 	toc?: boolean;
@@ -47,6 +47,12 @@ export default (props: DocHeadingProps) => {
 	const {level = 1, toc = true, id, className, children, ...rest} = props;
 
 	const Tag = `h${level}` as const;
+	// Rspress adds line breaks between serialized inline Markdown nodes.
+	const content = process.env.__SSR_MD__
+		? Children.map(children, (child) =>
+				typeof child === "string" ? child.replace(/\r?\n/g, "") : child,
+			)
+		: children;
 
 	return (
 		<Tag id={id} className={cn(className, {"rp-toc-include": toc})} {...rest}>
@@ -58,7 +64,7 @@ export default (props: DocHeadingProps) => {
 					</a>
 				</>
 			)}
-			{children}
+			{content}
 		</Tag>
 	);
 };

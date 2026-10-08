@@ -1,0 +1,496 @@
+---
+description: "Создавайте страницу новой вкладки через New Tab в Addon Bone. Используйте Vanilla или React, настройте HTML и учтите поддержку браузеров."
+---
+
+# New Tab
+
+import {PackageManagerTabs, Tab, Tabs} from "@rspress/core/theme";
+import Details from "@components/Details";
+import DocHeading from "@components/DocHeading";
+import FrameworkTabs from "@components/FrameworkTabs";
+import PermissionIntro from "@ru/components/entrypoints/PermissionIntro";
+import PermissionOptions from "@ru/components/entrypoints/PermissionOptions";
+import ViewRender from "@ru/components/entrypoints/ViewRender";
+import View from "@ru/components/entrypoints/View";
+import Entrypoint from "@ru/components/entrypoints/Entrypoint";
+import ViewRendering from "./fragments/view-rendering.mdx";
+import ViewAssets from "./fragments/view-assets.mdx";
+import ViewHtml from "./fragments/view-html.mdx";
+import reactInstallCommands from "../../../../code/entrypoints/page/install/commands.json";
+
+New Tab заменяет страницу, которую браузер показывает при открытии новой пустой вкладки.
+Используйте её для стартовой панели, заметок или другого интерфейса, к которому пользователь обращается из каждой новой вкладки.
+Вы пишете код на TypeScript, работая с DOM напрямую или используя React; Addon Bone создаёт HTML и регистрирует его в манифесте.
+
+Разместите код в `newtab.ts` или `newtab.tsx`.
+Браузер откроет страницу сам: отдельная команда или вызов открытия не нужны.
+New Tab меняет именно новую вкладку; домашняя страница и страницы, открываемые при запуске браузера, настраиваются отдельно.
+
+## Быстрый старт
+
+Создадим новую вкладку с простым приветствием:
+
+```ts file="../../../../code/entrypoints/newtab/newtab.ts" title="src/newtab.ts"
+```
+
+Добавьте файл в проект Addon Bone, соберите расширение и загрузите его в браузер с поддержкой New Tab.
+Откройте новую вкладку через `Ctrl+T`, а на macOS — через `Command+T`.
+Вы увидите текст `Welcome to your new tab!` и заголовок вкладки `New Tab`.
+В Safari сначала выберите расширение для новых вкладок в настройках браузера, как описано ниже.
+
+Addon Bone создаст `newtab.html` и запишет его путь в `chrome_url_overrides.newtab`.
+Строку из `render` фреймворк отобразит как текст, создав контейнер автоматически.
+Для примера не нужны дополнительные файлы, React или разрешения.
+
+## Поддержка браузеров
+
+New Tab работает в Manifest V2 и Manifest V3, если браузер поддерживает переопределение новой вкладки.
+Текущая сборка Addon Bone учитывает следующие браузеры:
+
+| Браузер | Поведение |
+| --- | --- |
+| Chrome, Chromium, Edge | Addon Bone регистрирует New Tab в манифесте |
+| Firefox | Поддерживается в настольном браузере; Firefox для Android не поддерживает это переопределение |
+| Safari на macOS | Поддерживается с Safari 14.1; пользователь должен выбрать расширение для новых вкладок |
+| Safari на iOS | Браузер поддерживает переопределение с Safari 15; пользователь должен выбрать расширение для новых вкладок |
+| Opera | Браузер не поддерживает замену страницы новой вкладки через расширение. Поэтому Addon Bone не добавляет HTML, скрипт, разрешения и CSP New Tab в сборку |
+
+В Safari на macOS новая вкладка выбирается в общих настройках браузера, а на iOS — в настройках расширений.
+Наличие страницы в манифесте само по себе не меняет этот выбор пользователя.
+Поддержка версий и платформ приведена в [таблице совместимости Mozilla](https://developer.mozilla.org/en-US/docs/Mozilla/Add-ons/WebExtensions/manifest.json/chrome_url_overrides#browser_compatibility).
+
+В Chrome расширения не заменяют New Tab в окнах incognito.
+Проверяйте результат в обычном окне; подробнее — [переопределение страниц Chrome](https://developer.chrome.com/docs/extensions/develop/ui/override-chrome-pages).
+
+Если для неподдерживаемого браузера нужен похожий интерфейс, создайте обычную [Page](./page.mdx) и предусмотрите её открытие в своём коде.
+
+## Структура файлов
+
+Addon Bone находит New Tab по имени файла или каталога.
+Выберите один из вариантов размещения:
+
+<Tabs>
+    <Tab label="Обычная структура">
+```tree file="../../../../code/entrypoints/newtab/default.tree"
+```
+    </Tab>
+    <Tab label="Группировка файлов">
+```tree file="../../../../code/entrypoints/newtab/grouped.tree"
+```
+    </Tab>
+</Tabs>
+
+Для TypeScript поддерживаются следующие пути; `{ts,tsx}` обозначает два возможных расширения:
+
+- `newtab.{ts,tsx}` и `*.newtab.{ts,tsx}`;
+- `newtab/index.{ts,tsx}` и `*.newtab/index.{ts,tsx}`;
+- `newtabs/newtab.{ts,tsx}` и `newtabs/*.newtab.{ts,tsx}`;
+- `newtabs/newtab/index.{ts,tsx}` и `newtabs/*.newtab/index.{ts,tsx}`.
+
+Используйте `.ts` для Vanilla и `.tsx` для React.
+Для JavaScript используйте те же пути с `.js` или `.jsx`: `.js` выбирает Vanilla, а `.jsx` — React.
+
+:::warning Область поиска
+Если Addon Bone найдёт точки входа в `newtabs/`, он использует их вместо New Tab-файлов на верхнем уровне той же области исходников.
+Перенесите нужные реализации в `newtabs/`, если выбираете группировку.
+
+В multi-app проекте правило действует отдельно для shared-слоя и текущего приложения, до проверки фильтров сборки.
+Если файлы в `newtabs/` затем исключены фильтрами, поиск на верхний уровень не возвращается.
+:::
+
+<DocHeading level={3} id="newtab-selection" toc={false}>Выбор реализации</DocHeading>
+
+В сборку входит одна New Tab.
+Если после фильтров осталось несколько подходящих файлов, Addon Bone выбирает последний по приоритету: локальные файлы имеют преимущество перед файлами плагинов, а среди локальных файлов одного уровня выбирается последний по порядку путей.
+Остальные кандидаты не создают дополнительные страницы и не добавляют свои разрешения или CSP.
+
+Для предсказуемого выбора оставляйте одну реализацию на сборку или разделяйте варианты фильтрами, например `includeBrowser` и `includeApp`.
+Правила выбора shared-слоя и приложения описаны в [Multi-App Structure](#multi-app-structure).
+
+## Объявление New Tab
+
+Используйте `defineNewtab`, чтобы получить подсказки опций и проверку типов.
+Вместо него можно объявить опции именованными экспортами, а содержимое или функцию отображения — через `export default`.
+
+В этом примере React-компонент показывает форму поиска.
+Разрешение `search` позволяет отправить введённый запрос поисковой системе, выбранной в настройках браузера.
+Для примера нужны `react`, `react-dom`, `@types/react` и `@types/react-dom`; команды установки приведены в [разделе React](#react).
+Выберите один из двух форматов `newtab.tsx` и сохраните рядом файл `SearchForm.tsx`:
+
+<Tabs>
+    <Tab label="Через defineNewtab">
+```tsx file="../../../../code/entrypoints/newtab/search/newtab.tsx" title="src/newtab.tsx"
+```
+    </Tab>
+    <Tab label="Именованные экспорты">
+```tsx file="../../../../code/entrypoints/newtab/search/newtab.named-exports.tsx" title="src/newtab.tsx"
+```
+    </Tab>
+    <Tab label="Форма поиска">
+```tsx file="../../../../code/entrypoints/newtab/search/SearchForm.tsx" title="src/SearchForm.tsx"
+```
+    </Tab>
+</Tabs>
+
+Соберите расширение, загрузите его в браузер и откройте новую вкладку.
+Введите запрос и нажмите **Search**: результаты откроются в этой же вкладке.
+Addon Bone добавит `search` из опций New Tab в манифест; дополнительные разрешения на доступ к сайтам для этого API не нужны.
+
+Пример использует [`search.query`](https://developer.mozilla.org/en-US/docs/Mozilla/Add-ons/WebExtensions/API/search/query), доступный с Promise в Chrome 96+, Edge 96+ и настольном Firefox 111+.
+В Safari этот API не поддерживается.
+
+Оба формата поддерживают одни и те же опции и фильтры сборки.
+В формате с именованными экспортами задавайте опции через `export const`; обычный `export default` соответствует `render`.
+Готовый React-компонент экспортируйте напрямую, как `export default SearchForm` в примере.
+В описании опций это соответствие обозначено бейджем **primary**.
+
+Для постоянного текста передайте строку напрямую, как в [быстром старте](#быстрый-старт).
+Функция нужна, когда содержимое создаётся или вычисляется при загрузке страницы.
+`render` необязателен: если вся разметка находится в HTML-шаблоне, достаточно задать `template` и остальные опции страницы.
+
+## Содержимое страницы
+
+<ViewRendering />
+
+### Vanilla
+
+Передайте в `render` DOM-элемент, непустую строку или число напрямую либо верните их из функции.
+Этот счётчик создаёт кнопку; Addon Bone помещает её в контейнер `main`:
+
+```ts file="../../../../code/entrypoints/newtab/counter.newtab.ts" title="src/newtab.ts"
+```
+
+При нажатии обработчик увеличивает значение и обновляет текст кнопки.
+Изменение переменной само по себе не перерисовывает DOM.
+
+Строка отображается как текст: `"<strong>Hello</strong>"` не превращается в HTML.
+Для разметки создавайте DOM-элементы, используйте HTML-шаблон или React.
+Пустая строка, `null`, `undefined` и логические значения не создают содержимое или контейнер; число `0` отображается.
+
+Vanilla вызывает `render(options)` при загрузке страницы и использует его синхронный результат.
+Для загрузки данных верните элемент с начальным содержимым, затем обновите его из отдельной асинхронной функции.
+Обрабатывайте ошибки в этой функции: Addon Bone не ожидает её выполнения.
+
+### React
+
+Установите `react` и `react-dom`, если их ещё нет в проекте.
+Для TypeScript также нужны `@types/react` и `@types/react-dom`.
+Выполните команды в каталоге проекта; для JavaScript достаточно первой строки:
+
+<PackageManagerTabs command={reactInstallCommands} />
+
+Сохраните точку входа как `newtab.tsx`: расширение файла выберет React.
+Для JavaScript с JSX используйте `newtab.jsx`.
+Этот пример показывает счётчик, который обновляется при нажатии кнопки:
+
+<Tabs>
+    <Tab label="Через defineNewtab">
+```tsx file="../../../../code/entrypoints/newtab/counter.newtab.tsx" title="src/newtab.tsx"
+```
+    </Tab>
+    <Tab label="Именованные экспорты">
+```tsx file="../../../../code/entrypoints/page/counter.named-exports.page.tsx" title="src/newtab.tsx"
+```
+    </Tab>
+    <Tab label="Компонент счётчика">
+```tsx file="../../../../code/entrypoints/page/counter.component.page.tsx" title="src/Counter.tsx"
+```
+    </Tab>
+</Tabs>
+
+Вариант с именованными экспортами содержит компонент прямо в точке входа и не требует отдельного `Counter.tsx`.
+Выберите одну реализацию `newtab.tsx`; она заменяет `newtab.ts` из предыдущих примеров.
+
+Нажатие кнопки обновит состояние через `useState`, и React отобразит новое значение.
+Addon Bone создаёт контейнер и React root; вручную вызывать `createRoot` не нужно.
+В формате с именованными экспортами можно экспортировать компонент напрямую, например `export default Counter`, или как стрелочную функцию, как в примере.
+
+Функция `render` в React выполняется как компонент и может использовать hooks.
+Сохраните импорт `React` из примера: текущее преобразование JSX использует его при выполнении.
+Загружайте данные через эффекты или выбранную библиотеку загрузки данных: сначала покажите начальное содержимое, затем обновите состояние.
+Сам компонент возвращает результат синхронно.
+
+<DocHeading level={3} id="newtab-render-types" toc={false}>Типы `render` и `props`</DocHeading>
+
+Для переиспользуемой функции импортируйте `ViewRenderHandler<NewtabProps>` из `adnbn`, а для React-компонента — `ViewRenderReactComponent<NewtabProps>`.
+`NewtabProps` описывает опции, которые получает функция; оба контракта требуют синхронного результата:
+
+<FrameworkTabs>
+    <Tab label="Vanilla">
+```ts file="../../../../code/entrypoints/newtab/typed.newtab.ts" title="src/newtab.ts"
+```
+    </Tab>
+    <Tab label="React">
+```tsx file="../../../../code/entrypoints/newtab/typed.newtab.tsx" title="src/newtab.tsx"
+```
+    </Tab>
+</FrameworkTabs>
+
+Явная аннотация необязательна: можно передать обычную функцию с выведенным синхронным типом результата.
+Тип `React.FC` в React 19 допускает Promise, поэтому для строгого контракта `render` используйте `ViewRenderReactComponent<NewtabProps>` или выведенный синхронный тип.
+
+<DocHeading level={3} id="container-examples" toc={false}>Контейнер для содержимого</DocHeading>
+
+`container` задаёт внешний элемент, а `render` — его содержимое.
+Для выбора тега достаточно строки, например `container: "main"`.
+Для свойств элемента передайте объект; для вызова DOM-методов или вычисления свойств по опциям страницы — функцию:
+
+<Tabs>
+    <Tab label="Свойства контейнера">
+```ts file="../../../../code/entrypoints/newtab/container/options.newtab.ts" title="src/newtab.ts"
+```
+    </Tab>
+    <Tab label="Создание контейнера">
+```ts file="../../../../code/entrypoints/newtab/container/factory.newtab.ts" title="src/newtab.ts"
+```
+    </Tab>
+</Tabs>
+
+Оба варианта создают `main` с классом `start-page`; функция дополнительно задаёт `aria-label` для вспомогательных технологий.
+`render` создаёт заголовок `h1` внутри контейнера.
+Обе функции получают опции текущего файла без `render` и `container`.
+
+В Vanilla Addon Bone получает результат `render`, создаёт контейнер, добавляет его в начало `body` и помещает внутрь содержимое.
+В React фреймворк сначала подготавливает React-элемент, затем создаёт и добавляет контейнер, после чего передаёт элемент React для отображения.
+React вызывает компонент при монтировании и управляет дальнейшими обновлениями интерфейса.
+
+Не добавляйте возвращаемые элементы в `body` самостоятельно.
+Функция контейнера может быть асинхронной: Addon Bone дождётся её результата перед монтированием.
+
+<DocHeading level={3} id="newtab-lifecycle" toc={false}>Загрузка и закрытие</DocHeading>
+
+Каждая новая вкладка загружает модуль и создаёт собственный интерфейс.
+Одновременно открытые New Tab имеют отдельные DOM и состояние; счётчик в одной вкладке не меняет счётчик в другой.
+После закрытия или перезагрузки вкладки состояние в памяти теряется — сохраняйте нужные данные в хранилище.
+
+Освобождайте подписки React-компонента в функции очистки эффекта.
+
+## Стили и модули
+
+<ViewAssets />
+
+Этот пример подключает компонент счётчика со стилями на SCSS.
+Переменная `$accent` задаёт основной цвет, а вложенный `&:hover` использует функцию Sass `color.adjust`, чтобы затемнить фон при наведении:
+
+<Tabs>
+    <Tab label="Код New Tab">
+```tsx file="../../../../code/entrypoints/newtab/styles/newtab.tsx" title="src/newtab.tsx"
+```
+    </Tab>
+    <Tab label="Компонент счётчика">
+```tsx file="../../../../code/entrypoints/newtab/styles/Counter.tsx" title="src/Counter.tsx"
+```
+    </Tab>
+    <Tab label="Файл стилей">
+```scss file="../../../../code/entrypoints/newtab/styles/counter.scss" title="src/counter.scss"
+```
+    </Tab>
+</Tabs>
+
+Addon Bone компилирует SCSS в CSS и собирает его как CSS Modules: `styles.counter` содержит итоговое имя класса.
+Sass уже подключён в сборщике — отдельная установка и настройка для этого примера не нужны.
+Кнопка получит синий фон, белый текст и отступы; при наведении фон станет темнее, а нажатие увеличит счётчик.
+Сборщик подключит компонент и CSS к HTML New Tab.
+Этот вариант заменяет предыдущую реализацию `newtab.tsx`; используйте те же зависимости React.
+
+## Настройка HTML
+
+<ViewHtml />
+
+<DocHeading level={3} id="html-tags" toc={true}>Дополнительные ресурсы и метатеги</DocHeading>
+
+Для готовых ресурсов, которые не импортируются точкой входа, задайте `links` и `scripts`.
+В этом примере CSS задаёт отступы и системный шрифт, дополнительный скрипт устанавливает `data-page="start"` на `html`, а метатеги добавляют описание и поддерживаемые цветовые схемы:
+
+<Tabs>
+    <Tab label="Код New Tab">
+```ts file="../../../../code/entrypoints/newtab/html/newtab.ts" title="src/newtab.ts"
+```
+    </Tab>
+    <Tab label="Файл стилей">
+```css file="../../../../code/entrypoints/page/html/page.css" title="src/public/page.css"
+```
+    </Tab>
+    <Tab label="Дополнительный скрипт">
+```js file="../../../../code/entrypoints/newtab/html/newtab-extra.js" title="src/public/newtab-extra.js"
+```
+    </Tab>
+</Tabs>
+
+Addon Bone скопирует файлы из `src/public` и добавит ссылки на них в HTML.
+Те же CSS и JavaScript можно перечислить через `tags`; не дублируйте одинаковые ресурсы в `tags` и `links` / `scripts`, иначе они подключатся повторно.
+
+<DocHeading level={3} id="html-template" toc={true}>Собственный шаблон</DocHeading>
+
+Используйте шаблон, если часть разметки должна находиться в HTML ещё до выполнения `render`.
+Здесь footer уже находится в документе, а Addon Bone добавляет контейнер `main` с приветствием перед ним:
+
+<Tabs>
+    <Tab label="Код New Tab">
+```ts file="../../../../code/entrypoints/newtab/template/newtab.ts" title="src/newtab.ts"
+```
+    </Tab>
+    <Tab label="HTML-шаблон">
+```html file="../../../../code/entrypoints/newtab/template/newtab.html" title="src/newtab.html"
+```
+    </Tab>
+</Tabs>
+
+Путь `./newtab.html` разрешается рядом с `newtab.ts`.
+Не добавляйте скрипт точки входа в шаблон вручную: Addon Bone подключит собранный файл.
+Если шаблон содержит всё нужное содержимое, `render` можно не объявлять.
+
+:::info Файлы страницы в одной папке
+Для страницы со своим шаблоном удобно выделить папку `src/newtab/`.
+Храните в ней точку входа, HTML, стили и связанные модули:
+
+```tree file="../../../../code/entrypoints/newtab/template/directory.tree"
+```
+
+Перенесите реализацию из примера в `newtab/index.ts`, переименуйте шаблон в `template.html` и укажите `template: "./template.html"`.
+Для React используйте `index.tsx`.
+:::
+
+<DocHeading level={3} id="newtab-csp" toc={true}>Content Security Policy</DocHeading>
+
+Через `csp` задайте, откуда интерфейс может загружать ресурсы и какой код может выполнять.
+Например, для библиотеки с WebAssembly включите `wasm`, а для предпросмотра изображений в data URL добавьте `CspSource.Data` в `sources.image`:
+
+<Tabs>
+    <Tab label="Код New Tab">
+```ts file="../../../../code/entrypoints/newtab/csp/newtab.ts" title="src/newtab.ts"
+```
+    </Tab>
+    <Tab label="Сгенерированный Manifest V3">
+```json file="../../../../code/entrypoints/newtab/csp/manifest-v3.json" title="manifest.json"
+```
+    </Tab>
+    <Tab label="Сгенерированный Manifest V2">
+```json file="../../../../code/entrypoints/newtab/csp/manifest-v2.json" title="manifest.json"
+```
+    </Tab>
+</Tabs>
+
+Показаны связанные с примером поля манифеста.
+Эти настройки разрешают нужные возможности; обработку и отображение изображений выполняет ваш код.
+Политика общая для страниц расширения: CSP выбранной New Tab действует и на другие включённые страницы.
+У Sandbox своя отдельная политика.
+
+Для запросов к серверу задавайте источник в `csp.sources.connect`, а доступ к сайту — шаблоном в `hostPermissions`.
+Эти настройки независимы: Addon Bone не выводит разрешения из CSP и не добавляет CSP из разрешений.
+
+В Chrome Manifest V3 JavaScript должен входить в пакет расширения: `scripts` не разрешает удалённый код, inline-обработчики или `eval`.
+Подробнее — [правила CSP для страниц расширения](https://developer.chrome.com/docs/extensions/reference/manifest/content-security-policy).
+
+## Опции
+
+Опции относятся к выбранному файлу New Tab: задают содержимое, настройки HTML и условия включения в сборку.
+
+<DocHeading level={3} id="view-options" toc={false}>Опции страницы</DocHeading>
+
+`render` и `container` управляют содержимым; остальные опции настраивают HTML и политику ресурсов.
+Форматы ресурсов, метатегов и CSP показаны в [примерах настройки HTML](#настройка-html).
+
+<ViewRender primary containerExamplesHref="#container-examples" />
+<View />
+
+<DocHeading level={3} id="newtab-permissions" toc={false}>Разрешения</DocHeading>
+
+New Tab может обращаться к API расширения напрямую.
+
+<PermissionIntro />
+
+<Details title="Опции разрешений">
+    <PermissionOptions />
+</Details>
+
+<DocHeading level={3} id="common-options" toc={false}>Общие опции</DocHeading>
+
+Все заданные фильтры должны подходить текущей сборке.
+Если файл исключён, он не участвует в выборе New Tab.
+Разрешения и CSP добавляет только выбранная реализация для поддерживаемого браузера.
+
+<Details title="Общие опции">
+    <Entrypoint />
+</Details>
+
+## Результат сборки
+
+Для быстрого старта Addon Bone создаёт HTML и скрипт New Tab и записывает путь к HTML в манифест:
+
+<Tabs>
+    <Tab label="Сгенерированный Manifest V3">
+```json file="../../../../code/entrypoints/newtab/manifest-v3.json" title="manifest.json"
+```
+    </Tab>
+    <Tab label="Сгенерированный Manifest V2">
+```json file="../../../../code/entrypoints/newtab/manifest-v2.json" title="manifest.json"
+```
+    </Tab>
+</Tabs>
+
+Показаны поля, связанные с New Tab; полный манифест содержит также название, версию и остальные настройки расширения.
+Для приложения `myapp` в сборке Chrome Manifest V3 основные файлы будут расположены так:
+
+```tree file="../../../../code/entrypoints/newtab/output.tree"
+```
+
+Показаны простые имена скриптов; реальная сборка может содержать общие chunks и хеши.
+Путь HTML зависит от имени файла, `as` и конфигурации выходного каталога:
+
+| Исходный файл или опция | HTML по умолчанию |
+| --- | --- |
+| `newtab.ts` или `newtab/index.ts` | `newtab.html` |
+| `dashboard.newtab.ts` или `dashboard.newtab/index.ts` | `dashboard.newtab.html` |
+| `as: "dashboard"` | `dashboard.newtab.html` |
+
+Addon Bone сам обновляет `chrome_url_overrides.newtab` при изменении пути.
+Браузер использует этот документ при открытии новой пустой вкладки.
+
+:::warning Одно переопределение на сборку
+New Tab, History и Bookmarks нельзя включить в одну сборку одновременно.
+Если для выбранного браузера подходят несколько этих точек входа, Addon Bone остановит сборку с сообщением `An extension can override only one browser page`.
+Оставьте одно переопределение или разделите их фильтрами `includeBrowser`, `excludeBrowser`, `includeApp` и `excludeApp`.
+Обычные Page, Popup и Options можно использовать вместе с New Tab.
+:::
+
+## Multi-App Structure
+
+В проекте с несколькими приложениями поместите общую New Tab в `src/shared`, а реализацию конкретного приложения — в `src/apps/<app>`:
+
+```tree file="../../../../code/entrypoints/newtab/multi-app.tree"
+```
+
+Включите multi-app режим в конфигурации проекта:
+
+```ts file="../../../../code/entrypoints/newtab/multi-app.config.ts" title="adnbn.config.ts"
+```
+
+Если у приложения есть New Tab-файлы, Addon Bone использует их набор вместо shared-набора.
+Если у приложения таких файлов нет, он использует общую New Tab.
+Отдельной опции слияния нет: в сборку входит одна выбранная страница.
+В single-app проекте используйте обычный `src`; отдельный shared-слой не требуется.
+
+Выбор набора приложения или shared-слоя происходит до фильтров.
+Если файл приложения найден, но затем исключён, например по `includeBrowser`, общая New Tab автоматически не возвращается.
+Размещайте варианты в выбранном наборе и задавайте фильтры так, чтобы нужная реализация оставалась в сборке.
+Опции разных файлов не сливаются в одно определение.
+
+## Практические рекомендации
+
+- **Показывайте начальное содержимое сразу.** Верните его синхронно и обновите после загрузки данных: пользователь видит New Tab при открытии каждой новой вкладки.
+- **Учитывайте отдельное состояние вкладок.** Сохраняйте заметки и настройки в хранилище, если они должны пережить закрытие вкладки или быть общими для нескольких вкладок.
+- **Оставляйте одну подходящую реализацию.** Используйте фильтры для вариантов по браузеру и приложению.
+- **Проверяйте поддержку браузера.** Наличие New Tab в исходниках не означает, что выбранный браузер её использует.
+- **Не рассчитывайте на фокус внутри страницы.** В Chrome новая вкладка сначала передаёт фокус адресной строке; учитывайте это при проектировании поиска и горячих клавиш.
+
+## Отладка
+
+1. **New Tab не появилась в сборке.** Проверьте браузер, имя файла, папку `newtabs/`, фильтры и набор приложения или shared-слоя. Для Opera эта точка входа пропускается.
+2. **Браузер показывает стандартную новую вкладку.** Проверьте `chrome_url_overrides.newtab` в итоговом манифесте и наличие указанного HTML. Заново загрузите расширение и откройте новую вкладку. В Safari проверьте выбор расширения в настройках; в Chrome используйте обычное окно.
+3. **Открылась другая реализация.** Проверьте подходящие New Tab-файлы и путь в манифесте. Уберите лишние кандидаты или разделите их фильтрами. Если установлены другие расширения New Tab, проверьте, какое из них браузер использует.
+4. **Сборка сообщает о нескольких переопределениях.** Найдите перечисленные в ошибке New Tab, History и Bookmarks. Оставьте только одно поддерживаемое переопределение для текущей сборки.
+5. **Страница открылась без содержимого.** Проверьте результат `render` и консоль самой страницы. Для Vanilla нужны DOM-элемент, непустая строка или число; для React — файл `.tsx` / `.jsx` и установленные зависимости.
+6. **HTML-теги видны как текст.** Строка из `render` отображается буквально. Создайте DOM-элементы или используйте JSX либо шаблон для разметки.
+7. **Не загружается CSS или дополнительный скрипт.** Проверьте наличие файла в сборке и путь в `links`, `scripts` или `tags`. Готовые ресурсы поместите в `src/public`; путь `template` проверяйте относительно точки входа.
+8. **Браузерный API или запрос к серверу блокируется.** Проверьте разрешения выбранной New Tab в итоговом манифесте, предоставленный необязательный доступ и CSP. После изменения разрешений заново загрузите расширение.

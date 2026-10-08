@@ -1,6 +1,12 @@
 import EntrypointSpec from "@components/docs/entrypoints/EntrypointSpec";
 
-export default ({primary = false}: {primary?: boolean}) => (
+export default ({
+	primary = false,
+	containerExamplesHref,
+}: {
+	primary?: boolean;
+	containerExamplesHref?: string;
+}) => (
 	<>
 		<EntrypointSpec
 			name="render"
@@ -23,12 +29,14 @@ export default ({primary = false}: {primary?: boolean}) => (
 			возвращающую элемент, тег или такой объект. Функция получает те же опции и
 			может быть асинхронной. По умолчанию используется новый <code>div</code>.
 			Addon Bone помещает контейнер в начало <code>document.body</code> перед
-			монтированием содержимого. Примеры свойств и функции контейнера показаны
-			на{" "}
-			<a href="/ru/guide/entrypoints/page.html#container-examples">
-				странице Page
-			</a>
-			.
+			монтированием содержимого.
+			{containerExamplesHref && (
+				<>
+					{" "}
+					Примеры свойств и функции контейнера показаны в{" "}
+					<a href={containerExamplesHref}>разделе о контейнере</a>.
+				</>
+			)}
 		</EntrypointSpec>
 	</>
 );

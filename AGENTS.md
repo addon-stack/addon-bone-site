@@ -86,6 +86,11 @@ Keep the tone calm, direct, and precise.
   `export default () => ...` or `export default async () => ...`. Do not add an
   intermediate handler variable or import a handler type just to annotate the
   example. Add inline parameter types only when the example needs them.
+- For View-based React entrypoints, pass an existing component directly when
+  it already provides the required UI: use `render: SearchForm` with a definition
+  helper or `export default SearchForm` with named exports. Do not wrap it in
+  `() => <SearchForm />` unless the wrapper supplies props, composes content, or
+  adds logic needed by the example.
 - Put a concise explanation next to the code it explains. Show necessary setup
   and the result; do not make the reader infer missing files or resources.
 - Keep primary examples and alternative implementations visible. Use tabs for
@@ -143,6 +148,27 @@ Keep the tone calm, direct, and precise.
   the Russian View option group. Keep each entrypoint's own lifecycle and
   primary-option mapping explicit; do not apply these shared lifecycle blocks
   to Content Script, which has its own context and mounting API.
+- Write each entrypoint Guide as a self-contained instruction. Describe shared
+  functionality directly for the current entrypoint; do not explain it through
+  comparisons such as "the same as Page" or "as in another entrypoint". Reuse
+  shared components and snippets without adding these comparisons to the prose.
+  Do not send readers to Page for shared View features such as rendering,
+  containers, styles, HTML templates, or CSP merely because their implementation
+  is shared. Explain the features and show the needed examples in the current
+  Guide, reusing shared fragments where appropriate. Keep links to other
+  entrypoints for choosing or combining distinct features. When the current
+  Guide already covers a topic, link to its local section. Check the complete
+  rendered text, including reused option components, for these references.
+- In every View-based entrypoint Guide with HTML-template support, add a short
+  info callout after the custom-template explanation recommending that related
+  files stay in one directory. Show a supported entrypoint directory containing
+  `index.ts` (or `index.tsx` for React), `template.html`, `styles.scss`, and any
+  related modules or assets. Explain the relative `template` path beside the
+  tree. Present this as optional organization advice, not a required layout.
+  Keep the callout focused on file organization; do not add `?asis` or global
+  selector instructions there.
+- Use SCSS with CSS Modules as the default for page UI style examples. Explain
+  other styling modes only when the documented task needs them.
 - Show Vanilla and React examples for page UI. Explain the current file-extension
   mapping and required dependencies; add plugin-provided adapters only after
   their implementation is verified in the framework.

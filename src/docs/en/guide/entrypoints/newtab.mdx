@@ -1,5 +1,496 @@
 ---
-tag: In Progress
+description: "Create a custom new tab page with Addon Bone. Use Vanilla or React, configure HTML, and account for browser support."
 ---
 
-# Newtab
+# New Tab
+
+import {PackageManagerTabs, Tab, Tabs} from "@rspress/core/theme";
+import Details from "@components/Details";
+import DocHeading from "@components/DocHeading";
+import FrameworkTabs from "@components/FrameworkTabs";
+import PermissionIntro from "@en/components/entrypoints/PermissionIntro";
+import PermissionOptions from "@en/components/entrypoints/PermissionOptions";
+import ViewRender from "@en/components/entrypoints/ViewRender";
+import View from "@en/components/entrypoints/View";
+import Entrypoint from "@en/components/entrypoints/Entrypoint";
+import ViewRendering from "./fragments/view-rendering.mdx";
+import ViewAssets from "./fragments/view-assets.mdx";
+import ViewHtml from "./fragments/view-html.mdx";
+import reactInstallCommands from "../../../../code/entrypoints/page/install/commands.json";
+
+New Tab replaces the page the browser shows when the user opens a new empty tab.
+Use it for a dashboard, notes, or another interface the user accesses from each new tab.
+Write TypeScript code using the DOM directly or React; Addon Bone creates the HTML and registers it in the manifest.
+
+Place your code in `newtab.ts` or `newtab.tsx`.
+The browser opens the page automatically; no separate command or API call is needed.
+New Tab changes the new tab page; the homepage and pages opened when the browser starts are configured separately.
+
+## Quick Start
+
+Create a new tab page with a simple greeting:
+
+```ts file="../../../../code/entrypoints/newtab/newtab.ts" title="src/newtab.ts"
+```
+
+Add the file to your Addon Bone project, build the extension, and load it into a browser that supports New Tab.
+Open a new tab with `Ctrl+T`, or `Command+T` on macOS.
+You will see `Welcome to your new tab!` and the tab title `New Tab`.
+In Safari, first select the extension for new tabs in the browser settings, as described below.
+
+Addon Bone creates `newtab.html` and writes its path to `chrome_url_overrides.newtab`.
+The framework displays the `render` string as text and creates the container automatically.
+This example needs no additional files, React, or permissions.
+
+## Browser Support
+
+New Tab works in Manifest V2 and Manifest V3 when the browser supports overriding the new tab page.
+The current Addon Bone build handles these browsers as follows:
+
+| Browser | Behavior |
+| --- | --- |
+| Chrome, Chromium, Edge | Addon Bone registers New Tab in the manifest |
+| Firefox | Supported on desktop; Firefox for Android does not support this override |
+| Safari on macOS | Supported since Safari 14.1; the user must select the extension for new tabs |
+| Safari on iOS | The browser supports this override since Safari 15; the user must select the extension for new tabs |
+| Opera | The browser does not support replacing the new tab page with an extension. Addon Bone therefore excludes New Tab's HTML, script, permissions, and CSP from the build |
+
+In Safari on macOS, the user selects the new tab page in the browser's General settings; on iOS, in Extensions settings.
+Registering the page in the manifest does not change this user preference.
+See [Mozilla's compatibility table](https://developer.mozilla.org/en-US/docs/Mozilla/Add-ons/WebExtensions/manifest.json/chrome_url_overrides#browser_compatibility) for version and platform support.
+
+In Chrome, extensions do not replace New Tab in incognito windows.
+Test in a regular window; see [Override Chrome pages](https://developer.chrome.com/docs/extensions/develop/ui/override-chrome-pages) for details.
+
+If you need a similar interface in an unsupported browser, create a regular [Page](./page.mdx) and open it from your code.
+
+## File Structure
+
+Addon Bone discovers New Tab by its file or directory name.
+Choose one of these layouts:
+
+<Tabs>
+    <Tab label="Default Structure">
+```tree file="../../../../code/entrypoints/newtab/default.tree"
+```
+    </Tab>
+    <Tab label="Grouped Files">
+```tree file="../../../../code/entrypoints/newtab/grouped.tree"
+```
+    </Tab>
+</Tabs>
+
+These paths are supported for TypeScript; `{ts,tsx}` represents two possible extensions:
+
+- `newtab.{ts,tsx}` and `*.newtab.{ts,tsx}`;
+- `newtab/index.{ts,tsx}` and `*.newtab/index.{ts,tsx}`;
+- `newtabs/newtab.{ts,tsx}` and `newtabs/*.newtab.{ts,tsx}`;
+- `newtabs/newtab/index.{ts,tsx}` and `newtabs/*.newtab/index.{ts,tsx}`.
+
+Use `.ts` for Vanilla and `.tsx` for React.
+For JavaScript, use the same paths with `.js` or `.jsx`: `.js` selects Vanilla, and `.jsx` selects React.
+
+:::warning Search Scope
+If Addon Bone finds entrypoints in `newtabs/`, it uses them instead of top-level New Tab files in the same source scope.
+Move the implementations you need into `newtabs/` when choosing this layout.
+
+In a multi-app project, this rule applies separately to the shared layer and the current app, before build filters are checked.
+If the files in `newtabs/` are then excluded by filters, discovery does not fall back to the top level.
+:::
+
+<DocHeading level={3} id="newtab-selection" toc={false}>Selecting an Implementation</DocHeading>
+
+The build includes one New Tab.
+If several matching files remain after filtering, Addon Bone selects the last one by priority: local files take precedence over plugin files, and among local files at the same level, the last file in path order wins.
+Other candidates do not create additional pages or contribute their permissions or CSP.
+
+For predictable selection, keep one implementation per build or separate variants with filters such as `includeBrowser` and `includeApp`.
+See [Multi-App Structure](#multi-app-structure) for the rules that select the shared layer or app.
+
+## Defining New Tab
+
+Use `defineNewtab` for option suggestions and type checking.
+Alternatively, declare options as named exports and provide the content or render function through `export default`.
+
+This example uses a React component to display a search form.
+The `search` permission lets it send the entered query to the search engine selected in the browser settings.
+The example needs `react`, `react-dom`, `@types/react`, and `@types/react-dom`; installation commands are in the [React section](#react).
+Choose one of the two formats for `newtab.tsx` and save `SearchForm.tsx` alongside it:
+
+<Tabs>
+    <Tab label="Using defineNewtab">
+```tsx file="../../../../code/entrypoints/newtab/search/newtab.tsx" title="src/newtab.tsx"
+```
+    </Tab>
+    <Tab label="Named exports">
+```tsx file="../../../../code/entrypoints/newtab/search/newtab.named-exports.tsx" title="src/newtab.tsx"
+```
+    </Tab>
+    <Tab label="Search form">
+```tsx file="../../../../code/entrypoints/newtab/search/SearchForm.tsx" title="src/SearchForm.tsx"
+```
+    </Tab>
+</Tabs>
+
+Build the extension, load it into the browser, and open a new tab.
+Enter a query and press **Search**: the results open in the same tab.
+Addon Bone adds `search` from the New Tab options to the manifest; this API needs no additional host permissions.
+
+The example uses [`search.query`](https://developer.mozilla.org/en-US/docs/Mozilla/Add-ons/WebExtensions/API/search/query), which supports Promises in Chrome 96+, Edge 96+, and desktop Firefox 111+.
+Safari does not support this API.
+
+Both formats support the same options and build filters.
+With named exports, declare options through `export const`; a bare `export default` maps to `render`.
+Export an existing React component directly, as in `export default SearchForm` in the example.
+The **primary** badge marks this mapping in the option descriptions.
+
+For constant text, pass a string directly, as in [Quick Start](#quick-start).
+Use a function when the content is created or computed as the page loads.
+`render` is optional: if all markup is in the HTML template, setting `template` and the other page options is enough.
+
+## Page Content
+
+<ViewRendering />
+
+### Vanilla
+
+Pass a DOM element, a non-empty string, or a number directly to `render`, or return it from a function.
+This counter creates a button; Addon Bone places it inside a `main` container:
+
+```ts file="../../../../code/entrypoints/newtab/counter.newtab.ts" title="src/newtab.ts"
+```
+
+Clicking the button increments the value and updates the button text.
+Changing the variable alone does not update the DOM.
+
+A string is displayed as text: `"<strong>Hello</strong>"` does not become HTML.
+For markup, create DOM elements, use an HTML template, or use React.
+An empty string, `null`, `undefined`, and booleans create neither content nor a container; the number `0` is displayed.
+
+Vanilla calls `render(options)` when the page loads and uses its synchronous result.
+To load data, return an element with initial content, then update it from a separate asynchronous function.
+Handle errors in that function: Addon Bone does not wait for it to finish.
+
+### React
+
+Install `react` and `react-dom` if they are not already in your project.
+TypeScript also needs `@types/react` and `@types/react-dom`.
+Run the commands in your project directory; for JavaScript, only the first line is needed:
+
+<PackageManagerTabs command={reactInstallCommands} />
+
+Save the entrypoint as `newtab.tsx`: the file extension selects React.
+For JavaScript with JSX, use `newtab.jsx`.
+This example shows a counter that updates when the button is clicked:
+
+<Tabs>
+    <Tab label="Using defineNewtab">
+```tsx file="../../../../code/entrypoints/newtab/counter.newtab.tsx" title="src/newtab.tsx"
+```
+    </Tab>
+    <Tab label="Named exports">
+```tsx file="../../../../code/entrypoints/page/counter.named-exports.page.tsx" title="src/newtab.tsx"
+```
+    </Tab>
+    <Tab label="Counter component">
+```tsx file="../../../../code/entrypoints/page/counter.component.page.tsx" title="src/Counter.tsx"
+```
+    </Tab>
+</Tabs>
+
+The named-export variant defines the component directly in the entrypoint and does not need a separate `Counter.tsx`.
+Choose one implementation of `newtab.tsx`; it replaces `newtab.ts` from the previous examples.
+
+Clicking the button updates state through `useState`, and React displays the new value.
+Addon Bone creates the container and React root; you do not need to call `createRoot` yourself.
+With named exports, you can export the component directly, for example `export default Counter`, or as an arrow function, as shown in the example.
+
+The `render` function runs as a React component and can use hooks.
+Keep the `React` import from the example: the current JSX transform uses it at runtime.
+Load data through effects or your chosen data-loading library: display initial content first, then update state.
+The component itself returns its result synchronously.
+
+<DocHeading level={3} id="newtab-render-types" toc={false}>`render` and `props` Types</DocHeading>
+
+For a reusable function, import `ViewRenderHandler<NewtabProps>` from `adnbn`; for a React component, use `ViewRenderReactComponent<NewtabProps>`.
+`NewtabProps` describes the options the function receives; both contracts require a synchronous result:
+
+<FrameworkTabs>
+    <Tab label="Vanilla">
+```ts file="../../../../code/entrypoints/newtab/typed.newtab.ts" title="src/newtab.ts"
+```
+    </Tab>
+    <Tab label="React">
+```tsx file="../../../../code/entrypoints/newtab/typed.newtab.tsx" title="src/newtab.tsx"
+```
+    </Tab>
+</FrameworkTabs>
+
+Explicit annotations are optional: you can pass a regular function with an inferred synchronous return type.
+In React 19, `React.FC` allows a Promise, so use `ViewRenderReactComponent<NewtabProps>` or an inferred synchronous type for the strict `render` contract.
+
+<DocHeading level={3} id="container-examples" toc={false}>Content Container</DocHeading>
+
+`container` sets the outer element, while `render` sets its content.
+To choose a tag, a string such as `container: "main"` is enough.
+Pass an object to set element properties; use a function to call DOM methods or compute properties from the page options:
+
+<Tabs>
+    <Tab label="Container properties">
+```ts file="../../../../code/entrypoints/newtab/container/options.newtab.ts" title="src/newtab.ts"
+```
+    </Tab>
+    <Tab label="Container factory">
+```ts file="../../../../code/entrypoints/newtab/container/factory.newtab.ts" title="src/newtab.ts"
+```
+    </Tab>
+</Tabs>
+
+Both variants create a `main` element with the `start-page` class; the factory also sets `aria-label` for assistive technologies.
+`render` creates an `h1` heading inside the container.
+Both functions receive the current file's options without `render` and `container`.
+
+In Vanilla, Addon Bone gets the `render` result, creates the container, adds it at the start of `body`, and places the content inside it.
+In React, the framework first prepares the React element, then creates and adds the container, and passes the element to React for rendering.
+React calls the component when it mounts and manages subsequent UI updates.
+
+Do not add the returned elements to `body` yourself.
+The container factory can be asynchronous: Addon Bone waits for its result before mounting.
+
+<DocHeading level={3} id="newtab-lifecycle" toc={false}>Loading and Closing</DocHeading>
+
+Each new tab loads the module and creates its own interface.
+New Tab pages open at the same time have separate DOM trees and state; a counter in one tab does not change the counter in another.
+Closing or reloading a tab discards its in-memory state; save data you need in storage.
+
+Clean up React component subscriptions in the effect's cleanup function.
+
+## Styles and Modules
+
+<ViewAssets />
+
+This example imports a counter component with SCSS styles.
+The `$accent` variable sets the main color, and the nested `&:hover` uses the Sass `color.adjust` function to darken the background on hover:
+
+<Tabs>
+    <Tab label="New Tab source">
+```tsx file="../../../../code/entrypoints/newtab/styles/newtab.tsx" title="src/newtab.tsx"
+```
+    </Tab>
+    <Tab label="Counter component">
+```tsx file="../../../../code/entrypoints/newtab/styles/Counter.tsx" title="src/Counter.tsx"
+```
+    </Tab>
+    <Tab label="Stylesheet">
+```scss file="../../../../code/entrypoints/newtab/styles/counter.scss" title="src/counter.scss"
+```
+    </Tab>
+</Tabs>
+
+Addon Bone compiles SCSS to CSS and builds it as CSS Modules: `styles.counter` contains the generated class name.
+Sass is already included in the bundler; this example needs no separate installation or configuration.
+The button has a blue background, white text, and spacing; the background darkens on hover, and clicking increments the counter.
+The bundler connects the component and CSS to New Tab's HTML.
+This variant replaces the previous `newtab.tsx` implementation; use the same React dependencies.
+
+## HTML Configuration
+
+<ViewHtml />
+
+<DocHeading level={3} id="html-tags" toc={true}>Additional Resources and Meta Tags</DocHeading>
+
+For ready-to-use resources that the entrypoint does not import, set `links` and `scripts`.
+In this example, CSS sets spacing and a system font, an additional script sets `data-page="start"` on `html`, and meta tags add a description and supported color schemes:
+
+<Tabs>
+    <Tab label="New Tab source">
+```ts file="../../../../code/entrypoints/newtab/html/newtab.ts" title="src/newtab.ts"
+```
+    </Tab>
+    <Tab label="Stylesheet">
+```css file="../../../../code/entrypoints/page/html/page.css" title="src/public/page.css"
+```
+    </Tab>
+    <Tab label="Additional script">
+```js file="../../../../code/entrypoints/newtab/html/newtab-extra.js" title="src/public/newtab-extra.js"
+```
+    </Tab>
+</Tabs>
+
+Addon Bone copies files from `src/public` and adds references to them in the HTML.
+You can list the same CSS and JavaScript through `tags`; do not duplicate resources in `tags` and `links` / `scripts`, or they will be included twice.
+
+<DocHeading level={3} id="html-template" toc={true}>Custom Template</DocHeading>
+
+Use a template when some markup needs to be in the HTML before `render` runs.
+Here, the footer is already in the document, and Addon Bone adds a `main` container with a greeting before it:
+
+<Tabs>
+    <Tab label="New Tab source">
+```ts file="../../../../code/entrypoints/newtab/template/newtab.ts" title="src/newtab.ts"
+```
+    </Tab>
+    <Tab label="HTML template">
+```html file="../../../../code/entrypoints/newtab/template/newtab.html" title="src/newtab.html"
+```
+    </Tab>
+</Tabs>
+
+The `./newtab.html` path resolves alongside `newtab.ts`.
+Do not add the entrypoint script to the template manually: Addon Bone connects the built file.
+If the template contains all the content you need, you can omit `render`.
+
+:::info Keep Page Files Together
+For a page with its own template, consider using a `src/newtab/` directory.
+Keep the entrypoint, HTML, styles, and related modules there:
+
+```tree file="../../../../code/entrypoints/newtab/template/directory.tree"
+```
+
+Move the example implementation to `newtab/index.ts`, rename the template to `template.html`, and set `template: "./template.html"`.
+For React, use `index.tsx`.
+:::
+
+<DocHeading level={3} id="newtab-csp" toc={true}>Content Security Policy</DocHeading>
+
+Use `csp` to control where the interface can load resources from and which code it can run.
+For example, enable `wasm` for a library that uses WebAssembly, and add `CspSource.Data` to `sources.image` to preview images from data URLs:
+
+<Tabs>
+    <Tab label="New Tab source">
+```ts file="../../../../code/entrypoints/newtab/csp/newtab.ts" title="src/newtab.ts"
+```
+    </Tab>
+    <Tab label="Generated Manifest V3">
+```json file="../../../../code/entrypoints/newtab/csp/manifest-v3.json" title="manifest.json"
+```
+    </Tab>
+    <Tab label="Generated Manifest V2">
+```json file="../../../../code/entrypoints/newtab/csp/manifest-v2.json" title="manifest.json"
+```
+    </Tab>
+</Tabs>
+
+Only the manifest fields relevant to the example are shown.
+These settings allow the required capabilities; your code handles processing and displaying images.
+The policy is shared by extension pages: the selected New Tab's CSP also applies to other included pages.
+Sandbox has its own separate policy.
+
+For server requests, set a source in `csp.sources.connect` and a site access pattern in `hostPermissions`.
+These settings are independent: Addon Bone does not derive permissions from CSP or add CSP from permissions.
+
+In Chrome Manifest V3, JavaScript must be bundled with the extension: `scripts` does not allow remote code, inline event handlers, or `eval`.
+See the [CSP rules for extension pages](https://developer.chrome.com/docs/extensions/reference/manifest/content-security-policy) for details.
+
+## Options
+
+Options apply to the selected New Tab file: they set the content, HTML configuration, and conditions for inclusion in the build.
+
+<DocHeading level={3} id="view-options" toc={false}>Page Options</DocHeading>
+
+`render` and `container` control the content; the other options configure HTML and resource policy.
+See the [HTML configuration examples](#html-configuration) for resource, meta tag, and CSP formats.
+
+<ViewRender primary containerExamplesHref="#container-examples" />
+<View />
+
+<DocHeading level={3} id="newtab-permissions" toc={false}>Permissions</DocHeading>
+
+New Tab can access extension APIs directly.
+
+<PermissionIntro />
+
+<Details title="Permission Options">
+    <PermissionOptions />
+</Details>
+
+<DocHeading level={3} id="common-options" toc={false}>Common Options</DocHeading>
+
+All specified filters must match the current build.
+An excluded file does not participate in New Tab selection.
+Only the selected implementation contributes permissions and CSP for a supported browser.
+
+<Details title="Common Options">
+    <Entrypoint />
+</Details>
+
+## Build Output
+
+For Quick Start, Addon Bone creates New Tab's HTML and script and writes the HTML path to the manifest:
+
+<Tabs>
+    <Tab label="Generated Manifest V3">
+```json file="../../../../code/entrypoints/newtab/manifest-v3.json" title="manifest.json"
+```
+    </Tab>
+    <Tab label="Generated Manifest V2">
+```json file="../../../../code/entrypoints/newtab/manifest-v2.json" title="manifest.json"
+```
+    </Tab>
+</Tabs>
+
+Only the fields related to New Tab are shown; the full manifest also includes the extension's name, version, and other settings.
+For the `myapp` app in a Chrome Manifest V3 build, the main files are arranged as follows:
+
+```tree file="../../../../code/entrypoints/newtab/output.tree"
+```
+
+The example shows simple script names; an actual build may include shared chunks and hashes.
+The HTML path depends on the file name, `as`, and output directory configuration:
+
+| Source file or option | Default HTML |
+| --- | --- |
+| `newtab.ts` or `newtab/index.ts` | `newtab.html` |
+| `dashboard.newtab.ts` or `dashboard.newtab/index.ts` | `dashboard.newtab.html` |
+| `as: "dashboard"` | `dashboard.newtab.html` |
+
+Addon Bone updates `chrome_url_overrides.newtab` automatically when the path changes.
+The browser uses this document when a new empty tab opens.
+
+:::warning One Override per Build
+New Tab, History, and Bookmarks cannot be included in the same build together.
+If several of these entrypoints match the selected browser, Addon Bone stops the build with `An extension can override only one browser page`.
+Keep one override or separate them with `includeBrowser`, `excludeBrowser`, `includeApp`, and `excludeApp` filters.
+Regular Page, Popup, and Options can be used alongside New Tab.
+:::
+
+## Multi-App Structure
+
+In a project with several apps, place the shared New Tab in `src/shared` and an app-specific implementation in `src/apps/<app>`:
+
+```tree file="../../../../code/entrypoints/newtab/multi-app.tree"
+```
+
+Enable multi-app mode in the project configuration:
+
+```ts file="../../../../code/entrypoints/newtab/multi-app.config.ts" title="adnbn.config.ts"
+```
+
+If an app has New Tab files, Addon Bone uses that set instead of the shared set.
+If the app has no such files, it uses the shared New Tab.
+There is no separate merge option: the build includes one selected page.
+In a single-app project, use the regular `src` directory; a separate shared layer is not required.
+
+The app or shared set is selected before filters are applied.
+If an app file is found but then excluded, for example by `includeBrowser`, the shared New Tab is not automatically restored.
+Place variants in the selected set and configure filters so the required implementation remains in the build.
+Options from different files are not merged into one definition.
+
+## Best Practices
+
+- **Show initial content immediately.** Return it synchronously and update it after loading data: the user sees New Tab whenever they open a new tab.
+- **Account for separate tab state.** Save notes and settings in storage if they need to survive closing a tab or be shared across tabs.
+- **Keep one matching implementation.** Use filters for browser and app variants.
+- **Check browser support.** Having New Tab in the source code does not mean the selected browser will use it.
+- **Do not rely on focus inside the page.** In Chrome, a new tab initially focuses the address bar; account for this when designing search and keyboard shortcuts.
+
+## Debugging
+
+1. **New Tab is missing from the build.** Check the browser, file name, `newtabs/` directory, filters, and selected app or shared set. This entrypoint is skipped for Opera.
+2. **The browser shows its default new tab page.** Check `chrome_url_overrides.newtab` in the generated manifest and confirm that the referenced HTML exists. Reload the extension and open a new tab. In Safari, check the selected extension in settings; in Chrome, use a regular window.
+3. **A different implementation opens.** Check the matching New Tab files and the manifest path. Remove extra candidates or separate them with filters. If other New Tab extensions are installed, check which one the browser uses.
+4. **The build reports multiple overrides.** Find the New Tab, History, and Bookmarks entrypoints listed in the error. Keep only one supported override for the current build.
+5. **The page opens without content.** Check the `render` result and the page's console. Vanilla needs a DOM element, a non-empty string, or a number; React needs a `.tsx` / `.jsx` file and installed dependencies.
+6. **HTML tags appear as text.** A string from `render` is displayed literally. Create DOM elements or use JSX or a template for markup.
+7. **CSS or an additional script does not load.** Check that the file exists in the build and that its path in `links`, `scripts`, or `tags` is correct. Put ready-to-use resources in `src/public`; check the `template` path relative to the entrypoint.
+8. **A browser API or server request is blocked.** Check the selected New Tab's permissions in the generated manifest, granted optional access, and CSP. Reload the extension after changing permissions.

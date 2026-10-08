@@ -1,6 +1,12 @@
 import EntrypointSpec from "@components/docs/entrypoints/EntrypointSpec";
 
-export default ({primary = false}: {primary?: boolean}) => (
+export default ({
+	primary = false,
+	containerExamplesHref,
+}: {
+	primary?: boolean;
+	containerExamplesHref?: string;
+}) => (
 	<>
 		<EntrypointSpec
 			name="render"
@@ -22,9 +28,14 @@ export default ({primary = false}: {primary?: boolean}) => (
 			that returns an element, a tag name, or such an object. The function
 			receives the same options and can be asynchronous. The default is a new{" "}
 			<code>div</code>. Addon Bone places the container at the start of{" "}
-			<code>document.body</code> before mounting the content. See the{" "}
-			<a href="/guide/entrypoints/page.html#container-examples">Page guide</a>{" "}
-			for examples of container properties and factories.
+			<code>document.body</code> before mounting the content.
+			{containerExamplesHref && (
+				<>
+					{" "}
+					See the <a href={containerExamplesHref}>container section</a> for
+					examples of container properties and factories.
+				</>
+			)}
 		</EntrypointSpec>
 	</>
 );

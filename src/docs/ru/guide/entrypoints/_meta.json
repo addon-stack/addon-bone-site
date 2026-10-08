@@ -1,6 +1,1 @@
-[
-  "background",
-  "command",
-  "service",
-  "page"
-]
+["background", "command", "service", "page", "newtab"]

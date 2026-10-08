@@ -1,0 +1,7 @@
+src
+└── newtab/
+    ├── index.ts
+    ├── template.html
+    └── styles.scss
+adnbn.config.ts
+package.json

@@ -1,0 +1,10 @@
+src
+├── shared/
+│   └── newtab.ts
+└── apps/
+    ├── app-a/
+    │   └── newtab.tsx
+    └── app-b/
+        └── background.ts
+adnbn.config.ts
+package.json
