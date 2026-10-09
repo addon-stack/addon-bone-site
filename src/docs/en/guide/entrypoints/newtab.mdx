@@ -305,9 +305,14 @@ In this example, CSS sets spacing and a system font, an additional script sets `
 ```js file="../../../../code/entrypoints/newtab/html/newtab-extra.js" title="src/public/newtab-extra.js"
 ```
     </Tab>
+    <Tab label="Generated HTML">
+```html file="../../../../code/entrypoints/newtab/html/generated.html" title="newtab.html"
+```
+    </Tab>
 </Tabs>
 
 Addon Bone copies files from `src/public` and adds references to them in the HTML.
+The Generated HTML tab highlights the tags added through `links`, `scripts`, and `metas`.
 You can list the same CSS and JavaScript through `tags`; do not duplicate resources in `tags` and `links` / `scripts`, or they will be included twice.
 
 <DocHeading level={3} id="html-template" toc={true}>Custom Template</DocHeading>
@@ -330,7 +335,7 @@ The `./newtab.html` path resolves alongside `newtab.ts`.
 Do not add the entrypoint script to the template manually: Addon Bone connects the built file.
 If the template contains all the content you need, you can omit `render`.
 
-:::info Keep Page Files Together
+:::tip Keep Page Files Together
 For a page with its own template, consider using a `src/newtab/` directory.
 Keep the entrypoint, HTML, styles, and related modules there:
 

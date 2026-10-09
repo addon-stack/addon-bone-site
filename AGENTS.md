@@ -133,6 +133,12 @@ Keep the tone calm, direct, and precise.
   without a terminal newline that creates an empty rendered line. Do not leave
   blank lines before the closing fence of inline snippets. Recheck the rendered
   final line after formatting examples.
+- Use `transformerNotationHighlight` from `@shikijs/transformers` to highlight
+  example lines. Mark only the lines that need emphasis with `[!code highlight]`
+  comments in the snippet's language. Do not use the deprecated
+  `transformerCompatibleMetaHighlight` or numeric code-fence highlight ranges.
+  Keep these annotation comments out of displayed code and generated Markdown,
+  including `llms-full.txt`; verify both outputs after changing highlights.
 - Extract examples shared across documentation languages into separate files
   under `src/code/`, regardless of their length, and reuse the same file through
   the code fence's `file` attribute in every locale. For entrypoint examples,
@@ -168,7 +174,7 @@ Keep the tone calm, direct, and precise.
   Guide already covers a topic, link to its local section. Check the complete
   rendered text, including reused option components, for these references.
 - In every View-based entrypoint Guide with HTML-template support, add a short
-  info callout after the custom-template explanation recommending that related
+  tip callout after the custom-template explanation recommending that related
   files stay in one directory. Show a supported entrypoint directory containing
   `index.ts` (or `index.tsx` for React), `template.html`, `styles.scss`, and any
   related modules or assets. Explain the relative `template` path beside the

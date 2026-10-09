@@ -389,6 +389,7 @@ Add both resources to `src/public`:
 </Tabs>
 
 Addon Bone copies CSS and JavaScript from `src/public` and adds their tags to HTML.
+The Generated HTML tab highlights the tags added through `links`, `scripts`, and `metas`.
 The page gets spacing and a system font, and the script sets `data-page="help"` on the `html` element.
 The `render` content appears when the page script runs, so it is not present in the generated HTML yet.
 
@@ -420,7 +421,7 @@ The `./help.html` path is resolved alongside `help.page.ts`.
 Do not add the entrypoint script to the template manually: Addon Bone connects the built file.
 If the template already contains all the content you need, you can omit `render`.
 
-:::info Page files in one directory
+:::tip Page files in one directory
 For a page with a custom template, you can keep related files in `src/help.page/`.
 Place the entrypoint, HTML, styles, and related modules together:
 

@@ -2,6 +2,12 @@
 	height: 1.2rem !important;
 }
 
+/* Code line highlighting */
+.rp-doc .shiki.has-highlighted .line.highlighted:not(.error):not(.warning) {
+	background-color: #10b9811a;
+	box-shadow: none;
+}
+
 /* Tabs */
 .rp-tabs__label {
 	padding-top: 10px !important;

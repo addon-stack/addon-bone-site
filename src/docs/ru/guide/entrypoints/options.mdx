@@ -344,9 +344,14 @@ Sass уже подключён в сборщике — отдельная уст
 ```js file="../../../../code/entrypoints/options/html/options-extra.js" title="src/public/options-extra.js"
 ```
     </Tab>
+    <Tab label="Сгенерированный HTML">
+```html file="../../../../code/entrypoints/options/html/generated.html" title="options.html"
+```
+    </Tab>
 </Tabs>
 
 Addon Bone скопирует файлы из `src/public` и добавит ссылки на них в HTML.
+Во вкладке «Сгенерированный HTML» выделены теги, добавленные через `links`, `scripts` и `metas`.
 Те же CSS и JavaScript можно перечислить через `tags`; не дублируйте одинаковые ресурсы в `tags` и `links` / `scripts`, иначе они подключатся повторно.
 
 <DocHeading level={3} id="html-template" toc={true}>Собственный шаблон</DocHeading>
@@ -369,7 +374,7 @@ Addon Bone скопирует файлы из `src/public` и добавит с�
 Не добавляйте скрипт точки входа в шаблон вручную: Addon Bone подключит собранный файл.
 Если шаблон содержит всё нужное содержимое, `render` можно не объявлять.
 
-:::info Файлы страницы в одной папке
+:::tip Файлы страницы в одной папке
 Для страницы со своим шаблоном удобно выделить папку `src/options/`.
 Храните в ней точку входа, HTML, стили и связанные модули или ресурсы:
 
