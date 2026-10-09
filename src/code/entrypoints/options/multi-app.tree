@@ -1,0 +1,10 @@
+src
+├── shared/
+│   └── options.ts
+└── apps/
+    ├── app-a/
+    │   └── options.tsx
+    └── app-b/
+        └── background.ts
+adnbn.config.ts
+package.json

@@ -1,0 +1,5 @@
+src
+└── newtab/
+    └── index.ts
+adnbn.config.ts
+package.json

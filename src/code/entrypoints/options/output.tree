@@ -1,0 +1,6 @@
+dist/
+└── myapp-chrome-mv3/
+    ├── manifest.json
+    ├── options.html
+    └── js/
+        └── options.js

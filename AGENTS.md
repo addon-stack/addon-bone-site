@@ -91,6 +91,14 @@ Keep the tone calm, direct, and precise.
   helper or `export default SearchForm` with named exports. Do not wrap it in
   `() => <SearchForm />` unless the wrapper supplies props, composes content, or
   adds logic needed by the example.
+- Use braces for every `if`, `else`, and loop body in executable code examples,
+  even for a single `return` or `continue`. Put the statement on its own line
+  inside the block; do not write one-line conditional returns or loop bodies.
+  Keep `else if` chains without an extra enclosing block.
+- Declare local helper functions in executable examples as `const` arrow
+  functions, using `async` when needed, such as `const save = async (...) => { ... };`.
+  Preserve object-method syntax when showing an API method, and actual
+  `declare function` signatures in API reference contracts.
 - Put a concise explanation next to the code it explains. Show necessary setup
   and the result; do not make the reader infer missing files or resources.
 - Keep primary examples and alternative implementations visible. Use tabs for

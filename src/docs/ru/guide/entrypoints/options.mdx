@@ -1,0 +1,536 @@
+---
+description: "Создавайте страницу настроек расширения через Options в Addon Bone. Используйте Vanilla или React, сохраняйте предпочтения и настройте открытие страницы и HTML."
+---
+
+# Options
+
+import {PackageManagerTabs, Tab, Tabs} from "@rspress/core/theme";
+import Details from "@components/Details";
+import DocHeading from "@components/DocHeading";
+import FrameworkTabs from "@components/FrameworkTabs";
+import EntrypointSpec from "@components/docs/entrypoints/EntrypointSpec";
+import PermissionIntro from "@ru/components/entrypoints/PermissionIntro";
+import PermissionOptions from "@ru/components/entrypoints/PermissionOptions";
+import ViewRender from "@ru/components/entrypoints/ViewRender";
+import View from "@ru/components/entrypoints/View";
+import Entrypoint from "@ru/components/entrypoints/Entrypoint";
+import ViewRendering from "./fragments/view-rendering.mdx";
+import ViewAssets from "./fragments/view-assets.mdx";
+import ViewHtml from "./fragments/view-html.mdx";
+import reactInstallCommands from "../../../../code/entrypoints/page/install/commands.json";
+
+Options создаёт страницу настроек расширения, которую пользователь открывает через интерфейс браузера или из вашего расширения.
+Используйте её для предпочтений интерфейса, настройки функций и управления необязательным доступом.
+Вы пишете код на TypeScript, работая с DOM напрямую или используя React; Addon Bone создаёт HTML и регистрирует его в манифесте.
+
+Разместите код в `options.ts` или `options.tsx`.
+По умолчанию Addon Bone настраивает открытие в отдельной вкладке; через `openInTab: false` можно запросить встроенный интерфейс настроек, если браузер его поддерживает.
+Options не запускается вместе с background: код страницы выполняется при её загрузке.
+
+## Быстрый старт
+
+Создадим страницу настроек с простым текстом:
+
+```ts file="../../../../code/entrypoints/options/options.ts" title="src/options.ts"
+```
+
+Добавьте файл в проект Addon Bone, соберите расширение и загрузите его в браузер.
+Откройте управление расширениями, найдите своё расширение и перейдите к его настройкам.
+В Chrome это пункт **Параметры расширения** на странице сведений о расширении.
+Вы увидите текст `Manage your extension preferences here.` и заголовок вкладки `Settings`.
+
+Addon Bone создаст `options.html` и запишет его путь в `options_ui.page`, а `options_ui.open_in_tab` установит в `true`.
+Строку из `render` фреймворк отобразит как текст, создав контейнер автоматически.
+Для примера не нужны дополнительные файлы, React или разрешения.
+
+## Открытие страницы
+
+Браузер показывает ссылку на настройки после загрузки расширения с полем `options_ui` в манифесте.
+Место этой ссылки зависит от браузера; её также можно открыть из popup или другого контекста расширения через `openOptionsPage` из `adnbn/browser`.
+
+Добавьте этот файл рядом с `options.ts` из быстрого старта:
+
+```ts file="../../../../code/entrypoints/options/open/popup.ts" title="src/popup.ts"
+```
+
+Соберите расширение и загрузите его заново.
+Нажмите на кнопку расширения, затем на **Settings** в popup: браузер откроет зарегистрированную страницу настроек.
+Для этого вызова отдельное разрешение не нужно.
+Если у проекта уже есть popup, перенесите обработчик кнопки в него вместо создания второго файла.
+
+`openOptionsPage()` возвращает `Promise<void>` и использует страницу из манифеста.
+Такой вызов учитывает `openInTab` и продолжает работать после изменения имени HTML через `as`.
+Обрабатывайте ошибку открытия, например если Options исключена из сборки.
+Подробности — в [контракте `runtime.openOptionsPage()`](https://developer.mozilla.org/en-US/docs/Mozilla/Add-ons/WebExtensions/API/runtime/openOptionsPage).
+
+<DocHeading level={3} id="options-open-mode" toc={false}>Вкладка или встроенный интерфейс</DocHeading>
+
+`openInTab: true` открывает настройки в обычной вкладке.
+Addon Bone записывает это значение и тогда, когда опция не задана.
+Для встроенного интерфейса укажите `false`:
+
+```ts file="../../../../code/entrypoints/options/embedded.options.ts" title="src/options.ts"
+```
+
+Этот вариант заменяет файл из быстрого старта.
+В манифесте появится `options_ui.open_in_tab: false`; браузер определит способ отображения:
+
+| Браузер | Поведение при `openInTab: false` |
+| --- | --- |
+| Chrome, Chromium, Edge | Страница встраивается в интерфейс управления расширениями |
+| Firefox | Страница открывается в менеджере дополнений |
+| Opera | Настройки всё равно открываются в отдельной вкладке |
+| Safari на macOS и iOS | Настройки всё равно открываются в отдельной вкладке |
+
+Options использует `options_ui` в Manifest V2 и Manifest V3.
+Safari поддерживает это поле с версии 14 на macOS и с версии 15 на iOS.
+Поддержка режима открытия приведена в [таблице совместимости `options_ui`](https://developer.mozilla.org/en-US/docs/Mozilla/Add-ons/WebExtensions/manifest.json/options_ui#browser_compatibility).
+
+Встроенная страница Chrome не является отдельной вкладкой: не рассчитывайте на `sender.tab` у отправленных ею сообщений.
+Делайте интерфейс пригодным для узкого контейнера; при необходимости задайте минимальную ширину содержимого в стилях.
+Подробнее — [особенности встроенных настроек Chrome](https://developer.chrome.com/docs/extensions/develop/ui/options-page#consider_the_differences).
+
+## Структура файлов
+
+Addon Bone находит Options по имени файла или каталога.
+Выберите один из вариантов размещения:
+
+<Tabs>
+    <Tab label="Обычная структура">
+```tree file="../../../../code/entrypoints/options/default.tree"
+```
+    </Tab>
+    <Tab label="Каталог страницы">
+```tree file="../../../../code/entrypoints/options/directory.tree"
+```
+    </Tab>
+</Tabs>
+
+Для TypeScript поддерживаются следующие пути; `{ts,tsx}` обозначает два возможных расширения:
+
+- `options.{ts,tsx}` и `*.options.{ts,tsx}`;
+- `options/index.{ts,tsx}` и `*.options/index.{ts,tsx}`.
+
+Используйте `.ts` для Vanilla и `.tsx` для React.
+Для JavaScript используйте те же пути с `.js` или `.jsx`: `.js` выбирает Vanilla, а `.jsx` — React.
+Поиск также распознаёт `.vue` и `.svelte`, но встроенных View-адаптеров для этих форматов сейчас нет; для готовых примеров используйте Vanilla или React.
+
+<DocHeading level={3} id="options-selection" toc={false}>Выбор реализации</DocHeading>
+
+В сборку входит одна страница Options.
+Если после фильтров осталось несколько подходящих файлов, Addon Bone выбирает последний по приоритету: локальные файлы имеют преимущество перед файлами плагинов, а среди локальных файлов одного уровня выбирается последний по порядку путей.
+Остальные кандидаты не создают дополнительные страницы и не добавляют свои разрешения или CSP.
+
+Для предсказуемого выбора оставляйте одну реализацию на сборку или разделяйте варианты фильтрами, например `includeBrowser` и `includeApp`.
+Правила выбора shared-слоя и приложения описаны в [Multi-App Structure](#multi-app-structure).
+
+## Объявление Options
+
+Используйте `defineOptions`, чтобы получить подсказки опций и проверку типов.
+Вместо него можно объявить опции именованными экспортами, а содержимое или функцию отображения — через `export default`.
+
+В этом примере React-компонент сохраняет настройку компактного интерфейса в локальном хранилище расширения.
+Для доступа к хранилищу требуется разрешение `storage`; объявите его в Options.
+Для React нужны `react`, `react-dom`, `@types/react` и `@types/react-dom`; команды установки приведены в [разделе React](#react).
+Хранилище и hook доступны через встроенные алиасы `adnbn/storage` и `adnbn/storage/react`.
+Выберите один из двух форматов `options.tsx` и сохраните рядом файл `SettingsForm.tsx`:
+
+<Tabs>
+    <Tab label="Через defineOptions">
+```tsx file="../../../../code/entrypoints/options/settings/options.tsx" title="src/options.tsx"
+```
+    </Tab>
+    <Tab label="Именованные экспорты">
+```tsx file="../../../../code/entrypoints/options/settings/options.named-exports.tsx" title="src/options.tsx"
+```
+    </Tab>
+    <Tab label="Форма настроек">
+```tsx file="../../../../code/entrypoints/options/settings/SettingsForm.tsx" title="src/SettingsForm.tsx"
+```
+    </Tab>
+</Tabs>
+
+Этот вариант заменяет `options.ts` из быстрого старта.
+Соберите расширение, загрузите его и откройте настройки.
+Включите **Compact interface**, закройте страницу и откройте снова: флажок останется включённым.
+Если запись не удалась, компонент покажет сообщение об ошибке; во время записи флажок недоступен.
+
+`useStorage` читает ключ `settings.compact` из локального хранилища, подписывается на его изменения и обновляет React-компонент.
+`defaultValue: false` задаёт значение для отображения, пока ключ не записан; само по себе оно не сохраняет настройку.
+Другой контекст расширения может читать этот же ключ через `storageLocal<boolean>("settings.compact")` из `adnbn/storage`.
+`storage.local` хранит данные в текущем профиле браузера и не синхронизирует их между устройствами.
+
+Оба формата поддерживают одни и те же опции и фильтры сборки.
+В формате с именованными экспортами задавайте опции через `export const`; обычный `export default` соответствует `render`.
+Готовый React-компонент экспортируйте напрямую, как `export default SettingsForm` в примере.
+В описании опций это соответствие обозначено бейджем **primary**.
+
+Для постоянного текста передайте строку напрямую, как в [быстром старте](#быстрый-старт).
+Функция нужна, когда содержимое создаётся или вычисляется при загрузке страницы.
+`render` необязателен: если вся разметка находится в HTML-шаблоне, достаточно задать `template` и остальные опции страницы.
+
+## Содержимое страницы
+
+<ViewRendering />
+
+### Vanilla
+
+Передайте в `render` DOM-элемент, непустую строку или число напрямую либо верните их из функции.
+Этот счётчик создаёт кнопку; Addon Bone помещает её в контейнер `main`:
+
+```ts file="../../../../code/entrypoints/options/counter.options.ts" title="src/options.ts"
+```
+
+При нажатии обработчик увеличивает значение и обновляет текст кнопки.
+Изменение переменной само по себе не перерисовывает DOM.
+
+Строка отображается как текст: `"<strong>Hello</strong>"` не превращается в HTML.
+Для разметки создавайте DOM-элементы, используйте HTML-шаблон или React.
+Пустая строка, `null`, `undefined` и логические значения не создают содержимое или контейнер; число `0` отображается.
+
+Vanilla вызывает `render(options)` при загрузке страницы и использует его синхронный результат.
+Для загрузки данных верните элемент с начальным содержимым, затем обновите его из отдельной асинхронной функции.
+Обрабатывайте ошибки в этой функции: Addon Bone не ожидает её выполнения.
+
+### React
+
+Установите `react` и `react-dom`, если их ещё нет в проекте.
+Для TypeScript также нужны `@types/react` и `@types/react-dom`.
+Выполните команды в каталоге проекта; для JavaScript достаточно первой строки:
+
+<PackageManagerTabs command={reactInstallCommands} />
+
+Сохраните точку входа как `options.tsx`: расширение файла выберет React.
+Для JavaScript с JSX используйте `options.jsx`.
+Этот пример использует отдельный компонент счётчика, который обновляется при нажатии кнопки.
+Сохраните `Counter.tsx` рядом с точкой входа и выберите один из двух форматов `options.tsx`:
+
+<Tabs>
+    <Tab label="Через defineOptions">
+```tsx file="../../../../code/entrypoints/options/counter.options.tsx" title="src/options.tsx"
+```
+    </Tab>
+    <Tab label="Именованные экспорты">
+```tsx file="../../../../code/entrypoints/options/counter.named-exports.options.tsx" title="src/options.tsx"
+```
+    </Tab>
+    <Tab label="Компонент счётчика">
+```tsx file="../../../../code/entrypoints/page/counter.component.page.tsx" title="src/Counter.tsx"
+```
+    </Tab>
+</Tabs>
+
+Оба формата подключают один `Counter.tsx`.
+В `defineOptions` передайте компонент через `render: Counter`; в формате с именованными экспортами объявите опции через `export const` и экспортируйте компонент напрямую через `export default Counter`.
+Выберите одну реализацию `options.tsx`; она заменяет предыдущую страницу из примеров.
+
+Нажатие кнопки обновит состояние через `useState`, и React отобразит новое значение.
+Addon Bone создаёт контейнер и React root; вручную вызывать `createRoot` не нужно.
+Функция `render` в React выполняется как компонент и может использовать hooks.
+Сохраните импорт `React` из примера: текущее преобразование JSX использует его при выполнении.
+Загружайте данные через эффекты или выбранную библиотеку загрузки данных: сначала покажите начальное содержимое, затем обновите состояние.
+Сам компонент возвращает результат синхронно.
+
+<DocHeading level={3} id="options-render-types" toc={false}>Типы `render` и `props`</DocHeading>
+
+Для переиспользуемой функции импортируйте `ViewRenderHandler<OptionsProps>` из `adnbn`, а для React-компонента — `ViewRenderReactComponent<OptionsProps>`.
+`OptionsProps` описывает опции, которые получает функция; оба контракта требуют синхронного результата:
+
+<FrameworkTabs>
+    <Tab label="Vanilla">
+```ts file="../../../../code/entrypoints/options/typed.options.ts" title="src/options.ts"
+```
+    </Tab>
+    <Tab label="React">
+```tsx file="../../../../code/entrypoints/options/typed.options.tsx" title="src/options.tsx"
+```
+    </Tab>
+</FrameworkTabs>
+
+Явная аннотация необязательна: можно передать обычную функцию с выведенным синхронным типом результата.
+Тип `React.FC` в React 19 допускает Promise, поэтому для строгого контракта `render` используйте `ViewRenderReactComponent<OptionsProps>` или выведенный синхронный тип.
+
+<DocHeading level={3} id="container-examples" toc={false}>Контейнер для содержимого</DocHeading>
+
+`container` задаёт внешний элемент, а `render` — его содержимое.
+Для выбора тега достаточно строки, например `container: "main"`.
+Для свойств элемента передайте объект; для вызова DOM-методов или вычисления свойств по опциям страницы — функцию:
+
+<Tabs>
+    <Tab label="Свойства контейнера">
+```ts file="../../../../code/entrypoints/options/container/options.options.ts" title="src/options.ts"
+```
+    </Tab>
+    <Tab label="Создание контейнера">
+```ts file="../../../../code/entrypoints/options/container/factory.options.ts" title="src/options.ts"
+```
+    </Tab>
+</Tabs>
+
+Оба варианта создают `main` с классом `settings-page`; функция дополнительно задаёт `aria-label` для вспомогательных технологий.
+`render` создаёт заголовок `h1` внутри контейнера.
+Обе функции получают опции текущего файла без `render` и `container`.
+
+В Vanilla Addon Bone получает результат `render`, создаёт контейнер, добавляет его в начало `body` и помещает внутрь содержимое.
+В React фреймворк сначала подготавливает React-элемент, затем создаёт и добавляет контейнер, после чего передаёт элемент React для отображения.
+React вызывает компонент при монтировании и управляет дальнейшими обновлениями интерфейса.
+
+Не добавляйте возвращаемые элементы в `body` самостоятельно.
+Функция контейнера может быть асинхронной: Addon Bone дождётся её результата перед монтированием.
+
+<DocHeading level={3} id="options-lifecycle" toc={false}>Загрузка и закрытие</DocHeading>
+
+Код Options выполняется в контексте страницы расширения, отдельно от background.
+Страница существует, пока её держит открытой браузер; после закрытия или перезагрузки состояние в памяти теряется.
+Сохраняйте настройки при изменении или явном нажатии кнопки сохранения, а не только при закрытии страницы.
+
+У каждой открытой копии страницы собственные DOM и состояние React.
+Для общих значений используйте хранилище и подписки на его изменения, как в [форме настроек](#объявление-options).
+Освобождайте подписки React-компонента в функции очистки эффекта.
+`useStorage` управляет своей подпиской самостоятельно.
+Длительную фоновую работу передавайте в [Background](./background.mdx) или [Service](./service.mdx).
+
+## Стили и модули
+
+<ViewAssets />
+
+Этот пример добавляет к форме настроек стили на SCSS.
+Сохраните `SettingsForm.tsx` из [объявления Options](#объявление-options), добавьте `settings.scss` и замените точку входа:
+
+<Tabs>
+    <Tab label="Код Options">
+```tsx file="../../../../code/entrypoints/options/styles/options.tsx" title="src/options.tsx"
+```
+    </Tab>
+    <Tab label="Форма настроек">
+```tsx file="../../../../code/entrypoints/options/settings/SettingsForm.tsx" title="src/SettingsForm.tsx"
+```
+    </Tab>
+    <Tab label="Файл стилей">
+```scss file="../../../../code/entrypoints/options/styles/settings.scss" title="src/settings.scss"
+```
+    </Tab>
+</Tabs>
+
+Addon Bone компилирует SCSS в CSS и собирает его как CSS Modules: `styles.form` содержит итоговое имя класса.
+Sass уже подключён в сборщике — отдельная установка и настройка для этого примера не нужны.
+Переменная `$accent` задаёт цвет флажка, а функция `color.adjust` осветляет этот цвет для рамки.
+Вложенные селекторы оформляют содержимое формы.
+Форма получит ограничение ширины, отступы и рамку; стили и компонент сборщик подключит к HTML автоматически.
+
+`className: styles.form` применяет стили к контейнеру `main` и его содержимому.
+Готовый компонент передан в `render` напрямую.
+Используйте те же зависимости React и разрешение `storage`, что и в исходном примере формы.
+
+## Настройка HTML
+
+<ViewHtml />
+
+<DocHeading level={3} id="html-tags" toc={true}>Дополнительные ресурсы и метатеги</DocHeading>
+
+Для готовых ресурсов, которые не импортируются точкой входа, задайте `links` и `scripts`.
+В этом примере CSS задаёт отступы и системный шрифт, дополнительный скрипт устанавливает `data-page="settings"` на `html`, а метатеги добавляют описание и поддерживаемые цветовые схемы:
+
+<Tabs>
+    <Tab label="Код Options">
+```ts file="../../../../code/entrypoints/options/html/options.ts" title="src/options.ts"
+```
+    </Tab>
+    <Tab label="Файл стилей">
+```css file="../../../../code/entrypoints/page/html/page.css" title="src/public/page.css"
+```
+    </Tab>
+    <Tab label="Дополнительный скрипт">
+```js file="../../../../code/entrypoints/options/html/options-extra.js" title="src/public/options-extra.js"
+```
+    </Tab>
+</Tabs>
+
+Addon Bone скопирует файлы из `src/public` и добавит ссылки на них в HTML.
+Те же CSS и JavaScript можно перечислить через `tags`; не дублируйте одинаковые ресурсы в `tags` и `links` / `scripts`, иначе они подключатся повторно.
+
+<DocHeading level={3} id="html-template" toc={true}>Собственный шаблон</DocHeading>
+
+Используйте шаблон, если часть разметки должна находиться в HTML ещё до выполнения `render`.
+Здесь footer уже находится в документе, а Addon Bone добавляет контейнер `main` с текстом перед ним:
+
+<Tabs>
+    <Tab label="Код Options">
+```ts file="../../../../code/entrypoints/options/template/options.ts" title="src/options.ts"
+```
+    </Tab>
+    <Tab label="HTML-шаблон">
+```html file="../../../../code/entrypoints/options/template/options.html" title="src/options.html"
+```
+    </Tab>
+</Tabs>
+
+Путь `./options.html` разрешается рядом с `options.ts`.
+Не добавляйте скрипт точки входа в шаблон вручную: Addon Bone подключит собранный файл.
+Если шаблон содержит всё нужное содержимое, `render` можно не объявлять.
+
+:::info Файлы страницы в одной папке
+Для страницы со своим шаблоном удобно выделить папку `src/options/`.
+Храните в ней точку входа, HTML, стили и связанные модули или ресурсы:
+
+```tree file="../../../../code/entrypoints/options/template/directory.tree"
+```
+
+Перенесите реализацию из примера в `options/index.ts`, переименуйте шаблон в `template.html` и укажите `template: "./template.html"`.
+Для React используйте `index.tsx`.
+Это необязательная организация файлов: одиночный `options.ts` также поддерживается.
+:::
+
+<DocHeading level={3} id="options-csp" toc={true}>Content Security Policy</DocHeading>
+
+Через `csp` задайте, откуда интерфейс может загружать ресурсы и какой код может выполнять.
+Например, для библиотеки с WebAssembly включите `wasm`, а для предпросмотра изображений в data URL добавьте `CspSource.Data` в `sources.image`:
+
+<Tabs>
+    <Tab label="Код Options">
+```ts file="../../../../code/entrypoints/options/csp/options.ts" title="src/options.ts"
+```
+    </Tab>
+    <Tab label="Сгенерированный Manifest V3">
+```json file="../../../../code/entrypoints/options/csp/manifest-v3.json" title="manifest.json"
+```
+    </Tab>
+    <Tab label="Сгенерированный Manifest V2">
+```json file="../../../../code/entrypoints/options/csp/manifest-v2.json" title="manifest.json"
+```
+    </Tab>
+</Tabs>
+
+Показаны связанные с примером поля манифеста.
+Эти настройки разрешают нужные возможности; обработку и отображение изображений выполняет ваш код.
+CSP выбранной Options объединяется с политиками других включённых страниц расширения и действует на них тоже.
+У Sandbox своя отдельная политика.
+
+Для запросов к серверу задавайте источник в `csp.sources.connect`, а доступ к сайту — шаблоном в `hostPermissions`.
+Эти настройки независимы: Addon Bone не выводит разрешения из CSP и не добавляет CSP из разрешений.
+
+В Chrome Manifest V3 JavaScript должен входить в пакет расширения: `scripts` не разрешает удалённый код, inline-обработчики или `eval`.
+Подробнее — [правила CSP для страниц расширения](https://developer.chrome.com/docs/extensions/reference/manifest/content-security-policy).
+
+## Опции
+
+Опции относятся к выбранному файлу Options: задают режим открытия, содержимое, настройки HTML и условия включения в сборку.
+
+<DocHeading level={3} id="options-specific" toc={false}>Открытие настроек</DocHeading>
+
+<EntrypointSpec name="openInTab" type="boolean" manifest>
+    Задаёт <code>options_ui.open_in_tab</code> в манифесте.
+    При <code>true</code> браузер открывает настройки в обычной вкладке.
+    При <code>false</code> запрашивается встроенный интерфейс управления расширениями; Opera и Safari всё равно открывают вкладку.
+    Если не указать, Addon Bone записывает <code>true</code>.
+    Пример и ограничения браузеров показаны в <a href="#options-open-mode">разделе о режиме открытия</a>.
+</EntrypointSpec>
+
+<DocHeading level={3} id="view-options" toc={false}>Опции страницы</DocHeading>
+
+`render` и `container` управляют содержимым; остальные опции настраивают HTML и политику ресурсов.
+Форматы ресурсов, метатегов и CSP показаны в [примерах настройки HTML](#настройка-html).
+
+<ViewRender primary containerExamplesHref="#container-examples" />
+<View />
+
+<DocHeading level={3} id="options-permissions" toc={false}>Разрешения</DocHeading>
+
+Options может обращаться к API расширения напрямую.
+Для самого открытия страницы разрешение не требуется; объявляйте разрешения для её функций, например `storage` для сохранения настроек.
+
+<PermissionIntro />
+
+<Details title="Опции разрешений">
+    <PermissionOptions />
+</Details>
+
+<DocHeading level={3} id="common-options" toc={false}>Общие опции</DocHeading>
+
+Все заданные фильтры должны подходить текущей сборке.
+Если файл исключён, он не участвует в выборе Options.
+Разрешения и CSP добавляет только выбранная реализация.
+
+<Details title="Общие опции">
+    <Entrypoint />
+</Details>
+
+## Результат сборки
+
+Для быстрого старта Addon Bone создаёт HTML и скрипт Options и записывает путь к HTML в манифест:
+
+<Tabs>
+    <Tab label="Сгенерированный Manifest V3">
+```json file="../../../../code/entrypoints/options/manifest-v3.json" title="manifest.json"
+```
+    </Tab>
+    <Tab label="Сгенерированный Manifest V2">
+```json file="../../../../code/entrypoints/options/manifest-v2.json" title="manifest.json"
+```
+    </Tab>
+</Tabs>
+
+Показаны поля, связанные с Options; полный манифест содержит также название, версию и остальные настройки расширения.
+Для приложения `myapp` в сборке Chrome Manifest V3 основные файлы будут расположены так:
+
+```tree file="../../../../code/entrypoints/options/output.tree"
+```
+
+Показаны простые имена скриптов; реальная сборка может содержать общие chunks и хеши.
+Путь HTML зависит от имени файла, `as` и конфигурации выходного каталога:
+
+| Исходный файл или опция | HTML по умолчанию |
+| --- | --- |
+| `options.ts` или `options/index.ts` | `options.html` |
+| `preferences.options.ts` или `preferences.options/index.ts` | `preferences.options.html` |
+| `as: "preferences"` | `preferences.options.html` |
+
+Addon Bone сам обновляет `options_ui.page` при изменении пути.
+В обоих вариантах Manifest он использует `options_ui`, а не `options_page`.
+Заданное `openInTab: false` сохраняется в `open_in_tab`; отсутствие опции даёт `true`.
+
+Options можно использовать вместе с New Tab, Popup и другими страницами расширения.
+Её наличие не переопределяет встроенные страницы браузера и не создаёт кнопку на панели инструментов само по себе.
+
+## Multi-App Structure
+
+В проекте с несколькими приложениями поместите общую страницу настроек в `src/shared`, а реализацию конкретного приложения — в `src/apps/<app>`:
+
+```tree file="../../../../code/entrypoints/options/multi-app.tree"
+```
+
+Включите multi-app режим в конфигурации проекта:
+
+```ts file="../../../../code/entrypoints/newtab/multi-app.config.ts" title="adnbn.config.ts"
+```
+
+Если у приложения есть Options-файлы, Addon Bone использует их набор вместо shared-набора.
+Если у приложения таких файлов нет, он использует общую страницу настроек.
+Отдельной опции слияния нет: в сборку входит одна выбранная страница.
+В single-app проекте используйте обычный `src`; отдельный shared-слой не требуется.
+
+Выбор набора приложения или shared-слоя происходит до фильтров.
+Если файл приложения найден, но затем исключён, например по `includeBrowser`, общая страница автоматически не возвращается.
+Размещайте варианты в выбранном наборе и задавайте фильтры так, чтобы нужная реализация оставалась в сборке.
+Опции разных файлов не сливаются в одно определение.
+
+## Практические рекомендации
+
+- **Сохраняйте данные при действии пользователя.** Закрытие страницы не должно быть единственным моментом записи настроек.
+- **Показывайте загрузку и ошибки.** Не разрешайте менять ещё не прочитанную настройку и сообщайте, если запись не удалась.
+- **Используйте хранилище для общих значений.** Состояние React и переменные страницы исчезают при её закрытии; настройки должны быть доступны другим контекстам расширения.
+- **Открывайте настройки через `openOptionsPage`.** Это сохраняет выбор режима открытия и не привязывает код к имени HTML.
+- **Проверяйте оба режима интерфейса.** При `openInTab: false` тестируйте размеры и поведение в менеджере расширений; учитывайте браузеры, которые всё равно открывают вкладку.
+- **Оставляйте одну подходящую реализацию.** Используйте фильтры для вариантов по браузеру и приложению.
+
+## Отладка
+
+1. **Options не появилась в сборке.** Проверьте имя файла, размещение, фильтры и выбранный набор приложения или shared-слоя. Убедитесь, что в итоговом манифесте есть `options_ui.page` и указанный HTML существует.
+2. **Нет ссылки на настройки или не работает открытие.** Заново загрузите расширение после сборки. Проверьте `options_ui` и ошибку из `openOptionsPage()`: если Options исключена, открывать нечего.
+3. **Настройки открываются в отдельной вкладке при `openInTab: false`.** Проверьте `options_ui.open_in_tab`. В Opera и Safari это поведение браузера; в Chrome и Firefox убедитесь, что проверяете заново загруженную версию расширения.
+4. **Открылась другая реализация.** Проверьте подходящие Options-файлы и путь в манифесте. Уберите лишние кандидаты или разделите их фильтрами.
+5. **Страница открылась без содержимого.** Проверьте результат `render` и консоль самой страницы. Для Vanilla нужны DOM-элемент, непустая строка или число; для React — файл `.tsx` / `.jsx` и установленные зависимости.
+6. **HTML-теги видны как текст.** Строка из `render` отображается буквально. Создайте DOM-элементы или используйте JSX либо шаблон для разметки.
+7. **Настройка сбрасывается после закрытия.** Проверьте, что значение записывается в хранилище, а не только в переменную или состояние React. Проверьте `storage` в манифесте и ошибки чтения или записи.
+8. **Не загружается CSS или дополнительный скрипт.** Проверьте наличие файла в сборке и путь в `links`, `scripts` или `tags`. Готовые ресурсы поместите в `src/public`; путь `template` проверяйте относительно точки входа.
+9. **Браузерный API или запрос к серверу блокируется.** Проверьте разрешения выбранной Options в итоговом манифесте, предоставленный необязательный доступ и CSP. После изменения разрешений заново загрузите расширение.

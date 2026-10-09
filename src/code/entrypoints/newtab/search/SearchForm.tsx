@@ -5,11 +5,13 @@ import React, {type SubmitEvent, useState} from "react";
 export default function SearchForm() {
 	const [error, setError] = useState("");
 
-	async function search(event: SubmitEvent<HTMLFormElement>) {
+	const search = async (event: SubmitEvent<HTMLFormElement>) => {
 		event.preventDefault();
 		const data = new FormData(event.currentTarget);
 		const text = String(data.get("query") ?? "").trim();
-		if (!text) return;
+		if (!text) {
+			return;
+		}
 
 		setError("");
 		try {
@@ -21,7 +23,7 @@ export default function SearchForm() {
 			setError("Could not start the search. Please try again.");
 			console.error(error);
 		}
-	}
+	};
 
 	return (
 		<form role="search" onSubmit={search}>

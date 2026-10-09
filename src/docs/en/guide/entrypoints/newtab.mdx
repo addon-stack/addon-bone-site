@@ -74,8 +74,8 @@ Choose one of these layouts:
 ```tree file="../../../../code/entrypoints/newtab/default.tree"
 ```
     </Tab>
-    <Tab label="Grouped Files">
-```tree file="../../../../code/entrypoints/newtab/grouped.tree"
+    <Tab label="Page Directory">
+```tree file="../../../../code/entrypoints/newtab/directory.tree"
 ```
     </Tab>
 </Tabs>
@@ -83,20 +83,10 @@ Choose one of these layouts:
 These paths are supported for TypeScript; `{ts,tsx}` represents two possible extensions:
 
 - `newtab.{ts,tsx}` and `*.newtab.{ts,tsx}`;
-- `newtab/index.{ts,tsx}` and `*.newtab/index.{ts,tsx}`;
-- `newtabs/newtab.{ts,tsx}` and `newtabs/*.newtab.{ts,tsx}`;
-- `newtabs/newtab/index.{ts,tsx}` and `newtabs/*.newtab/index.{ts,tsx}`.
+- `newtab/index.{ts,tsx}` and `*.newtab/index.{ts,tsx}`.
 
 Use `.ts` for Vanilla and `.tsx` for React.
 For JavaScript, use the same paths with `.js` or `.jsx`: `.js` selects Vanilla, and `.jsx` selects React.
-
-:::warning Search Scope
-If Addon Bone finds entrypoints in `newtabs/`, it uses them instead of top-level New Tab files in the same source scope.
-Move the implementations you need into `newtabs/` when choosing this layout.
-
-In a multi-app project, this rule applies separately to the shared layer and the current app, before build filters are checked.
-If the files in `newtabs/` are then excluded by filters, discovery does not fall back to the top level.
-:::
 
 <DocHeading level={3} id="newtab-selection" toc={false}>Selecting an Implementation</DocHeading>
 
@@ -486,7 +476,7 @@ Options from different files are not merged into one definition.
 
 ## Debugging
 
-1. **New Tab is missing from the build.** Check the browser, file name, `newtabs/` directory, filters, and selected app or shared set. This entrypoint is skipped for Opera.
+1. **New Tab is missing from the build.** Check the browser, file name and location, filters, and selected app or shared set. This entrypoint is skipped for Opera.
 2. **The browser shows its default new tab page.** Check `chrome_url_overrides.newtab` in the generated manifest and confirm that the referenced HTML exists. Reload the extension and open a new tab. In Safari, check the selected extension in settings; in Chrome, use a regular window.
 3. **A different implementation opens.** Check the matching New Tab files and the manifest path. Remove extra candidates or separate them with filters. If other New Tab extensions are installed, check which one the browser uses.
 4. **The build reports multiple overrides.** Find the New Tab, History, and Bookmarks entrypoints listed in the error. Keep only one supported override for the current build.

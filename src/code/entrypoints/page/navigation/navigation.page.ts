@@ -9,7 +9,9 @@ export default definePage({
 		const list = document.createElement("ul");
 
 		for (const [name, path] of getPages()) {
-			if (name === "navigation") continue;
+			if (name === "navigation") {
+				continue;
+			}
 
 			const item = document.createElement("li");
 			const link = document.createElement("a");

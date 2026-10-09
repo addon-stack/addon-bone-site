@@ -7,6 +7,7 @@ description: "Create extension pages with Page in Addon Bone. Open them by name,
 import {PackageManagerTabs, Tab, Tabs} from "@rspress/core/theme";
 import Details from "@components/Details";
 import DocHeading from "@components/DocHeading";
+import FrameworkTabs from "@components/FrameworkTabs";
 import Page from "@en/components/entrypoints/Page";
 import PermissionOptions from "@en/components/entrypoints/PermissionOptions";
 import PermissionIntro from "@en/components/entrypoints/PermissionIntro";
@@ -269,7 +270,7 @@ For a reusable function, import `ViewRenderHandler<PageProps>` from `adnbn`; for
 `PageProps` describes the page options the function receives.
 Both contracts require a synchronous result.
 
-<Tabs>
+<FrameworkTabs>
     <Tab label="Vanilla">
 ```ts file="../../../../code/entrypoints/page/typed.page.ts" title="src/report.page.ts"
 ```
@@ -278,7 +279,7 @@ Both contracts require a synchronous result.
 ```tsx file="../../../../code/entrypoints/page/typed.page.tsx" title="src/report.page.tsx"
 ```
     </Tab>
-</Tabs>
+</FrameworkTabs>
 
 An explicit annotation is optional: TypeScript also accepts a regular function with an inferred synchronous return type.
 In React 19, `React.FC` permits a Promise, so it cannot be passed directly to the strict `render` contract.
@@ -418,6 +419,17 @@ In this example, the template contains a footer, and `render` adds text in a `ma
 The `./help.html` path is resolved alongside `help.page.ts`.
 Do not add the entrypoint script to the template manually: Addon Bone connects the built file.
 If the template already contains all the content you need, you can omit `render`.
+
+:::info Page files in one directory
+For a page with a custom template, you can keep related files in `src/help.page/`.
+Place the entrypoint, HTML, styles, and related modules together:
+
+```tree file="../../../../code/entrypoints/page/template/directory.tree"
+```
+
+Move the example implementation to `help.page/index.ts`, rename the template to `template.html`, and set `template: "./template.html"`.
+For React, use `index.tsx`.
+:::
 
 <DocHeading level={3} id="page-csp" toc={true}>Content Security Policy</DocHeading>
 

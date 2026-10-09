@@ -1,6 +1,0 @@
-src
-└── newtabs/
-    └── dashboard.newtab/
-        └── index.tsx
-adnbn.config.ts
-package.json

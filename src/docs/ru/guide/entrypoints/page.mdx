@@ -7,6 +7,7 @@ description: "Создавайте страницы расширения чер�
 import {PackageManagerTabs, Tab, Tabs} from "@rspress/core/theme";
 import Details from "@components/Details";
 import DocHeading from "@components/DocHeading";
+import FrameworkTabs from "@components/FrameworkTabs";
 import Page from "@ru/components/entrypoints/Page";
 import PermissionOptions from "@ru/components/entrypoints/PermissionOptions";
 import PermissionIntro from "@ru/components/entrypoints/PermissionIntro";
@@ -269,7 +270,7 @@ Addon Bone передаст компонент React и отобразит ег�
 `PageProps` описывает опции страницы, которые получит функция.
 Оба контракта требуют синхронного результата.
 
-<Tabs>
+<FrameworkTabs>
     <Tab label="Vanilla">
 ```ts file="../../../../code/entrypoints/page/typed.page.ts" title="src/report.page.ts"
 ```
@@ -278,7 +279,7 @@ Addon Bone передаст компонент React и отобразит ег�
 ```tsx file="../../../../code/entrypoints/page/typed.page.tsx" title="src/report.page.tsx"
 ```
     </Tab>
-</Tabs>
+</FrameworkTabs>
 
 Явная аннотация необязательна: TypeScript также принимает обычную функцию с выведенным синхронным типом результата.
 Тип `React.FC` в React 19 допускает Promise, поэтому его нельзя напрямую передать в строгий контракт `render`.
@@ -418,6 +419,17 @@ Addon Bone скопирует CSS и JavaScript из `src/public` и добав�
 Путь `./help.html` разрешается рядом с `help.page.ts`.
 Не добавляйте в шаблон скрипт точки входа вручную: Addon Bone подключит собранный файл.
 Если шаблон уже содержит всё нужное содержимое, `render` можно не объявлять.
+
+:::info Файлы страницы в одной папке
+Для страницы со своим шаблоном удобно выделить папку `src/help.page/`.
+Храните в ней точку входа, HTML, стили и связанные модули:
+
+```tree file="../../../../code/entrypoints/page/template/directory.tree"
+```
+
+Перенесите реализацию из примера в `help.page/index.ts`, переименуйте шаблон в `template.html` и укажите `template: "./template.html"`.
+Для React используйте `index.tsx`.
+:::
 
 <DocHeading level={3} id="page-csp" toc={true}>Content Security Policy</DocHeading>
 
