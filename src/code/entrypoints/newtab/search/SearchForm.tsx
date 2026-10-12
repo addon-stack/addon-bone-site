@@ -1,6 +1,6 @@
-import {searchInCurrentTab} from "adnbn/browser";
-
 import React, {type SubmitEvent} from "react";
+
+import {searchInCurrentTab} from "adnbn/browser";
 
 const SearchForm = () => {
 	const search = async (event: SubmitEvent<HTMLFormElement>) => {
@@ -15,12 +15,14 @@ const SearchForm = () => {
 	};
 
 	return (
-		<form role="search" onSubmit={search}>
-			<label>
-				Search the web: <input type="search" name="query" required />
-			</label>
-			<button type="submit">Search</button>
-		</form>
+		<search>
+			<form onSubmit={search}>
+				<label>
+					Search the web: <input type="search" name="query" required />
+				</label>
+				<button type="submit">Search</button>
+			</form>
+		</search>
 	);
 };
 

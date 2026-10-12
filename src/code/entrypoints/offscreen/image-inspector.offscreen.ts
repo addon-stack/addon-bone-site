@@ -1,9 +1,9 @@
 import {defineOffscreen, OffscreenReason} from "adnbn";
 
 import {
-	inspectImage,
 	type ImageInput,
 	type ImageMetadata,
+	inspectImage,
 } from "@acme/image-inspector";
 
 class ImageInspector {

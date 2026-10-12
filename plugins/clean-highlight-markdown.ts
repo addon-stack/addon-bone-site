@@ -1,4 +1,4 @@
-import {readFile, readdir, writeFile} from "node:fs/promises";
+import {readdir, readFile, writeFile} from "node:fs/promises";
 import * as path from "node:path";
 import type {RspressPlugin} from "@rspress/core";
 

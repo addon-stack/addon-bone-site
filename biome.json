@@ -1,12 +1,12 @@
 {
-  "$schema": "https://biomejs.dev/schemas/2.3.8/schema.json",
+  "$schema": "https://biomejs.dev/schemas/2.5.15/schema.json",
   "files": {
-    "includes": ["**", "**/*.mdx"]
+    "includes": ["**", "**/*.mdx", "!!**/.pnpm-store"]
   },
   "linter": {
     "enabled": true,
     "rules": {
-      "recommended": true,
+      "preset": "recommended",
       "complexity": {
         "noImportantStyles": "off"
       }
@@ -15,7 +15,8 @@
   "formatter": {
     "enabled": true,
     "indentStyle": "tab",
-    "bracketSpacing": false
+    "bracketSpacing": false,
+    "trailingNewline": true
   },
   "javascript": {
     "formatter": {
@@ -36,7 +37,101 @@
       },
       "formatter": {
         "enabled": false
+      },
+      "assist": {
+        "enabled": false
+      }
+    },
+    {
+      "includes": [
+        "src/code/**",
+        "src/docs/**/code/**",
+        "!src/code/README.md",
+        "!src/code/tsconfig.json"
+      ],
+      "formatter": {
+        "trailingNewline": false
+      },
+      "html": {
+        "formatter": {
+          "trailingNewline": false,
+          "lineWidth": 120,
+          "selfCloseVoidElements": "always"
+        }
+      }
+    },
+    {
+      "includes": [
+        "src/code/**/*.tsx",
+        "src/code/**/*.jsx",
+        "src/docs/**/code/**/*.tsx",
+        "src/docs/**/code/**/*.jsx"
+      ],
+      "javascript": {
+        "jsxRuntime": "reactClassic"
+      }
+    },
+    {
+      "includes": ["src/code/**/api/**"],
+      "linter": {
+        "rules": {
+          "correctness": {
+            "noUnusedVariables": "off"
+          },
+          "suspicious": {
+            "noExplicitAny": "off",
+            "noConfusingVoidType": "off"
+          },
+          "complexity": {
+            "noBannedTypes": "off"
+          }
+        }
+      }
+    },
+    {
+      "includes": [
+        "src/code/**/generated.html",
+        "src/code/**/*.generated.html"
+      ],
+      "linter": {
+        "rules": {
+          "a11y": {
+            "useHtmlLang": "off"
+          }
+        }
       }
     }
-  ]
+  ],
+  "assist": {
+    "actions": {
+      "source": {
+        "organizeImports": {
+          "level": "on",
+          "options": {
+            "groups": [
+              ["react", "react/**", "react-dom", "react-dom/**"],
+              ":BLANK_LINE:",
+              ["adnbn", "adnbn/**"],
+              ":BLANK_LINE:",
+              [":NODE:", ":PACKAGE:", "!@components/**", "!@en/**", "!@ru/**"],
+              ":BLANK_LINE:",
+              [
+                ":STYLE:",
+                "**/*.svg",
+                "**/*.png",
+                "**/*.jpg",
+                "**/*.jpeg",
+                "**/*.webp",
+                "**/*.gif",
+                "**/*.woff",
+                "**/*.woff2"
+              ],
+              ":BLANK_LINE:",
+              [":ALIAS:", ":PATH:", "@components/**", "@en/**", "@ru/**"]
+            ]
+          }
+        }
+      }
+    }
+  }
 }

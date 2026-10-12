@@ -1,9 +1,11 @@
-import DocHeading from "@components/DocHeading";
-import PropertyBadge from "@components/PropertyBadge";
-import {useI18n} from "@rspress/core/runtime";
 import type {ComponentProps, ReactNode} from "react";
 
+import {useI18n} from "@rspress/core/runtime";
+
 import styles from "./property-spec.scss";
+
+import DocHeading from "@components/DocHeading";
+import PropertyBadge from "@components/PropertyBadge";
 
 export interface PropertySpecProps extends ComponentProps<"div"> {
 	name: string;

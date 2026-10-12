@@ -7,6 +7,7 @@ export default () => {
 
 	return (
 		<button
+			type="button"
 			className={styles.counter}
 			onClick={() => setCount((value) => value + 1)}
 		>

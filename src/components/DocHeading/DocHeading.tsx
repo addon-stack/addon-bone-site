@@ -1,5 +1,6 @@
-import cn from "classnames";
 import {Children, type ComponentPropsWithoutRef} from "react";
+
+import cn from "classnames";
 
 type BaseDocHeadingProps = {
 	toc?: boolean;

@@ -1,7 +1,7 @@
+import React from "react";
+
 import {StorageStatus} from "adnbn/storage";
 import {useStorage} from "adnbn/storage/react";
-
-import React from "react";
 
 const SettingsForm = () => {
 	const compact = useStorage({

@@ -4,14 +4,12 @@ interface SenderProps {
 
 export const SenderOverview = ({entrypoint}: SenderProps) => {
 	return (
-		<>
-			<p>
-				Every {entrypoint} method call has a request-scoped <code>$sender</code>
-				. It contains the <code>chrome.runtime.MessageSender</code> for the
-				current proxy call and is available inside {entrypoint} methods through{" "}
-				<code>this.$sender</code>.
-			</p>
-		</>
+		<p>
+			Every {entrypoint} method call has a request-scoped <code>$sender</code>.
+			It contains the <code>chrome.runtime.MessageSender</code> for the current
+			proxy call and is available inside {entrypoint} methods through{" "}
+			<code>this.$sender</code>.
+		</p>
 	);
 };
 

@@ -1,5 +1,6 @@
-import PropertyBadge from "@components/PropertyBadge";
 import {useI18n} from "@rspress/core/runtime";
+
+import PropertyBadge from "@components/PropertyBadge";
 
 type ManifestBadgeI18n = {
 	manifest_badge: string;

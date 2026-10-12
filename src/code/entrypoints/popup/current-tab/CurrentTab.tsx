@@ -1,6 +1,6 @@
-import {getActiveTab} from "adnbn/browser";
-
 import React, {useActionState} from "react";
+
+import {getActiveTab} from "adnbn/browser";
 
 const CurrentTab = () => {
 	const [message, load, isPending] = useActionState(async () => {
@@ -18,7 +18,7 @@ const CurrentTab = () => {
 			<button type="submit" disabled={isPending}>
 				{isPending ? "Loading…" : "Read current tab"}
 			</button>
-			<p role="status">{message}</p>
+			<output>{message}</output>
 		</form>
 	);
 };

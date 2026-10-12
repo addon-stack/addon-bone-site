@@ -36,10 +36,13 @@ export default () => (
 			массив таких записей. Если не указать, Addon Bone подключит только скрипты
 			самой точки входа и её зависимостей.
 		</EntrypointSpec>
-		<EntrypointSpec name="metas" type="HtmlMetaTagOptions | HtmlMetaTagOptions[]">
+		<EntrypointSpec
+			name="metas"
+			type="HtmlMetaTagOptions | HtmlMetaTagOptions[]"
+		>
 			Добавляет метатеги в <code>head</code> сгенерированного HTML, например
-			описание страницы. Передайте объект с непустым <code>attributes</code>:
-			в нём задайте атрибуты метатега, например <code>name</code> и{" "}
+			описание страницы. Передайте объект с непустым <code>attributes</code>: в
+			нём задайте атрибуты метатега, например <code>name</code> и{" "}
 			<code>content</code>. Для нескольких тегов используйте массив таких
 			объектов. Если не указать, дополнительные метатеги не добавляются.
 		</EntrypointSpec>

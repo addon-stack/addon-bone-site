@@ -1,6 +1,6 @@
-import {defineOffscreen, OffscreenReason} from "adnbn";
-
 import React from "react";
+
+import {defineOffscreen, OffscreenReason} from "adnbn";
 
 import {TextImage} from "./TextImage";
 

@@ -9,5 +9,3 @@ onInstalled((details) => {
 		console.log("Extension updated from version", details.previousVersion);
 	}
 });
-
-export {};

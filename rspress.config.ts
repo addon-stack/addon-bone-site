@@ -3,7 +3,6 @@ import {pathToFileURL} from "node:url";
 import {pluginSass as sass} from "@rsbuild/plugin-sass";
 import {defineConfig} from "@rspress/core";
 import {transformerNotationHighlight} from "@shikijs/transformers";
-
 import fileTree from "rspress-plugin-file-tree";
 
 import {cleanHighlightMarkdown} from "./plugins/clean-highlight-markdown";

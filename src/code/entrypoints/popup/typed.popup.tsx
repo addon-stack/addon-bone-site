@@ -1,6 +1,6 @@
-import {definePopup, type ViewRenderReactComponent} from "adnbn";
-
 import React from "react";
+
+import {definePopup, type ViewRenderReactComponent} from "adnbn";
 
 type PopupDefinition = Parameters<typeof definePopup>[0];
 type PopupProps = Omit<PopupDefinition, "render" | "container">;

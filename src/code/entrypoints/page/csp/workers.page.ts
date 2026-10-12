@@ -9,5 +9,6 @@ export default definePage({
 			frame: [CspSource.None],
 		},
 	},
-	render: "This build allows Blob images and packaged workers, and blocks frames.",
+	render:
+		"This build allows Blob images and packaged workers, and blocks frames.",
 });

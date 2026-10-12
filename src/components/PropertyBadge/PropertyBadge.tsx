@@ -1,5 +1,6 @@
-import cn from "classnames";
 import type {ComponentProps} from "react";
+
+import cn from "classnames";
 
 import styles from "./property-badge.scss";
 

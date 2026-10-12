@@ -122,9 +122,10 @@ Keep the tone calm, direct, and precise.
   keep the actual filename in the code-fence title.
 - Give source and configuration code fences a file title. Use Addon Bone public
   aliases such as `adnbn/browser` and `adnbn/storage` where wrappers exist.
-- Order example imports by group: Addon Bone and its public aliases first,
-  React next, then other dependencies, styles and assets, and local modules.
-  Separate these groups with one blank line.
+- Order imports in project code and examples by group: React first, Addon Bone
+  and its public aliases next, then other dependencies (including Node.js built-ins),
+  styles and assets, and local modules. Separate these groups with one blank line.
+  Keep this order synchronized with the Biome import-group configuration.
 - Use examples that reflect a useful application task. Show imported components
   or functions doing real work; do not add a separate module just to export a
   constant used as placeholder content.
@@ -133,6 +134,18 @@ Keep the tone calm, direct, and precise.
   without a terminal newline that creates an empty rendered line. Do not leave
   blank lines before the closing fence of inline snippets. Recheck the rendered
   final line after formatting examples.
+- Keep `trailingNewline: false` for snippet files in Biome. Preserve the normal
+  final newline in project source and configuration files. Run `npm run check`
+  to validate snippet endings, including formats that Biome does not process.
+- Preserve exact framework contracts in API declaration snippets. Scope lint
+  exceptions for unused standalone declarations, `any`, `{}`, and callable
+  `void` unions to `src/code/**/api/**`; keep formatting and all other rules.
+  In generated HTML snippets, allow an omitted `lang` attribute when the
+  framework output omits it; do not invent generated attributes for the linter.
+  Executable examples retain the normal lint rules. Use Biome's `reactClassic`
+  JSX runtime for framework React examples; the site uses `react-jsx`.
+- Keep `npm run check` and the pre-push hook read-only. Use `npm run check:fix`
+  for automatic corrections; the pre-commit hook fixes only staged files.
 - Use `transformerNotationHighlight` from `@shikijs/transformers` to highlight
   example lines. Mark only the lines that need emphasis with `[!code highlight]`
   comments in the snippet's language. Do not use the deprecated

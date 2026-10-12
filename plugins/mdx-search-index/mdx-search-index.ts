@@ -61,7 +61,7 @@ function attributeValue(node: Element, name: string): unknown {
 	const attribute = node.attributes.find(
 		(item) => item.type === "mdxJsxAttribute" && item.name === name,
 	);
-	if (!attribute || attribute.type !== "mdxJsxAttribute") return undefined;
+	if (attribute?.type !== "mdxJsxAttribute") return undefined;
 	if (typeof attribute.value === "object" && attribute.value !== null) {
 		return literalValue(attribute.value);
 	}

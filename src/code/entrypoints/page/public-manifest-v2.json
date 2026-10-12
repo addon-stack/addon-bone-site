@@ -1,5 +1,3 @@
 {
-  "web_accessible_resources": [
-    "help.html"
-  ]
+  "web_accessible_resources": ["help.html"]
 }

@@ -1,5 +1,6 @@
-import {type Tab, Tabs} from "@rspress/core/theme";
 import {Children, type ComponentProps, isValidElement} from "react";
+
+import {type Tab, Tabs} from "@rspress/core/theme";
 
 type Framework = "Vanilla" | "React";
 

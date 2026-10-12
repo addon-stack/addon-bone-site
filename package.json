@@ -6,18 +6,21 @@
     "build": "rspress build",
     "dev": "rspress dev",
     "preview": "rspress preview",
-    "check": "biome check --write",
+    "check": "biome check . && npm run check:snippets",
     "format": "biome format --write",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test:search": "node --experimental-strip-types --test plugins/mdx-search-index/mdx-search-index.test.ts",
-    "prepare": "husky"
+    "prepare": "husky",
+    "check:fix": "biome check --write . && npm run check:snippets -- --fix",
+    "check:snippets": "node scripts/check-snippets.mjs",
+    "test:tooling": "node --test scripts/*.test.mjs"
   },
   "dependencies": {
     "@rspress/core": "2.0.2",
     "classnames": "^2.5.1"
   },
   "devDependencies": {
-    "@biomejs/biome": "2.3.8",
+    "@biomejs/biome": "2.5.15",
     "@commitlint/cli": "^20.4.1",
     "@commitlint/config-conventional": "^20.4.1",
     "@mdx-js/mdx": "3.1.1",
@@ -29,12 +32,16 @@
     "@types/react-dom": "^19.2.3",
     "husky": "^9.1.7",
     "lint-staged": "^16.2.7",
-    "rspress-plugin-file-tree": "^1.0.4",
     "react": "^19.2.4",
     "react-dom": "^19.2.4",
-    "sass": "^1.97.3"
+    "rspress-plugin-file-tree": "^1.0.4",
+    "sass": "^1.97.3",
+    "typescript": "5.9.3"
   },
   "lint-staged": {
-    "*.{js,jsx,ts,tsx,json,cjs,mjs,css,scss,mdx}": "pnpm run format --no-errors-on-unmatched --"
+    "*": [
+      "biome check --write --no-errors-on-unmatched --",
+      "node scripts/check-snippets.mjs --fix"
+    ]
   }
 }

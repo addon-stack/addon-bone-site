@@ -1,6 +1,6 @@
-import {changePopup, getPopups, type PopupAlias} from "adnbn";
-
 import React, {useActionState} from "react";
+
+import {changePopup, getPopups, type PopupAlias} from "adnbn";
 
 export default () => {
 	const [message, apply, isPending] = useActionState(
@@ -19,6 +19,7 @@ export default () => {
 		<form>
 			{[...getPopups().keys()].map((alias) => (
 				<button
+					type="submit"
 					key={alias}
 					formAction={() => apply(alias)}
 					disabled={isPending}
@@ -26,7 +27,7 @@ export default () => {
 					{alias}
 				</button>
 			))}
-			<p role="status">{isPending ? "Applying…" : message}</p>
+			<output>{isPending ? "Applying…" : message}</output>
 		</form>
 	);
 };

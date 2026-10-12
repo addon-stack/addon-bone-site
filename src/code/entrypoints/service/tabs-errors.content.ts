@@ -6,5 +6,3 @@ try {
 } catch (error) {
 	console.error("Could not load tabs", error);
 }
-
-export {};

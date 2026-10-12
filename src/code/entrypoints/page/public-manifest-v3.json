@@ -1,12 +1,8 @@
 {
   "web_accessible_resources": [
     {
-      "resources": [
-        "help.html"
-      ],
-      "matches": [
-        "https://example.com/*"
-      ]
+      "resources": ["help.html"],
+      "matches": ["https://example.com/*"]
     }
   ]
 }
