@@ -1,467 +1,698 @@
 ---
-description: "Build typed Addon Bone offscreen entrypoints for hidden DOM, canvas, clipboard, iframe, and cross-manifest document work."
+description: "Parse HTML and process images in a hidden Offscreen document. Call its typed API from background with Addon Bone."
 ---
 
 # Offscreen
 
-import {Tab, Tabs} from "@rspress/core/theme";
-
+import {PackageManagerTabs, Tab, Tabs} from "@rspress/core/theme";
 import Details from "@components/Details";
 import DocHeading from "@components/DocHeading";
-import {
-	ContractHints,
-	ContractMembers,
-	ContractOverview,
-	Entrypoint,
-	Offscreen,
-	SenderNotes,
-	SenderOverview,
-	TransportCallingAsyncBoundary,
-	TransportCallingIntro,
-	TransportCallingNestedMembers,
-	View,
-} from "@en/components/entrypoints";
-import EntrypointDefinitionAdvanced from "./fragments/entrypoint-definition-advanced.mdx";
+import Offscreen from "@en/components/entrypoints/Offscreen";
+import PermissionIntro from "@en/components/entrypoints/PermissionIntro";
+import PermissionOptions from "@en/components/entrypoints/PermissionOptions";
+import ViewRender from "@en/components/entrypoints/ViewRender";
+import View from "@en/components/entrypoints/View";
+import Entrypoint from "@en/components/entrypoints/Entrypoint";
+import reactInstallCommands from "../../../../code/entrypoints/page/install/commands.json";
 
-`offscreen` is a hidden document entrypoint for extension work that needs a DOM-capable context without showing UI.
-Use it for `DOMParser`, canvas/image processing, clipboard payloads, iframe-based DOM work, media APIs, and other tasks that need `window` or `document`.
+Offscreen lets you work with the DOM in a hidden extension document.
+Use it when background code needs to parse HTML, process an image with canvas, or use an API that requires `window` and `document`, without opening a visible page.
 
-Native offscreen documents are a Chrome Manifest V3 API.
-Addon Bone gives you one offscreen entrypoint model for Chrome MV3, Manifest V2 builds, and Firefox builds, so application code can call the same typed API in every supported environment.
+Define the operations as methods of an object or class and call them through `getOffscreen(name)`.
+Addon Bone creates the hidden document when you call a method and provides TypeScript hints for arguments and results.
+Offscreen works in Manifest V3, Manifest V2, and Firefox builds, including environments without a native Offscreen API.
+Addon Bone chooses how to create the document; the API definition and method calls stay the same.
 
-Use `offscreen` as a focused document worker.
-Keep privileged browser orchestration in `background`, `service`, or `command`, then send DOM/document work to an offscreen API through `getOffscreen(name)`.
+Return the API with the operations you need from `init`.
+If these operations need elements in the document, add `render`: Addon Bone creates a container and mounts the returned content inside it.
+The document stays hidden.
 
 ## Quick Start
 
-Create an offscreen entrypoint that reads image dimensions in a hidden document.
+Read the width and height of a local image.
+Background passes its URL to Offscreen, where `Image` is available: this API is not available in a service worker.
 
 <Tabs>
-    <Tab label="Offscreen">
-        ```ts file="../../../../code/entrypoints/offscreen/image-size.offscreen.ts" title="src/offscreen.ts"
-        ```
+    <Tab label="Offscreen source">
+```ts file="../../../../code/entrypoints/offscreen/image-size/images.offscreen.ts" title="src/images.offscreen.ts"
+```
     </Tab>
-    <Tab label="Popup">
-```ts title="src/popup.ts"
-import {getOffscreen} from "adnbn";
-
-const offscreen = getOffscreen("offscreen");
-
-const size = await offscreen.size("https://example.com/photo.png");
-
-console.log(size.width, size.height);
-
-export {};
+    <Tab label="Background source">
+```ts file="../../../../code/entrypoints/offscreen/image-size/background.ts" title="src/background.ts"
+```
+    </Tab>
+    <Tab label="Source image">
+```xml file="../../../../code/entrypoints/offscreen/image-size/sample.svg" title="src/public/sample.svg"
 ```
     </Tab>
 </Tabs>
 
-Addon Bone discovers `offscreen.ts`, builds a hidden document for it, generates offscreen declarations, and exposes a typed async proxy for `getOffscreen("offscreen")`.
-The popup calls `offscreen.size()` like a normal method, while the hidden document uses DOM image APIs and returns typed dimensions.
-Remote image URLs must be accessible to the extension; depending on the URL and browser policy, your extension may also need matching host permissions.
+Add these files to an Addon Bone project, build the extension, and load it in your browser.
+When background starts, its console shows `960 480`, the width and height of this SVG in pixels.
+To use your own image, place it in `src/public` and change the path in `getUrl`.
 
-## When To Use Offscreen
+Background gets the local file URL through `getUrl` and calls `images.size()`.
+Offscreen loads the image and returns an object with `width` and `height` fields.
+The `Blob` and `Image` objects stay inside the hidden document.
 
-Use `offscreen` when the task needs a document context but should not open a visible page:
+In Chrome with Manifest V3, Addon Bone adds the `offscreen` permission automatically.
+The local image needs no host permissions or external dependencies.
 
-- Parse HTML with `DOMParser`.
-- Process images with `Image`, `createImageBitmap`, or canvas.
-- Prepare clipboard data.
-- Embed or inspect iframes.
-- Use DOM-only browser APIs from a background-driven workflow.
+## When to Use Offscreen
 
-Do not use offscreen as a replacement for ordinary background logic.
-Browser events, permissions, tab capture, downloads, and other privileged orchestration usually belong in `background`, `service`, or `command`.
-The offscreen entrypoint should receive the data it needs, do the document work, and return a typed result.
+Choose Offscreen for work that needs a document but no visible interface:
+
+- Parse HTML with `DOMParser` and return the data you need.
+- Process images with `Image` and canvas: resize, crop, or convert their format.
+- Work with the clipboard through the browser's available Clipboard APIs.
+- Embed an iframe when you need to read or change its DOM and the browser allows that access.
+- Use other Web APIs that need `window` or `document`.
+
+Keep querying tabs, capturing screenshots, saving files, and managing permissions in background.
+
+Offscreen does not bypass site access rules, iframe restrictions, or the requirements of a Web API.
+For example, loading a remote image may require permission for its host, while camera access depends on browser support and user consent.
+The Addon Bone API format stays the same across builds, but you need to check these browser requirements for your task.
 
 ## File Structure
 
-Addon Bone auto-discovers offscreen entrypoints by file naming patterns — no manual registration or manifest editing is required.
-Use the default flat structure for most projects.
-If you have many offscreen APIs, group them in `offscreens/` to keep hidden document work in one place.
+Place the API in a `*.offscreen.ts` file or a `*.offscreen/` directory with an `index.ts` file.
+Addon Bone discovers it by name and creates an HTML document during the build.
+You can also declare a single Offscreen in `offscreen.ts` or `offscreen/index.ts`.
 
 <Tabs>
-    <Tab label="Default">
-        ```tree file="./code/offscreen/default.tree"
-        ```
+    <Tab label="Default structure">
+```tree file="../../../../code/entrypoints/offscreen/default.tree"
+```
     </Tab>
-    <Tab label="Grouped">
-        ```tree file="./code/offscreen/grouped.tree"
-        ```
+    <Tab label="Grouped Offscreen files">
+```tree file="../../../../code/entrypoints/offscreen/grouped.tree"
+```
     </Tab>
 </Tabs>
 
-Supported patterns include:
+Keep files directly in `src` or group them in `offscreens/`.
+The following paths are supported for TypeScript and React; `{ts,tsx}` represents the two file extensions:
 
-- `offscreen.ts`
-- `*.offscreen.ts`
-- `offscreen/index.ts`
-- `*.offscreen/index.ts`
-- `offscreens/offscreen.ts`
-- `offscreens/*.offscreen.ts`
-- `offscreens/offscreen/index.ts`
-- `offscreens/*.offscreen/index.ts`
+- `offscreen.{ts,tsx}` and `*.offscreen.{ts,tsx}`;
+- `offscreen/index.{ts,tsx}` and `*.offscreen/index.{ts,tsx}`;
+- `offscreens/offscreen.{ts,tsx}` and `offscreens/*.offscreen.{ts,tsx}`;
+- `offscreens/offscreen/index.{ts,tsx}` and `offscreens/*.offscreen/index.{ts,tsx}`.
 
-:::warning Scope rule
-If an `offscreens/` directory contains offscreen entrypoints, Addon Bone scans only that directory for offscreen entrypoints in the same scope and does not merge them with root-level offscreen files.
+Use `.ts` for Vanilla and `.tsx` for React.
+For JavaScript, use the same paths with `.js` or `.jsx`: `.js` selects Vanilla, and `.jsx` selects React.
+
+:::warning Discovery scope
+If Addon Bone finds entrypoints in `offscreens/`, it uses that folder instead of Offscreen files at the top level of the same source scope.
+For example, if `offscreens/parser.offscreen.ts` exists, an `images.offscreen.ts` file next to the folder is not included in the build.
+Move all Offscreen files in that scope into `offscreens/` when you choose this grouping.
+
+In a multi-app project, the rule applies separately to the shared layer and the current app.
+The folder is selected before filters are checked: excluding files by browser or manifest version does not make discovery return to the top level.
 :::
 
-During build, Addon Bone creates one generated hidden-document view for each discovered offscreen entrypoint and generates transport declarations for each public offscreen API.
+<DocHeading level={3} id="offscreen-names" toc={false}>Offscreen Names</DocHeading>
 
-Merge order:
+| File | Default name |
+| --- | --- |
+| `offscreen.ts` or `offscreen/index.ts` | `offscreen` |
+| `images.offscreen.ts` or `images.offscreen/index.ts` | `images` |
+| `offscreens/images.offscreen.ts` | `images` |
 
-1. **External entrypoints** — provided by plugins.
-2. **Shared entrypoints** — from the configured shared layer in multi-app mode.
-3. **App-specific entrypoints** — from the current app directory.
+Use this name in `getOffscreen(name)`.
+Set `name` explicitly if it needs to stay the same after a file is renamed.
+An explicit name starts with a letter, `_`, or `$`; the remaining characters can be letters, digits, `_`, or `$`.
+Unicode letters are also allowed.
+A name derived from a file can contain other characters: for example, `image-tools.offscreen.ts` gives the name `image-tools`, even though a hyphen is not allowed in an explicit `name`.
 
-Within the same priority level, files are sorted by lexicographic path comparison.
-
-:::info
-Options are not merged between files into a single object.
-Each offscreen file is processed independently.
+:::warning Duplicate names
+If several local Offscreen entrypoints get the name `parser`, Addon Bone registers them as `parser`, `parser1`, and `parser2`.
+One implementation does not replace another.
+Choose unique names for stable calls.
+If one API has several implementations, set filters so that exactly one is included in each build.
 :::
+
+Addon Bone processes Offscreen entrypoints from plugins first, then the shared layer and the current app.
+Within each level, files are ordered by path.
+This order affects naming; documents start when their APIs are called.
 
 ## Definition
 
-Offscreen entrypoints can be declared in two equivalent formats:
-
-:::tip Recommended
-Use `defineOffscreen` as the default format.
-It provides strict TypeScript declarations: autocomplete, full option hints, and inline type validation while you write.
-:::
-
-<EntrypointDefinitionAdvanced/>
-
-Switch between tabs below to see each format in code:
+Use `defineOffscreen` for option hints and type checking.
+Alternatively, declare options as named exports and the API factory through `export default`.
 
 <Tabs>
-    <Tab label="Recommended">
-        ```ts file="../../../../code/entrypoints/offscreen/ping.offscreen.ts" title="src/ping.offscreen.ts"
-        ```
+    <Tab label="Using defineOffscreen">
+```ts file="../../../../code/entrypoints/offscreen/parser.offscreen.ts" title="src/parser.offscreen.ts"
+```
     </Tab>
-    <Tab label="Advanced">
-        ```ts file="../../../../code/entrypoints/offscreen/ping.named-exports.offscreen.ts" title="src/ping.offscreen.ts"
-        ```
+    <Tab label="Named exports">
+```ts file="../../../../code/entrypoints/offscreen/parser.named-exports.offscreen.ts" title="src/parser.offscreen.ts"
+```
     </Tab>
 </Tabs>
 
-For `offscreen`, the `primary` badge marks `init`, the option that receives a bare `export default`.
-Both formats support the same offscreen options, view options, and common entrypoint filters.
-Addon Bone uses the returned offscreen shape to generate declarations, so callers get autocomplete and typed async return values from `getOffscreen(name)`.
+Both formats support the same options and build filters.
+In the named-export format, declare options with `export const`; a bare `export default` maps to `init`.
+The option descriptions mark this mapping with the **primary** badge.
+If you need document content, add `render` to the `defineOffscreen` object or declare `export const render`; `export default` still maps to `init`.
 
-## Writing Offscreen
+<div id="writing-offscreen" />
 
-The value returned from `init` becomes the offscreen API.
-It can be an object literal, a class instance, or any object whose public methods and nested objects make up the callable API.
-For image workflows that need canvas, keep the offscreen API small and return a browser-friendly value such as a `dataUrl`.
+<DocHeading level={3} id="offscreen-init-main" toc={false}><code>init</code> and <code>main</code></DocHeading>
 
-```ts file="../../../../code/entrypoints/offscreen/thumbnail.offscreen.ts" title="src/thumbnail.offscreen.ts"
+`init(options)` creates the API synchronously inside the hidden document.
+Return an object, a class instance, or a function.
+If an operation needs to load an image, read data, or wait for another resource, do that work inside an API method.
+
+The optional `main(instance, options)` runs after the instance is registered and receives it directly.
+Use it for preparation that needs the created API.
+
+```ts file="../../../../code/entrypoints/offscreen/parser-startup.offscreen.ts" title="src/parser.offscreen.ts"
 ```
 
-Use `main` for bootstrap work that should run after the offscreen API is registered.
-Most offscreen entrypoints only need `init`.
+In this example, `parser.title()` runs inside Offscreen and returns a plain string.
+If preparation is asynchronous, methods that need its results must wait for the data to be ready themselves.
+Do not assume that registering the instance means this data is ready.
 
-```ts title="src/worker.offscreen.ts"
-import {defineOffscreen, OffscreenReason} from "adnbn";
-
-export default defineOffscreen({
-    reasons: OffscreenReason.Workers,
-
-    init() {
-        return {
-            ready(): boolean {
-                return true;
-            },
-        };
-    },
-
-    main(worker) {
-        console.log("Offscreen ready", worker.ready());
-    },
-});
-```
-
-## Generated Contracts
-
-<ContractOverview
-	entrypoint="offscreen"
-	getter="getOffscreen"
-	example="offscreen"
-/>
-
-<Tabs>
-    <Tab label="Object Target">
-        ```ts file="./code/offscreen/status.object.offscreen.ts.txt" title="src/offscreen.ts"
-        ```
-    </Tab>
-    <Tab label="Class Target">
-        ```ts file="./code/offscreen/status.class.offscreen.ts.txt" title="src/offscreen.ts"
-        ```
-    </Tab>
-</Tabs>
-
-Consumers of `getOffscreen("offscreen")` see only `status()`; `_statusText` is not part of the generated contract.
-
-<ContractMembers/>
-
-<ContractHints/>
-
-```ts title="src/image.offscreen.ts"
-import {defineOffscreen, OffscreenReason} from "adnbn";
-import {inspectImage, type ImageInput, type ImageMetadata} from "@acme/image-inspector";
-
-class ImageInspectorOffscreen {
-    /**
-     * @param {import("@acme/image-inspector").ImageInput} source
-     * @returns {Promise<import("@acme/image-inspector").ImageMetadata>}
-     */
-    inspect(source: ImageInput): Promise<ImageMetadata> {
-        return inspectImage(source);
-    }
-}
-
-export default defineOffscreen({
-    reasons: OffscreenReason.Blobs,
-
-    init() {
-        return new ImageInspectorOffscreen();
-    },
-});
-```
-
-In the generated contract, `inspect` uses the JSDoc `import(...)` types from the external package.
-Keep transport method parameters and return values JSON-serializable, such as an SDK DTO that carries a `dataUrl` string, because Chrome extension messaging uses JSON serialization.
-The same contract reader is used by other transport entrypoints, such as service and relay.
+`init` and `main` run each time the document is created.
+They do not run just once for the entire lifetime of the extension.
 
 ## Calling Offscreen
 
-<TransportCallingIntro getter="getOffscreen" contexts="normal extension contexts"/>
+Import `getOffscreen` from `adnbn` and call it from background or an extension page, such as a popup.
+Use the same import in Service and Command code that runs in background.
+The function returns a proxy; its methods run inside the hidden document.
 
-```ts title="src/content.ts"
-import {getOffscreen} from "adnbn";
+If a content script needs the operation, call a [Service](./service.mdx) method through `getService` from `adnbn`.
+The service runs in background: call the operation through `getOffscreen` inside its method and return the result to the content script.
+In Chrome, content scripts cannot access the APIs that manage Offscreen documents; see the [available content script APIs](https://developer.chrome.com/docs/extensions/develop/concepts/content-scripts#understand_content_script_capabilities).
 
-const thumbnails = getOffscreen("thumbnail");
-
-const dataUrl = await thumbnails.thumbnail("https://example.com/photo.png");
-
-console.log(dataUrl);
-
-export {};
+```ts file="../../../../code/entrypoints/offscreen/parser.background.ts" title="src/background.ts"
 ```
 
-<TransportCallingAsyncBoundary
-	entrypoint="Offscreen"
-	contexts="popup, content, page, sidebar, service, command, and background code"
-/>
+Use `await` for proxy calls.
+Even if the actual method is declared as `title(html): string`, the caller receives `Promise<string>`.
+Addon Bone creates the document when a method is called; getting a proxy through `getOffscreen(name)` alone does not start the document.
 
-<TransportCallingNestedMembers/>
+<DocHeading level={3} id="offscreen-nested-members" toc={false}>Nested Methods and Properties</DocHeading>
 
-```ts title="src/content.ts"
-import {getOffscreen} from "adnbn";
+Group related operations in nested objects: a path such as `html.title()` is preserved in the proxy.
+Read a plain property by calling a proxy function as well.
+For example, a `version` string becomes an asynchronous `version()` call.
 
-const image = getOffscreen("image-tools");
+<Tabs>
+    <Tab label="Offscreen source">
+```ts file="../../../../code/entrypoints/offscreen/diagnostics.offscreen.ts" title="src/diagnostics.offscreen.ts"
+```
+    </Tab>
+    <Tab label="Background source">
+```ts file="../../../../code/entrypoints/offscreen/diagnostics.background.ts" title="src/background.ts"
+```
+    </Tab>
+</Tabs>
 
-const size = await image.measure.fromDataUrl("data:image/png;base64,...");
+<DocHeading level={3} id="offscreen-data-errors" toc={false}>Data and Errors</DocHeading>
 
-console.log(size);
+Pass strings, numbers, booleans, `null`, arrays, and plain objects.
+Arguments and results travel through extension messaging, which uses [JSON serialization in Chrome](https://developer.chrome.com/docs/extensions/develop/concepts/messaging#serialization).
+A method can return `void` if the caller does not need a result.
 
-export {};
+Keep `Blob`, `ArrayBuffer`, DOM nodes, functions, and class instances inside Offscreen.
+For example, `init` can return a class instance, but a method's result must contain data that can be sent to the caller.
+In the Quick Start, the method returns an object with numeric `width` and `height` fields, while `Image` and `Blob` stay in the document.
+
+If a method throws, the caller's `await` also fails.
+Handle the error with `try` / `catch` to report the problem or choose another way to perform the action.
+
+```ts file="../../../../code/entrypoints/offscreen/parser-errors.background.ts" title="src/background.ts"
 ```
 
-Inside the offscreen document itself, prefer `main` when startup code needs direct access to the real registered instance.
-Addon Bone runs `main` after `init` registers the offscreen API and passes the instance directly.
+<DocHeading level={3} id="offscreen-direct-access" toc={false}>Access Inside the Hidden Document</DocHeading>
 
-```ts title="src/thumbnail.offscreen.ts"
-import {defineOffscreen, OffscreenReason} from "adnbn";
+If code already runs inside Offscreen, use the instance passed to `main`.
+You can also import `getOffscreen` from `adnbn/offscreen` inside this document to get the registered instance by name.
+With direct access, synchronous methods and properties stay synchronous.
 
-export default defineOffscreen({
-    reasons: OffscreenReason.Blobs,
+If an instance with that name has not been registered in the current document, or its registration has already been removed, the function synchronously throws `Transport instance "…" is not registered in the current context.`.
+The call does not wait for future registration. For manual registration, call `register()` first.
 
-    init() {
-        return {
-            async thumbnail(url: string) {
-                // ...
-            },
-        };
-    },
+`adnbn/offscreen` does not create a document or provide access to instances in other hidden documents.
+In background, use the import from `adnbn`, as in the examples above.
+Getting a proxy from `adnbn` inside Offscreen itself throws an error: the framework does not support that path.
 
-    async main(thumbnails) {
-        console.log(await thumbnails.thumbnail("https://example.com/photo.png"));
-    },
-});
+## Generated Contracts
+
+During the build, Addon Bone reads the API shape returned from `init` and creates types for `getOffscreen`.
+TypeScript provides hints for names, methods, arguments, and results.
+For the proxy, synchronous results become Promises.
+
+The contract includes public methods and properties, nested objects, and inherited public class methods.
+Members marked `private`, `protected`, or `static`, and names starting with `_`, are excluded.
+
+```ts file="../../../../code/entrypoints/offscreen/parser.class.offscreen.ts" title="src/parser.offscreen.ts"
 ```
+
+The caller gets `title()`, but not `_parse()`.
+The `_` prefix hides a method from the generated types; the method remains available on the actual instance.
+The `Document` returned by `_parse()` does not pass through the proxy: the public method returns a string.
+
+<DocHeading level={3} id="offscreen-jsdoc" toc={false}>Refining Types with JSDoc</DocHeading>
+
+Start with regular TypeScript annotations.
+Use JSDoc when the generator needs a hint about an external type or a complex contract.
+Supported tags are `@type`, `@param`, `@returns`, `@template`, and `@typedef` with `@property`.
+
+```ts file="../../../../code/entrypoints/offscreen/image-inspector.offscreen.ts" title="src/image-inspector.offscreen.ts"
+```
+
+This example integrates with a hypothetical external SDK; it is not an additional Quick Start dependency.
+Here, JSDoc tells the generator to use types from the SDK package.
+If TypeScript and JSDoc describe a member differently, the JSDoc hint takes precedence for the generated contract.
+It does not transform data: actual arguments and results must remain compatible with JSON.
 
 ## Runtime and Concurrency Model
 
-Native Chrome MV3 allows only one active offscreen document for an extension profile at a time.
-Addon Bone hides that lifecycle behind the typed proxy and keeps the calling model portable for MV2 and Firefox compatibility builds.
+On the first method call, Addon Bone creates the hidden document and registers its API.
+Subsequent calls use the same instance while the document exists.
+Field state is preserved between these calls but is lost when the document closes.
 
-When code calls an offscreen API, Addon Bone creates the hidden document if needed and reuses it when the same offscreen document is already active.
-In the native Chrome MV3 path, Addon Bone switches documents only when a different offscreen target is required.
+Addon Bone calls `init`, registers the API, waits for `main` to finish, and then runs `render` if it is defined.
+Elements created in `render` are not yet available in `init` and `main`.
+If an API method uses document content, wait for the required resource inside that method, such as an iframe's `load` event.
 
-Calls to the same offscreen target can run in parallel.
-In Chrome MV3, calls that need a different offscreen target wait for active calls to finish, then Addon Bone switches the hidden document and runs the next call.
-Application code does not manually create, close, or queue offscreen documents.
+<DocHeading level={3} id="offscreen-native-lifecycle" toc={false}>Chrome with Manifest V3</DocHeading>
 
-This matters when you define several offscreen entrypoints.
-Keep each one focused, and treat a call to a different offscreen API as a separate hidden document lifecycle.
+In Chrome with Manifest V3, one Offscreen document can be open at a time per extension profile.
+The regular and incognito profiles can have separate documents in split mode.
+See the [Offscreen lifecycle in Chrome](https://developer.chrome.com/docs/extensions/reference/api/offscreen#concepts_and_usage).
+
+When the API of an already open document is called, Addon Bone reuses it.
+Several calls to the same Offscreen can run concurrently: Addon Bone does not wait for one method to finish before starting another.
+If methods change a shared resource, such as one canvas, coordinate access inside the API or create a separate resource for each call, as in the Quick Start.
+
+When another Offscreen is needed, Addon Bone waits for current proxy calls to finish, closes the previous document, and creates the new one.
+Returning to the previous API creates its instance again.
+Long-running work started by a method but not included in its returned Promise does not prevent this switch.
+Wait for the operation inside the method if it must finish before switching documents.
+
+You do not need to create, close, or switch documents manually for normal calls.
+A call also does not mean that the document closes immediately after returning a result.
+For `AudioPlayback`, Chrome closes the document after 30 seconds without audio playback; other reasons do not set this timer.
+See the [Offscreen creation reasons](https://developer.chrome.com/docs/extensions/reference/api/offscreen#reasons).
+
+<div id="write-once-across-runtimes" />
+
+<DocHeading level={3} id="offscreen-compatible-lifecycle" toc={false}>Manifest V2 and Firefox</DocHeading>
+
+In Manifest V2 and Firefox, Addon Bone creates hidden documents in the background page through its compatibility mechanism.
+Different Offscreen documents can exist at the same time, so Chrome's one-document limit does not apply to these builds.
+The framework waits for each document to be ready before sending a request.
+
+Define one API for common DOM tasks and call it through the same `getOffscreen(name)`.
+You do not need separate implementations by manifest version just to access `document`.
+Use build filters if the operation itself depends on browser support for a particular API.
+
+Keep long-lived data outside the Offscreen instance.
+The document can be recreated when switching, reloading the extension, or restarting the background page.
+Its presence also does not mean that background will run continuously.
 
 ## Sender Context
 
-<SenderOverview entrypoint="offscreen"/>
+If a method needs to know where a call came from, use `this.$sender`.
+Addon Bone provides this information for the current proxy call.
+In this example, the method returns the caller's URL if the browser supplied it.
 
-```ts title="src/tab-aware.offscreen.ts"
-import type {MessageSenderAware} from "adnbn/message";
+<Tabs>
+    <Tab label="Object">
+```ts file="../../../../code/entrypoints/offscreen/caller.object.offscreen.ts" title="src/caller.offscreen.ts"
+```
+    </Tab>
+    <Tab label="Class">
+```ts file="../../../../code/entrypoints/offscreen/caller.class.offscreen.ts" title="src/caller.offscreen.ts"
+```
+    </Tab>
+    <Tab label="Background source">
+```ts file="../../../../code/entrypoints/offscreen/caller.background.ts" title="src/background.ts"
+```
+    </Tab>
+</Tabs>
 
-export default () => ({
-    callerTabId(this: MessageSenderAware): number | undefined {
-        return this.$sender?.tab?.id;
-    },
-});
+In the object, `MessageSenderAware` provides hints for `$sender` through the `this` parameter.
+This TypeScript parameter does not become a call argument in the generated contract.
+
+In the class, `declare` describes a field for TypeScript without creating it on the instance.
+Declare `$sender` as `protected` to keep the field out of the public contract.
+Import the `MessageSender` type from `adnbn/message`.
+
+Declare methods with regular method syntax, such as `callerUrl() { ... }`.
+An arrow function in a class field or a method with `.bind(this)` fixes `this` to the original instance and does not receive the sender context of a proxy call.
+
+A call from background or an extension page may not contain `sender.tab`; check `sender.url` or `sender.origin`.
+If background makes a request on behalf of another part of the extension, `$sender` inside Offscreen describes the immediate caller: background.
+Pass any information about the original request separately if the operation needs it.
+
+Do not store `$sender` in an instance field: concurrent calls have different senders.
+Direct access from `main` or through `adnbn/offscreen` does not add sender context.
+
+## Hidden Document Content
+
+Use `render` when an Offscreen operation needs an element mounted in the document.
+Addon Bone creates a container, adds it at the start of `document.body`, and mounts the content inside it.
+The document stays hidden; you do not need to add the container to `body` yourself.
+
+`render` returns content synchronously, without a Promise.
+Run asynchronous work in API methods or in the code that manages the mounted content.
+If `render` is omitted, Addon Bone does not create a container for it; the HTML template's markup remains in the document.
+
+### Vanilla
+
+Use `.ts` or `.js` to work with the DOM directly.
+Pass a DOM element, a non-empty string, a number, or a function that returns one of these values to `render`.
+Strings are displayed as text: create elements or use a [custom template](#html-template) for HTML markup.
+An empty string, `null`, `undefined`, and booleans create neither content nor a container; the number `0` is displayed.
+
+Create a PNG with text, for example a card for export.
+`render` creates a canvas, while `init` returns a `TextImage` class instance.
+Background passes text to `create(text)` and receives the image as a data URL:
+
+<Tabs>
+    <Tab label="Offscreen source">
+```ts file="../../../../code/entrypoints/offscreen/view/image.offscreen.ts" title="src/image.offscreen.ts"
+```
+    </Tab>
+    <Tab label="TextImage class">
+```ts file="../../../../code/entrypoints/offscreen/view/TextImage.ts" title="src/TextImage.ts"
+```
+    </Tab>
+    <Tab label="Background source">
+```ts file="../../../../code/entrypoints/offscreen/view/image.background.ts" title="src/background.ts"
+```
+    </Tab>
+</Tabs>
+
+Place `TextImage.ts` alongside `image.offscreen.ts`.
+This example needs no additional permissions, resources, or dependencies.
+
+The example has one canvas, so `create` finds it by tag through `document.querySelector("canvas")`.
+It clears the canvas and draws the supplied text.
+`toBlob` encodes the PNG, and `FileReader` converts it to a string to send to background.
+On success, the background console shows a data URL starting with `data:image/png;base64,`.
+If the canvas is missing, the method immediately throws `Canvas has not been rendered.`; it does not wait for the element to appear.
+
+### React
+
+Use React if components make it easier to describe the hidden document's content, or if you need an existing React component.
+Install `react` and `react-dom`; TypeScript also needs `@types/react` and `@types/react-dom`.
+Run the commands in your project directory; for JavaScript, only the first line is needed:
+
+<PackageManagerTabs command={reactInstallCommands} />
+
+Save the entrypoint as `image.offscreen.tsx`: the `.tsx` extension selects React.
+For JavaScript, use `.jsx` and remove type annotations from the example.
+Describe the canvas directly in the `render` function:
+
+```tsx file="../../../../code/entrypoints/offscreen/view/image.offscreen.tsx" title="src/image.offscreen.tsx"
 ```
 
-<SenderNotes entrypoint="offscreen"/>
+This version replaces `image.offscreen.ts` from the Vanilla example; the `TextImage` class and background code stay the same.
+React mounts the content asynchronously.
+If a `create` request arrives before the canvas appears, the call fails with `Canvas has not been rendered.`.
+After mounting, the method draws the text and returns a PNG in the same data URL format.
 
-## Write Once Across Runtimes
+Addon Bone creates the React root and mounts the component; you do not need to call `createRoot` yourself.
+Keep the `React` import: the current JSX transform uses it at runtime.
+The component returns its result synchronously and can use hooks.
+If you need asynchronous data, load it in an effect and update component state; release subscriptions in the effect's cleanup function.
 
-The offscreen API is intentionally the same across Addon Bone builds.
-Whether the target browser uses native Chrome MV3 offscreen documents, a Manifest V2 background-page bridge, or the Firefox compatibility path, your offscreen entrypoint still runs in a DOM-capable hidden document.
+<DocHeading level={3} id="container-examples" toc={false}>Container and render Parameters</DocHeading>
 
-That means most offscreen code should not be split by manifest version.
-If a task is about `DOMParser`, canvas, image loading, clipboard payloads, iframe work, or other document APIs, write one offscreen entrypoint and call it through the same `getOffscreen(name)` API everywhere.
+`container` sets the outer element, while `render` sets its content.
+Addon Bone creates a `div` by default; use `container: "section"` to choose another tag.
+Use an object or function to set element properties or create the element through the DOM API.
+In these examples, `render` places source HTML in the container as text, and the `title()` API method parses it with `DOMParser`:
 
-Use build-time strategies only when the public behavior really depends on the browser or manifest version.
-For example, background services may need different implementations because Chrome MV3 background code runs in a service worker, while Manifest V2 and Firefox background code can run in a document-backed context.
-Offscreen entrypoints already give you that document-backed context as the stable abstraction.
+<Tabs>
+    <Tab label="Container properties">
+```ts file="../../../../code/entrypoints/offscreen/view/container-options.ts" title="src/preview.offscreen.ts"
+```
+    </Tab>
+    <Tab label="Container factory">
+```ts file="../../../../code/entrypoints/offscreen/view/container-factory.ts" title="src/preview.offscreen.ts"
+```
+    </Tab>
+</Tabs>
+
+Both versions create a `section` with the `offscreen-content` class and the text `<title>Report preview</title>` inside it.
+The string returned by `render` does not become HTML markup: the `title()` method parses it.
+The container factory also sets `data-document="Report preview"` using `title` from the Offscreen options.
+Use a factory when you need DOM methods or need to calculate container properties from the document options.
+Save one version as `src/preview.offscreen.ts`.
+In this separate example, calling `await getOffscreen("preview").title()` from background returns `Report preview`.
+The container factory can return an element, a tag name, or a properties object, and can be asynchronous: Addon Bone waits for its result before mounting.
+
+The `render` and `container` functions receive the current Offscreen options without `init`, `main`, `name`, `render`, or `container`.
+For example, they can use `title`, but do not receive the API instance.
+`export default` still maps to `init`; in the named-export format, declare content with `export const render`.
+
+In Vanilla, the `render` function runs before the container is created.
+In React, Addon Bone prepares a React element and container, and React calls the component during mounting.
+The Offscreen startup order stays the same: `init`, API registration, completion of `main`, then content rendering.
+Call methods that use the DOM after the required elements have been created.
+If an operation uses an asynchronous resource, such as a loading image, wait for it to be ready inside the method.
+
+<DocHeading level={3} id="offscreen-modules-styles" toc={false}>Modules and Styles</DocHeading>
+
+Connect helper functions, components, and styles through `import` in the Offscreen file.
+Addon Bone includes the dependencies in the build and connects the required scripts and stylesheets to the hidden document's HTML.
+
+Styles are useful when an operation or library depends on DOM element styling, for example when measuring element dimensions.
+You can import `styles.module.scss` and assign a class through `styles.content`: SCSS compiles to CSS, and CSS Modules generates class names.
+Parsing HTML with `DOMParser` or processing an image with canvas usually needs no styles.
+Loading CSS does not make the document visible.
+
+## HTML Configuration
+
+Addon Bone creates HTML and connects Offscreen scripts with their imported dependencies.
+The `title` option sets the document title, while `as` changes the generated HTML filename.
+Set the API name for `getOffscreen` separately through `name`.
+
+<DocHeading level={3} id="html-tags" toc={true}>Additional Resources and Meta Tags</DocHeading>
+
+Use `links` and `scripts` for ready-made resources loaded separately from imports.
+A string sets the path to a file in the built extension, an object with `path` lets you add `attributes`, and an array combines several entries.
+Place these files in `src/public`: Addon Bone copies them into the build.
+Use `tags` to list CSS and JavaScript together; for plain paths, the `.css` or `.js` extension determines the tag type.
+
+Use `metas` to add meta tags needed by the hidden document.
+For example, this parser sets the referrer policy for the hidden document's requests.
+Addon Bone adds the meta tag to the generated HTML's `head`; the second tab shows the corresponding fragment:
+
+<Tabs>
+    <Tab label="Offscreen source">
+```ts file="../../../../code/entrypoints/offscreen/html/metas.ts" title="src/parser.offscreen.ts"
+```
+    </Tab>
+    <Tab label="Generated HTML">
+```html file="../../../../code/entrypoints/offscreen/html/generated.html" title="parser.offscreen.html"
+```
+    </Tab>
+</Tabs>
+
+The meta tag applies to the hidden document itself; `DOMParser` still parses the HTML passed to `title(html)`.
+For several meta tags, use an array of objects; each entry must contain non-empty `attributes`.
+
+<DocHeading level={3} id="html-template" toc={true}>Custom Template</DocHeading>
+
+Use `template` if the hidden document needs markup prepared in advance.
+In this example, HTML stores report content in a `template` element, and the `title()` method parses it with `DOMParser` and returns the heading:
+
+<Tabs>
+    <Tab label="Offscreen source">
+```ts file="../../../../code/entrypoints/offscreen/template/index.ts" title="src/preview.offscreen/index.ts"
+```
+    </Tab>
+    <Tab label="HTML template">
+```html file="../../../../code/entrypoints/offscreen/template/template.html" title="src/preview.offscreen/template.html"
+```
+    </Tab>
+</Tabs>
+
+This version replaces `src/preview.offscreen.ts` from the container examples.
+After building and reloading the extension, calling `await getOffscreen("preview").title()` from background returns `Quarterly report`.
+The `./template.html` path is resolved relative to `index.ts`.
+Addon Bone connects the entrypoint script; you do not need to add it to the template manually.
+All content is already in the HTML here, so `render` is omitted.
+If you add `render`, its container appears at the start of `body`, and the template markup remains.
+
+:::tip Hidden document files in one directory
+Keep the entrypoint, template, and related modules or styles together:
+
+```tree file="../../../../code/entrypoints/offscreen/view/directory.tree"
+```
+
+In `preview.offscreen/index.ts`, set `template: "./template.html"`.
+For React, use `index.tsx`; add styles and helper modules as needed.
+This file organization is optional: a single `preview.offscreen.ts` is also supported.
+:::
+
+<DocHeading level={3} id="offscreen-csp" toc={true}>Content Security Policy</DocHeading>
+
+Use `csp` to set allowed resource sources and enable WebAssembly in the hidden document.
+For example, if a method loads an image through `fetch`, set its source in `csp.sources.connect` and site access in `hostPermissions`.
+In this example, `size()` fetches an image, decodes it, and returns its width and height.
+Declare permissions and CSP alongside the API in `defineOffscreen`:
+
+```ts file="../../../../code/entrypoints/offscreen/csp/remote-images.ts" title="src/images.offscreen.ts"
+```
+
+Replace `https://images.example.com` with your source's address and pass the image URL to `getOffscreen("images").size(url)`.
+`Blob` and `ImageBitmap` stay inside the hidden document; the caller receives a plain object with numeric `width` and `height` fields.
+Permissions and CSP are independent: Addon Bone does not derive permissions from CSP or add CSP from permissions.
+If the image is loaded through `Image` or `<img>`, set its source in `csp.sources.image`.
+For a library that uses WebAssembly, set `csp.wasm: true`.
+
+Settings from included Offscreen entrypoints are combined with other extension pages' CSP into a shared manifest policy, even if the hidden document has not been created yet.
+Sandbox has a separate policy.
+In Chrome Manifest V3, JavaScript must be bundled with the extension: `scripts` does not allow remote code, inline handlers, or `eval`.
+See the [CSP rules for extension pages](https://developer.chrome.com/docs/extensions/reference/manifest/content-security-policy).
 
 ## Options
 
-Options are declarative settings recognized by Addon Bone at build time.
-They control offscreen registration, hidden document creation, generated HTML, and build filters.
+Use options to set the API name, factory, startup handler, and the hidden document's task.
+Add build filters if a file is only needed for a particular browser, app, or mode.
+Addon Bone processes each file's options separately.
 
 <DocHeading level={3} id="offscreen-options" toc={false}>Offscreen Options</DocHeading>
 
-These options are specific to the `offscreen` entrypoint.
-They define the public offscreen API and native offscreen creation metadata.
-Most offscreen entrypoints only need `reasons`; `justification` is optional and can usually be omitted.
-
-<Offscreen/>
+<Offscreen />
 
 <DocHeading level={3} id="view-options" toc={false}>View Options</DocHeading>
 
-Offscreen entrypoints also generate hidden HTML documents, so they support the same view options used by document-based entrypoints.
-Use them when the hidden document needs a custom HTML template, title, or extra script/link/meta tags.
+Addon Bone creates HTML for each Offscreen.
+The generated document is usually enough; use `template` for custom markup, or the tag options for additional resources.
+The `as` option changes the HTML filename, while `name` sets the API name for `getOffscreen`.
+
+See [Hidden Document Content](#hidden-document-content) for `render` and `container` examples.
+[Modules and styles](#offscreen-modules-styles), [HTML templates](#html-template), [additional resources](#html-tags), and [CSP](#offscreen-csp) are covered above on this page.
 
 <Details title="View Options">
-	<View/>
+
+<div id="offscreen-render">
+    <ViewRender containerExamplesHref="#container-examples" />
+</div>
+
+<View />
+
+</Details>
+
+<DocHeading level={3} id="offscreen-permissions" toc={false}>Permissions</DocHeading>
+
+<PermissionIntro />
+
+In a native Chrome Offscreen document, `runtime` is the only available extension API.
+Declaring permissions does not make other extension APIs available inside the document.
+See the [Offscreen restrictions in Chrome](https://developer.chrome.com/docs/extensions/reference/api/offscreen#concepts_and_usage).
+
+<Details title="Permission Options">
+    <PermissionOptions />
 </Details>
 
 <DocHeading level={3} id="common-options" toc={false}>Common Options</DocHeading>
 
-These options are shared by all entrypoints: build filters, mode targeting, and manifest constraints.
-Read the full model in [Introduction](./introduction).
+All specified filters must match the current build.
+For example, a file with `includeBrowser` set to Chrome and `manifestVersion: 3` is only included in a Chrome Manifest V3 build.
+If a file is excluded, its document and API are not included in that build; its permissions and CSP are not added either.
 
 <Details title="Common Options">
-	<Entrypoint/>
+    <Entrypoint />
 </Details>
 
 ## Manifest Output
 
-In Chrome Manifest V3 builds, Addon Bone adds the native `offscreen` permission when offscreen entrypoints exist.
-The `reasons` option and optional `justification` option are used when Addon Bone creates the native offscreen document.
+Addon Bone creates an HTML document and scripts for each included Offscreen, connects imported styles, and creates `.adnbn/offscreen.d.ts` with API contracts.
+There is no separate `offscreen` field in the manifest.
+The framework uses the document path, `reasons`, and `justification` when creating a document through the native Offscreen API.
 
-In Manifest V2 and Firefox builds, Addon Bone uses its compatibility layer instead of the native Chrome offscreen API, so it does not add the native `offscreen` permission for those builds.
+For the Quick Start, Addon Bone generates a manifest with these fields:
 
-Offscreen entrypoints also produce hidden HTML files in the generated extension output.
-View options affect those generated HTML files.
+<Tabs>
+    <Tab label="Generated Manifest V3">
+```json file="../../../../code/entrypoints/offscreen/manifest-v3.json" title="manifest.json"
+```
+    </Tab>
+    <Tab label="Generated Manifest V2">
+```json file="../../../../code/entrypoints/offscreen/manifest-v2.json" title="manifest.json"
+```
+    </Tab>
+</Tabs>
+
+These examples show the fields related to this scenario; the full manifest also contains the extension's name, version, and other settings.
+In Manifest V3 builds other than Firefox, Addon Bone adds `offscreen` if the build includes Offscreen files.
+This permission is not added for Manifest V2 or Firefox.
+You do not need to declare `offscreen` manually.
+In a Firefox Manifest V3 build, background is also declared through `background.scripts`.
+
+For an app named `myapp` in a Chrome Manifest V3 build, the main files are arranged as follows:
+
+```tree file="../../../../code/entrypoints/offscreen/output.tree"
+```
+
+The tree shows the main files and simple script names.
+The actual build may contain shared chunks and hashes in filenames; you can configure the output directory and paths.
+Addon Bone copies `sample.svg` from `src/public` and places declarations in the project's `.adnbn` directory.
+Permissions and CSP from included Offscreen entrypoints are added to the shared manifest at build time, even if their APIs have not been called yet.
 
 ## Multi-App Structure
 
-Use this structure when one project builds several extension apps from the same codebase.
+In a project with several apps, place shared Offscreen files in `src/shared` and app-specific files in `src/apps/<app>`.
+In a single-app project, use the regular `src` directory; no separate shared layer is required.
 
-Shared offscreen APIs live in `src/shared`.
-Use them for hidden document work that every app needs, such as image processing, DOM parsing, or shared clipboard helpers.
-
-App-specific offscreen APIs live in `src/apps/<app>`.
-Use them when one app needs its own hidden document API, template, build filters, or browser-specific implementation.
-
-In a single-app project, you do not need this structure.
-Addon Bone works with your normal `src` files directly.
-
-```tree file="./code/offscreen/multi-app.tree"
+```tree file="../../../../code/entrypoints/offscreen/multi-app.tree"
 ```
 
-Offscreen naming patterns work the same way in both layers: `src/shared` and `src/apps/<app>`.
-The app files can add offscreen APIs that only one app needs; they do not need to repeat the shared offscreen filenames.
+<div id="multi-app-configuration" />
 
-<DocHeading level={3} id="multi-app-configuration" toc={false}>Configuration</DocHeading>
+Enable `mergeOffscreen` to let an app use both the shared `parser` and its own `images`:
 
-```ts title="adnbn.config.ts"
-import {defineConfig, Workspace} from "adnbn";
-
-export default defineConfig({
-    workspace: Workspace.Multi,
-
-    // Merges shared offscreen entrypoints and app offscreen entrypoints
-    mergeOffscreen: true,
-});
+```ts file="../../../../code/entrypoints/offscreen/multi-app.config.ts" title="adnbn.config.ts"
 ```
 
-<DocHeading level={3} id="multi-app-merge" toc={false}><code>mergeOffscreen</code> behavior</DocHeading>
+<div id="multi-app-merge" />
 
-`workspace: Workspace.Multi` enables the shared/app source layout.
-`mergeOffscreen` controls what happens when the shared layer and the current app both provide offscreen entrypoints.
+`mergeOffscreen` defaults to `false`:
 
-- `mergeOffscreen: true`
-  Shared and app offscreen entrypoints are included together.
-- `mergeOffscreen: false`
-  App offscreen entrypoints replace shared offscreen entrypoints when the app has its own files.
-  If the app has no offscreen entrypoints, shared offscreen entrypoints are used as a fallback.
+- When `true`, Offscreen files from the shared layer and the current app are included together.
+- When `false`, if the app has Offscreen files, their entire set is used instead of the shared set.
+- If the app has no Offscreen files, the shared set is used regardless of `mergeOffscreen`.
 
-This lets you keep common hidden document APIs in one place and add app-specific offscreen work only where an app needs it.
+Addon Bone first selects app or shared files, then applies entrypoint filters.
+If an app file is found but later excluded, for example by `includeBrowser`, shared files are not brought back automatically.
+Use `mergeOffscreen: true` if shared APIs are needed alongside the app's APIs.
+
+Local Offscreen entrypoints with duplicate names get numeric suffixes under the normal naming rules.
+Options from different files are not merged into one definition.
 
 ## Best Practices
 
-<DocHeading level={3} id="best-practices-critical" toc={false}>Critical</DocHeading>
+<div id="best-practices-critical" />
+<div id="best-practices-recommended" />
 
-- **Use one structure style per scope: root-level or `offscreens/`.**
-  If `offscreens/` contains offscreen entrypoints in a scope, only that directory is used, and root-level offscreen files in the same scope are ignored.
-
-- **Treat offscreen calls as async boundaries.**
-  Calls go through extension messaging and may create or switch the hidden document before the method runs, so always use `await`.
-
-- **Keep privileged browser orchestration outside offscreen.**
-  Capture tabs, listen to browser events, request permissions, and start downloads from background, service, command, or another privileged context. Use offscreen for the document work.
-
-- **Choose reasons that match the real hidden document task.**
-  For Chrome MV3, `reasons` should describe why the native offscreen document is needed.
-
-- **Do not store `$sender` on your offscreen instance.**
-  `$sender` belongs to the current call. Read it inside the offscreen method that needs it.
-
-<DocHeading level={3} id="best-practices-recommended" toc={false}>Recommended</DocHeading>
-
-- Use explicit `name` values for public offscreen APIs.
-  Generated names are convenient, but explicit names survive file renames.
-
-- Keep offscreen APIs small and task-focused.
-  Offscreen documents are easiest to reason about when each API does one kind of document work.
-
-- Use view options only when the hidden document needs them.
-  Most offscreen entrypoints can use the generated HTML file without a custom template.
+- **Keep DOM work in Offscreen.** Fetch data through extension APIs and save the result in background.
+- **Choose reasons for the operation.** Set suitable `reasons` and a specific `justification` for a working extension.
+- **Return JSON-compatible data.** For example, return image dimensions as an object with numbers; keep `Image`, canvas, and `Blob` inside the document.
+- **Finish work before returning the result.** If an operation continues outside the returned Promise, switching documents may interrupt it.
+- **Account for concurrent calls.** Create separate resources per request or coordinate access to shared resources inside the API.
+- **Keep long-lived data outside the instance.** Switching documents in Chrome with Manifest V3 creates the instance's state again.
+- **Use unique names.** Automatic suffixes depend on the set of included files.
 
 ## Debugging
 
-To inspect and debug offscreen entrypoints:
-
-1. Build the extension and confirm the offscreen file is discovered.
-2. Check the offscreen name used by `getOffscreen(name)`.
-3. If autocomplete is missing or falls back to `any`, make sure `init` returns a statically visible object or class instance.
-4. If calls serialize unexpectedly, check whether they target different offscreen entrypoints and therefore require a hidden document switch.
-5. If an offscreen file is missing from a build, check `manifestVersion`, `includeBrowser`, `excludeBrowser`, `includeApp`, `excludeApp`, `mode`, and `debug` filters.
-6. If a proxy call fails, inspect the console for the context where the method actually runs.
-
-:::tip
-If offscreen code starts needing browser events, permissions, tab capture, or downloads, split the workflow.
-Keep that orchestration in background/service/command code and call offscreen only for the hidden document work.
-:::
+- **The document is missing from the build.** Check the filename and location, filters, and `mergeOffscreen`. If files exist in `offscreens/`, move the required Offscreen there as well.
+- **`getOffscreen` does not accept the name.** Find it in `.adnbn/offscreen.d.ts`. If a numeric suffix was added, set a unique name or exclude the extra implementation with filters.
+- **A background call reports an invalid context.** Check the import: use `adnbn`, not `adnbn/offscreen`. The latter is for direct access inside the hidden document.
+- **A method fails.** Handle the rejected Promise in the caller and open DevTools for the hidden document where the operation runs. Check resource loading, CSP, and JSON compatibility of arguments and results.
+- **The browser blocks an operation.** Check permissions in the generated manifest and CSP, and make sure any optional access has been granted. Reload the extension after changing permissions. If an extension API is unavailable in a native Chrome Offscreen document, run the operation in Service or Background: adding a permission will not make that API available.
+- **Method hints are missing.** Check `.adnbn/offscreen.d.ts` and whether the declarations are included in the project's TypeScript configuration. Make sure the generator can see the shape returned from `init`; refine the types with annotations or JSDoc if needed.
+- **A call to another Offscreen waits a long time.** In Chrome with Manifest V3, check whether previous proxy calls have finished. A long operation keeps the active document until it returns a result.
+- **State disappears after another call.** Check whether the hidden document was switched. Store data that needs to survive its closure outside the instance.

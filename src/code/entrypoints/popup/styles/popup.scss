@@ -1,0 +1,23 @@
+@use "sass:color";
+
+$accent: #2458a6;
+
+.popup {
+    box-sizing: border-box;
+    width: 320px;
+    padding: 1rem;
+    font: 14px/1.5 system-ui, sans-serif;
+    overflow-wrap: anywhere;
+    border-top: 4px solid $accent;
+
+    button {
+        margin: 0 0 0.75rem;
+        font: inherit;
+        color: $accent;
+    }
+
+    p {
+        margin: 0;
+        color: color.adjust($accent, $lightness: -15%);
+    }
+}

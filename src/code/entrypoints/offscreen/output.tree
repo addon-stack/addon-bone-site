@@ -1,0 +1,10 @@
+dist/
+└── myapp-chrome-mv3/
+    ├── manifest.json
+    ├── images.offscreen.html
+    ├── sample.svg
+    └── js/
+        ├── background.js
+        └── images.offscreen.js
+.adnbn/
+└── offscreen.d.ts

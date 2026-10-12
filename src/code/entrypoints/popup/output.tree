@@ -1,0 +1,6 @@
+dist/
+└── myapp-chrome-mv3/
+    ├── manifest.json
+    ├── popup.html
+    └── js/
+        └── popup.js

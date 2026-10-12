@@ -104,6 +104,7 @@ Alternatively, declare options as named exports and provide the content or rende
 
 This example uses a React component to display a search form.
 The `search` permission lets it send the entered query to the search engine selected in the browser settings.
+For `searchInCurrentTab`, install `@addon-core/browser` version 1.0 or later in your project and import the function through `adnbn/browser`.
 The example needs `react`, `react-dom`, `@types/react`, and `@types/react-dom`; installation commands are in the [React section](#react).
 Choose one of the two formats for `newtab.tsx` and save `SearchForm.tsx` alongside it:
 
@@ -126,7 +127,8 @@ Build the extension, load it into the browser, and open a new tab.
 Enter a query and press **Search**: the results open in the same tab.
 Addon Bone adds `search` from the New Tab options to the manifest; this API needs no additional host permissions.
 
-The example uses [`search.query`](https://developer.mozilla.org/en-US/docs/Mozilla/Add-ons/WebExtensions/API/search/query), which supports Promises in Chrome 96+, Edge 96+, and desktop Firefox 111+.
+`searchInCurrentTab` calls [`search.query`](https://developer.mozilla.org/en-US/docs/Mozilla/Add-ons/WebExtensions/API/search/query) to search in the current tab and returns a Promise.
+This browser API is available in Chrome 87+, Edge 87+, and desktop Firefox 111+.
 Safari does not support this API.
 
 Both formats support the same options and build filters.
@@ -171,29 +173,16 @@ Run the commands in your project directory; for JavaScript, only the first line 
 
 Save the entrypoint as `newtab.tsx`: the file extension selects React.
 For JavaScript with JSX, use `newtab.jsx`.
-This example shows a counter that updates when the button is clicked:
+In this example, the counter component is declared in the entrypoint file and passed to `render`:
 
-<Tabs>
-    <Tab label="Using defineNewtab">
 ```tsx file="../../../../code/entrypoints/newtab/counter.newtab.tsx" title="src/newtab.tsx"
 ```
-    </Tab>
-    <Tab label="Named exports">
-```tsx file="../../../../code/entrypoints/page/counter.named-exports.page.tsx" title="src/newtab.tsx"
-```
-    </Tab>
-    <Tab label="Counter component">
-```tsx file="../../../../code/entrypoints/page/counter.component.page.tsx" title="src/Counter.tsx"
-```
-    </Tab>
-</Tabs>
 
-The named-export variant defines the component directly in the entrypoint and does not need a separate `Counter.tsx`.
-Choose one implementation of `newtab.tsx`; it replaces `newtab.ts` from the previous examples.
+Pass the component directly through `render: Counter`.
+This implementation of `newtab.tsx` replaces `newtab.ts` from the previous examples.
 
 Clicking the button updates state through `useState`, and React displays the new value.
 Addon Bone creates the container and React root; you do not need to call `createRoot` yourself.
-With named exports, you can export the component directly, for example `export default Counter`, or as an arrow function, as shown in the example.
 
 The `render` function runs as a React component and can use hooks.
 Keep the `React` import from the example: the current JSX transform uses it at runtime.

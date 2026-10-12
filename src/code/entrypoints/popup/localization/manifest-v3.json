@@ -1,0 +1,8 @@
+{
+  "manifest_version": 3,
+  "default_locale": "en",
+  "action": {
+    "default_title": "__MSG_popup_account__",
+    "default_popup": "popup.html"
+  }
+}

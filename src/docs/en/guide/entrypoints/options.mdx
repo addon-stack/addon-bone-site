@@ -1,5 +1,527 @@
 ---
-tag: In Progress
+description: "Create an extension settings page with Addon Bone. Use Vanilla or React, save preferences, and configure how the page opens and generates HTML."
 ---
 
 # Options
+
+import {PackageManagerTabs, Tab, Tabs} from "@rspress/core/theme";
+import Details from "@components/Details";
+import DocHeading from "@components/DocHeading";
+import FrameworkTabs from "@components/FrameworkTabs";
+import EntrypointSpec from "@components/docs/entrypoints/EntrypointSpec";
+import PermissionIntro from "@en/components/entrypoints/PermissionIntro";
+import PermissionOptions from "@en/components/entrypoints/PermissionOptions";
+import ViewRender from "@en/components/entrypoints/ViewRender";
+import View from "@en/components/entrypoints/View";
+import Entrypoint from "@en/components/entrypoints/Entrypoint";
+import ViewRendering from "./fragments/view-rendering.mdx";
+import ViewAssets from "./fragments/view-assets.mdx";
+import ViewHtml from "./fragments/view-html.mdx";
+import reactInstallCommands from "../../../../code/entrypoints/page/install/commands.json";
+
+Options creates an extension settings page that users open through the browser UI or from your extension.
+Use it for interface preferences, feature settings, and managing optional access.
+Write TypeScript code using the DOM directly or React; Addon Bone creates the HTML and registers it in the manifest.
+
+Place your code in `options.ts` or `options.tsx`.
+By default, Addon Bone configures the page to open in a separate tab; use `openInTab: false` to request an embedded settings interface if the browser supports it.
+Options does not start with background: its code runs when the page loads.
+
+## Quick Start
+
+Create a settings page with simple text:
+
+```ts file="../../../../code/entrypoints/options/options.ts" title="src/options.ts"
+```
+
+Add the file to your Addon Bone project, build the extension, and load it into the browser.
+Open the browser's extension manager, find your extension, and open its settings.
+In Chrome, select **Extension options** on the extension's details page.
+You will see `Manage your extension preferences here.` and the tab title `Settings`.
+
+Addon Bone creates `options.html`, writes its path to `options_ui.page`, and sets `options_ui.open_in_tab` to `true`.
+The framework displays the `render` string as text and creates the container automatically.
+This example needs no additional files, React, or permissions.
+
+## Opening the Page
+
+The browser shows a settings link after you load an extension with `options_ui` in its manifest.
+The location of this link depends on the browser; you can also open the page from a popup or another extension context using `openOptionsPage` from `adnbn/browser`.
+
+Add this file alongside `options.ts` from the Quick Start:
+
+```ts file="../../../../code/entrypoints/options/open/popup.ts" title="src/popup.ts"
+```
+
+Build the extension and reload it.
+Click the extension's toolbar button, then **Settings** in the popup: the browser opens the registered settings page.
+This call needs no separate permission.
+If your project already has a popup, move the button handler into it instead of creating a second file.
+
+`openOptionsPage()` returns `Promise<void>` and uses the page registered in the manifest.
+It respects `openInTab` and continues to work after you change the HTML filename through `as`.
+Handle opening errors, for example when Options is excluded from the build.
+See the [`runtime.openOptionsPage()` contract](https://developer.mozilla.org/en-US/docs/Mozilla/Add-ons/WebExtensions/API/runtime/openOptionsPage) for details.
+
+<DocHeading level={3} id="options-open-mode" toc={false}>Tab or Embedded Interface</DocHeading>
+
+`openInTab: true` opens settings in a regular tab.
+Addon Bone writes this value even when you omit the option.
+For an embedded interface, set it to `false`:
+
+```ts file="../../../../code/entrypoints/options/embedded.options.ts" title="src/options.ts"
+```
+
+This version replaces the file from the Quick Start.
+The manifest will contain `options_ui.open_in_tab: false`; the browser determines how to display the page:
+
+| Browser | Behavior with `openInTab: false` |
+| --- | --- |
+| Chrome, Chromium, Edge | The page is embedded in the extension management UI |
+| Firefox | The page opens in the Add-ons Manager |
+| Opera | Settings still open in a separate tab |
+| Safari on macOS and iOS | Settings still open in a separate tab |
+
+Options uses `options_ui` in Manifest V2 and Manifest V3.
+Safari supports this field since version 14 on macOS and version 15 on iOS.
+See the [`options_ui` compatibility table](https://developer.mozilla.org/en-US/docs/Mozilla/Add-ons/WebExtensions/manifest.json/options_ui#browser_compatibility) for opening mode support.
+
+Chrome's embedded page is not a separate tab: do not rely on `sender.tab` in messages sent from it.
+Make the interface work in a narrow container; set a minimum content width in your styles if needed.
+See [Chrome's embedded options behavior](https://developer.chrome.com/docs/extensions/develop/ui/options-page#consider_the_differences) for details.
+
+## File Structure
+
+Addon Bone discovers Options by its file or directory name.
+Choose one of these layouts:
+
+<Tabs>
+    <Tab label="Default Structure">
+```tree file="../../../../code/entrypoints/options/default.tree"
+```
+    </Tab>
+    <Tab label="Page Directory">
+```tree file="../../../../code/entrypoints/options/directory.tree"
+```
+    </Tab>
+</Tabs>
+
+These paths are supported for TypeScript; `{ts,tsx}` represents two possible extensions:
+
+- `options.{ts,tsx}` and `*.options.{ts,tsx}`;
+- `options/index.{ts,tsx}` and `*.options/index.{ts,tsx}`.
+
+Use `.ts` for Vanilla and `.tsx` for React.
+For JavaScript, use the same paths with `.js` or `.jsx`: `.js` selects Vanilla, and `.jsx` selects React.
+Discovery also recognizes `.vue` and `.svelte`, but there are currently no built-in View adapters for these formats; use Vanilla or React for working examples.
+
+<DocHeading level={3} id="options-selection" toc={false}>Selecting an Implementation</DocHeading>
+
+The build includes one Options page.
+If several matching files remain after filtering, Addon Bone selects the last one by priority: local files take precedence over plugin files, and among local files at the same level, the last file in path order wins.
+Other candidates do not create additional pages or contribute their permissions or CSP.
+
+For predictable selection, keep one implementation per build or separate variants with filters such as `includeBrowser` and `includeApp`.
+See [Multi-App Structure](#multi-app-structure) for the rules that select the shared layer or app.
+
+## Defining Options
+
+Use `defineOptions` for option suggestions and type checking.
+Alternatively, declare options as named exports and provide the content or render function through `export default`.
+
+In this example, a React component saves a compact interface preference in the extension's local storage.
+Storage access requires the `storage` permission; declare it in Options.
+React needs `react`, `react-dom`, `@types/react`, and `@types/react-dom`; installation commands are in the [React section](#react).
+Storage and the hook are available through the built-in aliases `adnbn/storage` and `adnbn/storage/react`.
+Choose one of the two formats for `options.tsx` and save `SettingsForm.tsx` alongside it:
+
+<Tabs>
+    <Tab label="Using defineOptions">
+```tsx file="../../../../code/entrypoints/options/settings/options.tsx" title="src/options.tsx"
+```
+    </Tab>
+    <Tab label="Named exports">
+```tsx file="../../../../code/entrypoints/options/settings/options.named-exports.tsx" title="src/options.tsx"
+```
+    </Tab>
+    <Tab label="Settings form">
+```tsx file="../../../../code/entrypoints/options/settings/SettingsForm.tsx" title="src/SettingsForm.tsx"
+```
+    </Tab>
+</Tabs>
+
+This version replaces `options.ts` from the Quick Start.
+Build the extension, load it, and open settings.
+Enable **Compact interface**, close the page, and open it again: the checkbox stays checked.
+If saving fails, the component shows an error message; the checkbox is disabled while saving.
+
+`useStorage` reads the `settings.compact` key from local storage, subscribes to its changes, and updates the React component.
+`defaultValue: false` provides the value to display until the key is written; it does not save the preference by itself.
+Another extension context can read the same key using `storageLocal<boolean>("settings.compact")` from `adnbn/storage`.
+`storage.local` stores data in the current browser profile and does not synchronize it across devices.
+
+Both formats support the same options and build filters.
+With named exports, declare options using `export const`; a bare `export default` maps to `render`.
+Export an existing React component directly, as in `export default SettingsForm` in the example.
+The **primary** badge identifies this mapping in the option descriptions.
+
+For static text, pass a string directly, as in the [Quick Start](#quick-start).
+Use a function when the content is created or computed as the page loads.
+`render` is optional: if all markup is in an HTML template, setting `template` and the other page options is enough.
+
+## Page Content
+
+<ViewRendering />
+
+### Vanilla
+
+Pass a DOM element, a non-empty string, or a number directly to `render`, or return it from a function.
+This counter creates a button; Addon Bone places it inside a `main` container:
+
+```ts file="../../../../code/entrypoints/options/counter.options.ts" title="src/options.ts"
+```
+
+Clicking the button increments the value and updates the button text.
+Changing a variable alone does not redraw the DOM.
+
+Strings are displayed as text: `"<strong>Hello</strong>"` does not become HTML.
+For markup, create DOM elements, use an HTML template, or use React.
+An empty string, `null`, `undefined`, and boolean values create neither content nor a container; the number `0` is displayed.
+
+Vanilla calls `render(options)` when the page loads and uses its synchronous result.
+To load data, return an element with initial content, then update it from a separate asynchronous function.
+Handle errors in that function: Addon Bone does not wait for it to finish.
+
+### React
+
+Install `react` and `react-dom` if the project does not already have them.
+TypeScript also needs `@types/react` and `@types/react-dom`.
+Run the commands in the project directory; for JavaScript, only the first line is needed:
+
+<PackageManagerTabs command={reactInstallCommands} />
+
+Save the entrypoint as `options.tsx`: the file extension selects React.
+For JavaScript with JSX, use `options.jsx`.
+In this example, the counter component is declared in the entrypoint file and passed to `render`:
+
+```tsx file="../../../../code/entrypoints/options/counter.options.tsx" title="src/options.tsx"
+```
+
+Pass the component directly through `render: Counter`.
+This implementation of `options.tsx` replaces the previous page from the examples.
+
+Clicking the button updates state through `useState`, and React displays the new value.
+Addon Bone creates the container and React root; you do not need to call `createRoot` yourself.
+The `render` function runs as a React component and can use hooks.
+Keep the `React` import from the example: the current JSX transform uses it at runtime.
+Load data through effects or your chosen data loading library: show initial content first, then update state.
+The component itself returns its result synchronously.
+
+<DocHeading level={3} id="options-render-types" toc={false}>Types for `render` and `props`</DocHeading>
+
+For a reusable function, import `ViewRenderHandler<OptionsProps>` from `adnbn`; for a React component, use `ViewRenderReactComponent<OptionsProps>`.
+`OptionsProps` describes the options passed to the function; both contracts require a synchronous result:
+
+<FrameworkTabs>
+    <Tab label="Vanilla">
+```ts file="../../../../code/entrypoints/options/typed.options.ts" title="src/options.ts"
+```
+    </Tab>
+    <Tab label="React">
+```tsx file="../../../../code/entrypoints/options/typed.options.tsx" title="src/options.tsx"
+```
+    </Tab>
+</FrameworkTabs>
+
+An explicit annotation is optional: you can pass a regular function with an inferred synchronous return type.
+In React 19, `React.FC` allows a Promise, so use `ViewRenderReactComponent<OptionsProps>` or an inferred synchronous type for the strict `render` contract.
+
+<DocHeading level={3} id="container-examples" toc={false}>Content Container</DocHeading>
+
+`container` sets the outer element, while `render` sets its content.
+To choose a tag, a string such as `container: "main"` is enough.
+Pass an object to set element properties; use a function to call DOM methods or compute properties from the page options:
+
+<Tabs>
+    <Tab label="Container properties">
+```ts file="../../../../code/entrypoints/options/container/options.options.ts" title="src/options.ts"
+```
+    </Tab>
+    <Tab label="Container factory">
+```ts file="../../../../code/entrypoints/options/container/factory.options.ts" title="src/options.ts"
+```
+    </Tab>
+</Tabs>
+
+Both versions create `main` with the class `settings-page`; the factory also sets `aria-label` for assistive technologies.
+`render` creates an `h1` heading inside the container.
+Both functions receive the current file's options without `render` and `container`.
+
+In Vanilla, Addon Bone obtains the `render` result, creates the container, adds it to the start of `body`, and places the content inside it.
+In React, the framework first prepares a React element, then creates and inserts the container, and passes the element to React for rendering.
+React calls the component when mounting and manages later UI updates.
+
+Do not add the returned elements to `body` yourself.
+The container factory can be asynchronous: Addon Bone waits for its result before mounting.
+
+<DocHeading level={3} id="options-lifecycle" toc={false}>Loading and Closing</DocHeading>
+
+Options code runs in an extension page context, separately from background.
+The page exists while the browser keeps it open; closing or reloading it discards its in-memory state.
+Save preferences when they change or when the user clicks a save button, rather than only when the page closes.
+
+Each open copy of the page has its own DOM and React state.
+Use storage and subscriptions for shared values, as shown in the [settings form](#defining-options).
+Release a React component's subscriptions in its effect cleanup function.
+`useStorage` manages its own subscription.
+Delegate long-running background work to [Background](./background.mdx) or [Service](./service.mdx).
+
+## Styles and Modules
+
+<ViewAssets />
+
+This example adds SCSS styles to the settings form.
+Keep `SettingsForm.tsx` from [Defining Options](#defining-options), add `settings.scss`, and replace the entrypoint:
+
+<Tabs>
+    <Tab label="Options source">
+```tsx file="../../../../code/entrypoints/options/styles/options.tsx" title="src/options.tsx"
+```
+    </Tab>
+    <Tab label="Settings form">
+```tsx file="../../../../code/entrypoints/options/settings/SettingsForm.tsx" title="src/SettingsForm.tsx"
+```
+    </Tab>
+    <Tab label="Stylesheet">
+```scss file="../../../../code/entrypoints/options/styles/settings.scss" title="src/settings.scss"
+```
+    </Tab>
+</Tabs>
+
+Addon Bone compiles SCSS to CSS and builds it as CSS Modules: `styles.form` contains the generated class name.
+Sass is already included in the bundler; this example needs no separate installation or configuration.
+The `$accent` variable sets the checkbox color, and `color.adjust` lightens it for the border.
+Nested selectors style the form's content.
+The form gets a width limit, spacing, and a border; the bundler connects its styles and component to the HTML automatically.
+
+`className: styles.form` applies the styles to the `main` container and its content.
+The existing component is passed directly to `render`.
+Use the same React dependencies and `storage` permission as in the original form example.
+
+## HTML Configuration
+
+<ViewHtml />
+
+<DocHeading level={3} id="html-tags" toc={true}>Additional Resources and Meta Tags</DocHeading>
+
+Set `links` and `scripts` for ready-to-use resources that the entrypoint does not import.
+In this example, CSS sets spacing and the system font, an additional script sets `data-page="settings"` on `html`, and meta tags add a description and supported color schemes:
+
+<Tabs>
+    <Tab label="Options source">
+```ts file="../../../../code/entrypoints/options/html/options.ts" title="src/options.ts"
+```
+    </Tab>
+    <Tab label="Stylesheet">
+```css file="../../../../code/entrypoints/page/html/page.css" title="src/public/page.css"
+```
+    </Tab>
+    <Tab label="Additional script">
+```js file="../../../../code/entrypoints/options/html/options-extra.js" title="src/public/options-extra.js"
+```
+    </Tab>
+    <Tab label="Generated HTML">
+```html file="../../../../code/entrypoints/options/html/generated.html" title="options.html"
+```
+    </Tab>
+</Tabs>
+
+Addon Bone copies the files from `src/public` and adds references to them in the HTML.
+The Generated HTML tab highlights the tags added through `links`, `scripts`, and `metas`.
+You can list the same CSS and JavaScript through `tags`; avoid duplicating resources in `tags` and `links` / `scripts`, or they will load twice.
+
+<DocHeading level={3} id="html-template" toc={true}>Custom Template</DocHeading>
+
+Use a template when some markup must be present in the HTML before `render` runs.
+Here, the footer is already in the document, and Addon Bone adds a `main` container with text before it:
+
+<Tabs>
+    <Tab label="Options source">
+```ts file="../../../../code/entrypoints/options/template/options.ts" title="src/options.ts"
+```
+    </Tab>
+    <Tab label="HTML template">
+```html file="../../../../code/entrypoints/options/template/options.html" title="src/options.html"
+```
+    </Tab>
+</Tabs>
+
+The path `./options.html` is resolved alongside `options.ts`.
+Do not add the entrypoint script to the template manually: Addon Bone connects the built file.
+If the template contains all the content you need, you can omit `render`.
+
+:::tip Keep the Page's Files Together
+For a page with its own template, consider using a `src/options/` directory.
+Keep the entrypoint, HTML, styles, and related modules or assets there:
+
+```tree file="../../../../code/entrypoints/options/template/directory.tree"
+```
+
+Move the example's implementation to `options/index.ts`, rename the template to `template.html`, and set `template: "./template.html"`.
+For React, use `index.tsx`.
+This layout is optional; a standalone `options.ts` is also supported.
+:::
+
+<DocHeading level={3} id="options-csp" toc={true}>Content Security Policy</DocHeading>
+
+Use `csp` to specify where the interface can load resources from and which code it can execute.
+For example, enable `wasm` for a WebAssembly library, and add `CspSource.Data` to `sources.image` to preview images from data URLs:
+
+<Tabs>
+    <Tab label="Options source">
+```ts file="../../../../code/entrypoints/options/csp/options.ts" title="src/options.ts"
+```
+    </Tab>
+    <Tab label="Generated Manifest V3">
+```json file="../../../../code/entrypoints/options/csp/manifest-v3.json" title="manifest.json"
+```
+    </Tab>
+    <Tab label="Generated Manifest V2">
+```json file="../../../../code/entrypoints/options/csp/manifest-v2.json" title="manifest.json"
+```
+    </Tab>
+</Tabs>
+
+Only the manifest fields relevant to the example are shown.
+These settings allow the required capabilities; your code performs the processing and displays the images.
+The selected Options page's CSP is combined with the policies of other included extension pages and applies to them too.
+Sandbox has its own separate policy.
+
+For server requests, set the source in `csp.sources.connect` and declare website access with a pattern in `hostPermissions`.
+These settings are independent: Addon Bone does not derive permissions from CSP or add CSP from permissions.
+
+In Chrome Manifest V3, JavaScript must be packaged with the extension: `scripts` does not allow remote code, inline handlers, or `eval`.
+See the [CSP rules for extension pages](https://developer.chrome.com/docs/extensions/reference/manifest/content-security-policy) for details.
+
+## Options
+
+These options apply to the selected Options file: they control how the page opens, its content, HTML settings, and conditions for inclusion in the build.
+
+<DocHeading level={3} id="options-specific" toc={false}>Opening Settings</DocHeading>
+
+<EntrypointSpec name="openInTab" type="boolean" manifest>
+    Sets <code>options_ui.open_in_tab</code> in the manifest.
+    With <code>true</code>, the browser opens settings in a regular tab.
+    With <code>false</code>, it requests an embedded extension management interface; Opera and Safari still open a tab.
+    If omitted, Addon Bone writes <code>true</code>.
+    See the <a href="#options-open-mode">opening mode section</a> for an example and browser limitations.
+</EntrypointSpec>
+
+<DocHeading level={3} id="view-options" toc={false}>Page Options</DocHeading>
+
+`render` and `container` control the content; the remaining options configure HTML and resource policy.
+See the [HTML configuration examples](#html-configuration) for resource, meta tag, and CSP formats.
+
+<ViewRender primary containerExamplesHref="#container-examples" />
+<View />
+
+<DocHeading level={3} id="options-permissions" toc={false}>Permissions</DocHeading>
+
+Options can call extension APIs directly.
+Opening the page itself needs no permission; declare permissions for its features, such as `storage` to save preferences.
+
+<PermissionIntro />
+
+<Details title="Permission options">
+    <PermissionOptions />
+</Details>
+
+<DocHeading level={3} id="common-options" toc={false}>Common Options</DocHeading>
+
+All specified filters must match the current build.
+An excluded file does not take part in Options selection.
+Only the selected implementation contributes permissions and CSP.
+
+<Details title="Common options">
+    <Entrypoint />
+</Details>
+
+## Build Output
+
+For the Quick Start, Addon Bone creates the Options HTML and script and writes the HTML path to the manifest:
+
+<Tabs>
+    <Tab label="Generated Manifest V3">
+```json file="../../../../code/entrypoints/options/manifest-v3.json" title="manifest.json"
+```
+    </Tab>
+    <Tab label="Generated Manifest V2">
+```json file="../../../../code/entrypoints/options/manifest-v2.json" title="manifest.json"
+```
+    </Tab>
+</Tabs>
+
+Only the fields related to Options are shown; the complete manifest also contains the extension name, version, and other settings.
+For the `myapp` application in a Chrome Manifest V3 build, the main files are laid out as follows:
+
+```tree file="../../../../code/entrypoints/options/output.tree"
+```
+
+Simple script names are shown; an actual build may include shared chunks and hashes.
+The HTML path depends on the source filename, `as`, and output directory configuration:
+
+| Source file or option | Default HTML |
+| --- | --- |
+| `options.ts` or `options/index.ts` | `options.html` |
+| `preferences.options.ts` or `preferences.options/index.ts` | `preferences.options.html` |
+| `as: "preferences"` | `preferences.options.html` |
+
+Addon Bone updates `options_ui.page` automatically when the path changes.
+It uses `options_ui` in both manifest versions rather than `options_page`.
+An explicit `openInTab: false` is preserved in `open_in_tab`; omitting the option produces `true`.
+
+Options can be used alongside New Tab, Popup, and other extension pages.
+Its presence does not override built-in browser pages or create a toolbar button by itself.
+
+## Multi-App Structure
+
+In a project with multiple apps, place the shared settings page in `src/shared` and each app's implementation in `src/apps/<app>`:
+
+```tree file="../../../../code/entrypoints/options/multi-app.tree"
+```
+
+Enable multi-app mode in the project configuration:
+
+```ts file="../../../../code/entrypoints/newtab/multi-app.config.ts" title="adnbn.config.ts"
+```
+
+If an app has Options files, Addon Bone uses that set instead of the shared set.
+If the app has none, it uses the shared settings page.
+There is no separate merge option: the build includes one selected page.
+In a single-app project, use the regular `src` directory; a separate shared layer is not required.
+
+The app or shared set is selected before filtering.
+If an app file is found but then excluded, for example by `includeBrowser`, the shared page is not restored automatically.
+Place variants in the selected set and configure filters so the implementation you need remains in the build.
+Options from different files are not merged into one definition.
+
+## Best Practices
+
+- **Save data when the user acts.** Closing the page should not be the only time you write preferences.
+- **Show loading and errors.** Disable changes until a preference has loaded, and report failed writes.
+- **Use storage for shared values.** React state and page variables disappear when the page closes; preferences need to remain available to other extension contexts.
+- **Open settings through `openOptionsPage`.** This preserves the opening mode and avoids tying code to an HTML filename.
+- **Test both interface modes.** With `openInTab: false`, test sizing and behavior in the extension manager; account for browsers that still open a tab.
+- **Keep one matching implementation.** Use filters for browser and app variants.
+
+## Debugging
+
+1. **Options is missing from the build.** Check the filename, location, filters, and selected app or shared set. Verify that the final manifest contains `options_ui.page` and that the referenced HTML exists.
+2. **The settings link is missing or opening fails.** Reload the extension after building. Check `options_ui` and the error from `openOptionsPage()`: if Options is excluded, there is no page to open.
+3. **Settings open in a separate tab with `openInTab: false`.** Check `options_ui.open_in_tab`. This is browser behavior in Opera and Safari; in Chrome and Firefox, make sure you are testing the reloaded extension.
+4. **A different implementation opens.** Check the matching Options files and the manifest path. Remove extra candidates or separate them with filters.
+5. **The page opens without content.** Check the `render` result and the page's own console. Vanilla needs a DOM element, a non-empty string, or a number; React needs a `.tsx` / `.jsx` file and installed dependencies.
+6. **HTML tags appear as text.** A `render` string is displayed literally. Create DOM elements or use JSX or a template for markup.
+7. **A preference resets after closing.** Verify that the value is written to storage rather than only to a variable or React state. Check the `storage` permission in the manifest and any read or write errors.
+8. **CSS or an additional script does not load.** Check that the file is in the build and verify the path in `links`, `scripts`, or `tags`. Put ready-to-use resources in `src/public`; check the `template` path relative to the entrypoint.
+9. **A browser API or server request is blocked.** Check the selected Options page's permissions in the final manifest, granted optional access, and CSP. Reload the extension after changing permissions.

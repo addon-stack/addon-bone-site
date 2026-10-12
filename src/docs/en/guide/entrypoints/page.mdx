@@ -231,32 +231,17 @@ Run the commands in the project directory; for JavaScript, only the first line i
 <PackageManagerTabs command={reactInstallCommands} />
 
 Save the entrypoint as `counter.page.tsx`: the file extension selects React.
-For JavaScript with JSX, use `counter.page.jsx`; the examples below contain no TypeScript annotations and work in both formats.
+For JavaScript with JSX, use `counter.page.jsx`; the example below contains no TypeScript annotations and works in both formats.
 
-<Tabs>
-    <Tab label="Using definePage">
+In this example, the counter component is declared in the entrypoint file and passed to `render`:
+
 ```tsx file="../../../../code/entrypoints/page/counter.page.tsx" title="src/counter.page.tsx"
 ```
-    </Tab>
-    <Tab label="Named exports">
-```tsx file="../../../../code/entrypoints/page/counter.named-exports.page.tsx" title="src/counter.page.tsx"
-```
-    </Tab>
-</Tabs>
 
+Pass the component directly through `render: Counter`.
 This version replaces `counter.page.ts` from the previous example.
 Clicking the button updates state through `useState`, and React displays the new value.
-Addon Bone creates the container and React root; you define the component in `render`.
-In the named-export format, export the component directly as an arrow function through `export default`.
-
-If the component is already declared separately, export it directly through `export default Counter`.
-Addon Bone passes the component to React and renders it in the container:
-
-```tsx file="../../../../code/entrypoints/page/counter.component.page.tsx" title="src/counter.page.tsx"
-```
-
-This is another implementation of the same page; choose one file variant.
-If you need options, add named exports, such as `export const title = "Counter"`.
+Addon Bone creates the container and React root; you do not need to call `createRoot` yourself.
 
 The `render` function runs as a React component, so hooks work as usual.
 Keep the `React` import from the example: the current JSX transform uses it at runtime.

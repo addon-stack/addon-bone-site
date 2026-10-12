@@ -104,6 +104,7 @@ Addon Bone находит New Tab по имени файла или катало
 
 В этом примере React-компонент показывает форму поиска.
 Разрешение `search` позволяет отправить введённый запрос поисковой системе, выбранной в настройках браузера.
+Для функции `searchInCurrentTab` установите в проект `@addon-core/browser` версии 1.0 или новее; импортируйте её через `adnbn/browser`.
 Для примера нужны `react`, `react-dom`, `@types/react` и `@types/react-dom`; команды установки приведены в [разделе React](#react).
 Выберите один из двух форматов `newtab.tsx` и сохраните рядом файл `SearchForm.tsx`:
 
@@ -126,7 +127,8 @@ Addon Bone находит New Tab по имени файла или катало
 Введите запрос и нажмите **Search**: результаты откроются в этой же вкладке.
 Addon Bone добавит `search` из опций New Tab в манифест; дополнительные разрешения на доступ к сайтам для этого API не нужны.
 
-Пример использует [`search.query`](https://developer.mozilla.org/en-US/docs/Mozilla/Add-ons/WebExtensions/API/search/query), доступный с Promise в Chrome 96+, Edge 96+ и настольном Firefox 111+.
+`searchInCurrentTab` вызывает [`search.query`](https://developer.mozilla.org/en-US/docs/Mozilla/Add-ons/WebExtensions/API/search/query) с поиском в текущей вкладке и возвращает Promise.
+Этот браузерный API доступен в Chrome 87+, Edge 87+ и настольном Firefox 111+.
 В Safari этот API не поддерживается.
 
 Оба формата поддерживают одни и те же опции и фильтры сборки.
@@ -171,29 +173,16 @@ Vanilla вызывает `render(options)` при загрузке страни�
 
 Сохраните точку входа как `newtab.tsx`: расширение файла выберет React.
 Для JavaScript с JSX используйте `newtab.jsx`.
-Этот пример показывает счётчик, который обновляется при нажатии кнопки:
+В этом примере компонент счётчика объявлен в файле точки входа и передан в `render`:
 
-<Tabs>
-    <Tab label="Через defineNewtab">
 ```tsx file="../../../../code/entrypoints/newtab/counter.newtab.tsx" title="src/newtab.tsx"
 ```
-    </Tab>
-    <Tab label="Именованные экспорты">
-```tsx file="../../../../code/entrypoints/page/counter.named-exports.page.tsx" title="src/newtab.tsx"
-```
-    </Tab>
-    <Tab label="Компонент счётчика">
-```tsx file="../../../../code/entrypoints/page/counter.component.page.tsx" title="src/Counter.tsx"
-```
-    </Tab>
-</Tabs>
 
-Вариант с именованными экспортами содержит компонент прямо в точке входа и не требует отдельного `Counter.tsx`.
-Выберите одну реализацию `newtab.tsx`; она заменяет `newtab.ts` из предыдущих примеров.
+Передайте готовый компонент напрямую через `render: Counter`.
+Эта реализация `newtab.tsx` заменяет `newtab.ts` из предыдущих примеров.
 
 Нажатие кнопки обновит состояние через `useState`, и React отобразит новое значение.
 Addon Bone создаёт контейнер и React root; вручную вызывать `createRoot` не нужно.
-В формате с именованными экспортами можно экспортировать компонент напрямую, например `export default Counter`, или как стрелочную функцию, как в примере.
 
 Функция `render` в React выполняется как компонент и может использовать hooks.
 Сохраните импорт `React` из примера: текущее преобразование JSX использует его при выполнении.

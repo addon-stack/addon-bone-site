@@ -207,6 +207,8 @@ Their asynchronous preparation may still be in progress, so methods must wait fo
 
 Other services may not yet be registered in an individual service's constructor, `init`, or `main`.
 Move those calls to `background.main` so startup does not depend on file registration order.
+If an instance with that name has not been registered, or its registration has already been removed, `getService` synchronously throws `Transport instance "…" is not registered in the current context.`.
+The call does not wait for future registration.
 
 ## Lifecycle
 

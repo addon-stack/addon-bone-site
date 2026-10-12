@@ -231,32 +231,17 @@ Vanilla вызывает `render(options)` при загрузке страни�
 <PackageManagerTabs command={reactInstallCommands} />
 
 Сохраните точку входа как `counter.page.tsx`: расширение файла выберет React.
-Для JavaScript с JSX используйте `counter.page.jsx`; примеры ниже не содержат типов TypeScript и работают в обоих форматах.
+Для JavaScript с JSX используйте `counter.page.jsx`; пример ниже не содержит типов TypeScript и работает в обоих форматах.
 
-<Tabs>
-    <Tab label="Через definePage">
+В этом примере компонент счётчика объявлен в файле точки входа и передан в `render`:
+
 ```tsx file="../../../../code/entrypoints/page/counter.page.tsx" title="src/counter.page.tsx"
 ```
-    </Tab>
-    <Tab label="Именованные экспорты">
-```tsx file="../../../../code/entrypoints/page/counter.named-exports.page.tsx" title="src/counter.page.tsx"
-```
-    </Tab>
-</Tabs>
 
+Передайте готовый компонент напрямую через `render: Counter`.
 Этот вариант заменяет `counter.page.ts` из предыдущего примера.
 Нажатие кнопки обновит состояние через `useState`, и React отобразит новое значение.
-Addon Bone создаёт контейнер и React root; вы описываете компонент в `render`.
-В формате с именованными экспортами экспортируйте компонент как стрелочную функцию через `export default`.
-
-Если компонент уже объявлен отдельно, экспортируйте его напрямую через `export default Counter`.
-Addon Bone передаст компонент React и отобразит его в контейнере:
-
-```tsx file="../../../../code/entrypoints/page/counter.component.page.tsx" title="src/counter.page.tsx"
-```
-
-Это ещё одна реализация той же страницы; выберите один вариант файла.
-Если нужны опции, добавьте именованные экспорты, например `export const title = "Counter"`.
+Addon Bone создаёт контейнер и React root; вручную вызывать `createRoot` не нужно.
 
 Функция `render` в React выполняется как компонент, поэтому hooks работают в ней обычным образом.
 Сохраните импорт `React` из примера: текущее преобразование JSX использует его при выполнении.

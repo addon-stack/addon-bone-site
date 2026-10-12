@@ -1,1 +1,10 @@
-["background", "command", "service", "page", "newtab", "options"]
+[
+  "background",
+  "command",
+  "service",
+  "page",
+  "popup",
+  "offscreen",
+  "newtab",
+  "options"
+]

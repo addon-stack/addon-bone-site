@@ -3,7 +3,7 @@ import {useStorage} from "adnbn/storage/react";
 
 import React from "react";
 
-export default function SettingsForm() {
+const SettingsForm = () => {
 	const compact = useStorage({
 		key: "settings.compact",
 		defaultValue: false,
@@ -44,4 +44,6 @@ export default function SettingsForm() {
 			)}
 		</section>
 	);
-}
+};
+
+export default SettingsForm;

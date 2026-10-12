@@ -33,9 +33,10 @@ Addon Bone подставляет пути и размеры иконок из �
 Popup с `apply: true` переопределяет каждое поле независимо:
 
 - Иконка: `popup.icon` → `config.action.icon` → `config.icon`.
-- Подсказка: `popup.title` → `config.action.title` → имя расширения.
+- Подсказка: `popup.tooltip` → `config.action.title` → имя расширения.
 
-Например, если popup задаёт только `title`, кнопка сохраняет иконку из `config.action`.
+Например, если popup задаёт только `tooltip`, кнопка сохраняет иконку из `config.action`.
+Опция `title` у Popup задаёт заголовок HTML-документа и не меняет подсказку кнопки.
 Popup с `apply: false` не влияет на исходные настройки кнопки.
 Поле `default_popup` добавляет сам popup; конфигурация `action` не создаёт HTML-страницу.
 

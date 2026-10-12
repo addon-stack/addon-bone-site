@@ -3,6 +3,17 @@
   "compilerOptions": {
     "noCheck": true
   },
-  "include": ["entrypoints/**/*.ts", "entrypoints/**/*.tsx"],
+  // Keep React variants when a sibling .ts snippet has the same basename.
+  "files": [
+    "entrypoints/newtab/counter.newtab.tsx",
+    "entrypoints/newtab/typed.newtab.tsx",
+    "entrypoints/options/counter.options.tsx",
+    "entrypoints/options/typed.options.tsx",
+    "entrypoints/page/counter.page.tsx",
+    "entrypoints/page/typed.page.tsx",
+    "entrypoints/popup/counter.popup.tsx",
+    "entrypoints/popup/typed.popup.tsx"
+  ],
+  "include": ["**/*.ts", "**/*.tsx"],
   "exclude": []
 }

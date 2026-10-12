@@ -1,0 +1,10 @@
+src
+├── shared/
+│   └── parser.offscreen.ts
+└── apps/
+    ├── app-a/
+    │   └── images.offscreen.ts
+    └── app-b/
+        └── clipboard.offscreen.ts
+adnbn.config.ts
+package.json

@@ -1,0 +1,7 @@
+{
+  "manifest_version": 3,
+  "action": {
+    "default_title": "Open quick actions",
+    "default_popup": "popup.html"
+  }
+}

@@ -1,1 +1,672 @@
+---
+description: "Create a Popup for your extension's toolbar button with Addon Bone. Use Vanilla or React, configure HTML, styles, and permissions, and switch between interfaces."
+---
+
 # Popup
+
+import {PackageManagerTabs, Tab, Tabs} from "@rspress/core/theme";
+import Details from "@components/Details";
+import DocHeading from "@components/DocHeading";
+import FrameworkTabs from "@components/FrameworkTabs";
+import EntrypointSpec from "@components/docs/entrypoints/EntrypointSpec";
+import PermissionIntro from "@en/components/entrypoints/PermissionIntro";
+import PermissionOptions from "@en/components/entrypoints/PermissionOptions";
+import ViewRender from "@en/components/entrypoints/ViewRender";
+import View from "@en/components/entrypoints/View";
+import Entrypoint from "@en/components/entrypoints/Entrypoint";
+import ViewRendering from "./fragments/view-rendering.mdx";
+import ViewAssets from "./fragments/view-assets.mdx";
+import ViewHtml from "./fragments/view-html.mdx";
+import reactInstallCommands from "../../../../code/entrypoints/page/install/commands.json";
+
+Popup creates a small window that users open by clicking your extension's button in the browser.
+Use it for quick actions on the current tab, checking the extension's status, and controlling its features.
+
+Place your code in `popup.ts` or `popup.tsx`.
+You can work with the DOM directly or use React; Addon Bone creates the HTML, connects the page's code, and assigns the Popup to the extension button.
+
+## Quick Start
+
+Create a Popup with simple text that opens when the user clicks the extension button:
+
+```ts file="../../../../code/entrypoints/popup/popup.ts" title="src/popup.ts"
+```
+
+Add the file to your Addon Bone project, build the extension, and load it into the browser.
+Click the extension's icon in the toolbar or extensions menu; pin it to the toolbar if needed.
+The window displays `Your extension is ready.`, and the button's tooltip reads `Open quick actions`.
+`title` sets the HTML document title; `tooltip` sets the text shown when the user hovers over the extension button.
+
+Addon Bone creates `popup.html` and writes its path to `action.default_popup` for Manifest V3 or `browser_action.default_popup` for Manifest V2.
+The framework displays the `render` string as text and creates the container automatically.
+This example needs no additional files, React, or permissions.
+
+## Opening and Closing
+
+The browser loads the Popup when it opens and destroys its document when it closes.
+Variables, DOM elements, and React state are created again the next time it opens.
+Save data you need in extension storage; move long-running work to [Background](./background.mdx) or [Service](./service.mdx).
+
+Clicking outside the Popup closes the window.
+Chrome cannot keep it open after it loses focus; use a separate [extension page](./page.mdx) or [Sidebar](./sidebar.mdx) for longer interactions.
+See [the Popup lifecycle in Chrome](https://developer.chrome.com/docs/extensions/develop/ui/add-popup) for details.
+
+When the button has a Popup assigned, the `action.onClicked` event does not fire.
+Put UI actions in its event handlers and initial data loading in the page's code or React effects.
+This also applies to `browserAction.onClicked` in Manifest V2.
+See [extension button behavior](https://developer.mozilla.org/en-US/docs/Mozilla/Add-ons/WebExtensions/user_interface/Toolbar_button#specifying_the_browser_action).
+
+The window size depends on its content and the browser's limits.
+Chrome automatically sizes the Popup between 25 × 25 and 800 × 600 pixels.
+Set its width, spacing, and wrapping of long text through styles; `definePopup` has no separate size option.
+See the [styles example](#styles-and-modules) and [Chrome's Action API Popup documentation](https://developer.chrome.com/docs/extensions/reference/api/action#popup) for the browser limits.
+
+## File Structure
+
+Addon Bone discovers Popup by its file or directory name.
+You can keep files directly in `src` or group them in `popups/`:
+
+<Tabs>
+    <Tab label="Default Structure">
+```tree file="../../../../code/entrypoints/popup/default.tree"
+```
+    </Tab>
+    <Tab label="Grouped Files">
+```tree file="../../../../code/entrypoints/popup/grouped.tree"
+```
+    </Tab>
+</Tabs>
+
+An `account.popup/` directory with an `index.tsx` file declares a Popup with the alias `account`.
+You can use a single `account.popup.tsx` file instead.
+Choose a directory when you want to keep this Popup's components, styles, and assets together.
+
+These paths are supported for TypeScript; `{ts,tsx}` represents two possible extensions:
+
+- `popup.{ts,tsx}` and `*.popup.{ts,tsx}`;
+- `popup/index.{ts,tsx}` and `*.popup/index.{ts,tsx}`;
+- `popups/popup.{ts,tsx}` and `popups/*.popup.{ts,tsx}`;
+- `popups/popup/index.{ts,tsx}` and `popups/*.popup/index.{ts,tsx}`.
+
+Use `.ts` for Vanilla and `.tsx` for React.
+For JavaScript, use the same paths with `.js` or `.jsx`: `.js` selects Vanilla, and `.jsx` selects React.
+Discovery also recognizes `.vue` and `.svelte`, but there are currently no built-in View adapters for these formats; use Vanilla or React for working examples.
+
+:::warning Discovery Scope
+If Addon Bone finds entrypoints in `popups/`, it uses that directory instead of Popup files at the top level of the same source scope.
+For example, when `popups/account.popup/index.tsx` exists, a `popup.ts` file alongside the directory is excluded from the build.
+This rule applies separately to the shared layer and each app, before filters: excluding a discovered file does not restart discovery at the top level.
+:::
+
+<DocHeading level={3} id="popup-selection" toc={false}>Selecting an Implementation</DocHeading>
+
+With `multiplePopup: false`, the default, the build includes one Popup.
+After applying filters, Addon Bone selects the last file by priority: app files take precedence over the shared layer and plugins, and among local files at the same level, the last file in path order wins.
+Other candidates do not generate HTML, appear in `getPopups()`, or contribute permissions or CSP.
+
+For a single implementation, keep one matching file or separate variants with filters such as `includeBrowser` and `includeApp`.
+To switch between several built interfaces, use [multiple Popups](#multiple-popups).
+
+## Defining Popup
+
+Use `definePopup` for option suggestions and type checking.
+Alternatively, declare options as named exports and provide the content or render function through `export default`.
+
+This example uses a React component to show the current tab's title when the user clicks a button in the Popup.
+The `activeTab` permission grants temporary access to the title after the user clicks the extension button; this example does not need permanent access to all tabs.
+`getActiveTab` from `adnbn/browser` finds the active tab in the current window.
+This example needs React 19 or later, along with `react-dom`, `@types/react`, and `@types/react-dom`; installation commands are in the [React section](#react).
+Choose one of the two formats for `popup.tsx` and save `CurrentTab.tsx` alongside it:
+
+<Tabs>
+    <Tab label="Using definePopup">
+```tsx file="../../../../code/entrypoints/popup/current-tab/popup.tsx" title="src/popup.tsx"
+```
+    </Tab>
+    <Tab label="Named exports">
+```tsx file="../../../../code/entrypoints/popup/current-tab/popup.named-exports.tsx" title="src/popup.tsx"
+```
+    </Tab>
+    <Tab label="Tab data">
+```tsx file="../../../../code/entrypoints/popup/current-tab/CurrentTab.tsx" title="src/CurrentTab.tsx"
+```
+    </Tab>
+</Tabs>
+
+This version replaces `popup.ts` from the Quick Start.
+Build the extension, reload it, open a regular web page, and click the extension button.
+Click **Read current tab** in the Popup: while the request runs, the button displays `Loading…` and is disabled, then the tab title or an error message appears below it.
+After reopening the Popup, click the button again: the result is stored only in component state.
+
+[`useActionState`](https://react.dev/reference/react/useActionState) stores the operation's result in `message` and returns `isPending` while the request runs.
+The handler returns the title on success or a message on error.
+With `action={load}`, React runs the handler when the form is submitted and tracks its execution; no separate `startTransition` call is needed.
+
+`activeTab` does not grant permanent access to all sites or remove restrictions on internal browser pages.
+Navigating to another site revokes temporary access; clicking the extension button grants it again.
+See [what `activeTab` allows and when it applies](https://developer.chrome.com/docs/extensions/develop/concepts/activeTab) for details.
+
+Both formats support the same options and build filters.
+With named exports, declare options through `export const`; a bare `export default` maps to `render`.
+Export an existing React component directly, as in `export default CurrentTab` in the example.
+The **primary** badge marks this mapping in the option descriptions.
+
+For constant text, pass a string directly, as in [Quick Start](#quick-start).
+Use a function when the content is created or computed as the page loads.
+`render` is optional: if all markup is in the HTML template, setting `template` and the other page options is enough.
+
+## Page Content
+
+<ViewRendering />
+
+### Vanilla
+
+Pass a DOM element, a non-empty string, or a number directly to `render`, or return it from a function.
+This counter creates a button; Addon Bone places it inside a `main` container:
+
+```ts file="../../../../code/entrypoints/popup/counter.popup.ts" title="src/popup.ts"
+```
+
+Clicking the button increments the value and updates the button text.
+Changing the variable alone does not update the DOM.
+Closing the window resets the value: this example keeps the counter only in the Popup's memory.
+
+A string is displayed as text: `"<strong>Hello</strong>"` does not become HTML.
+For markup, create DOM elements, use an HTML template, or use React.
+An empty string, `null`, `undefined`, and booleans create neither content nor a container; the number `0` is displayed.
+
+Vanilla calls `render(options)` when the page loads and uses its synchronous result.
+To load data, return an element with initial content, then update it from a separate asynchronous function.
+Handle errors in that function: Addon Bone does not wait for it to finish.
+
+### React
+
+Install `react` and `react-dom` if they are not already in your project.
+TypeScript also needs `@types/react` and `@types/react-dom`.
+Run the commands in your project directory; for JavaScript, only the first line is needed:
+
+<PackageManagerTabs command={reactInstallCommands} />
+
+Save the entrypoint as `popup.tsx`: the file extension selects React.
+For JavaScript with JSX, use `popup.jsx`.
+In this example, the counter component is declared in the entrypoint file and passed to `render`:
+
+```tsx file="../../../../code/entrypoints/popup/counter.popup.tsx" title="src/popup.tsx"
+```
+
+Pass the component directly through `render: Counter`.
+This implementation of `popup.tsx` replaces the previous Popup from the examples.
+
+Clicking the button updates state through `useState`, and React displays the new value.
+Addon Bone creates the container and React root; you do not need to call `createRoot` yourself.
+The `render` function runs as a React component and can use hooks.
+Keep the `React` import from the example: the current JSX transform uses it at runtime.
+Load data through effects or your chosen data-loading library: display initial content first, then update state.
+The component itself returns its result synchronously.
+
+<DocHeading level={3} id="popup-render-types" toc={false}>`render` and `props` Types</DocHeading>
+
+For a reusable function, use `ViewRenderHandler<PopupProps>`; for a React component, use `ViewRenderReactComponent<PopupProps>`.
+`PopupProps` describes the current Popup's options, including the document title `title` and button tooltip `tooltip`.
+The current framework does not export this type directly from `adnbn`. In the examples below, the local alias is inferred from the parameter of `definePopup`, excluding `render` and `container`.
+Both contracts require a synchronous result:
+
+<FrameworkTabs>
+    <Tab label="Vanilla">
+```ts file="../../../../code/entrypoints/popup/typed.popup.ts" title="src/popup.ts"
+```
+    </Tab>
+    <Tab label="React">
+```tsx file="../../../../code/entrypoints/popup/typed.popup.tsx" title="src/popup.tsx"
+```
+    </Tab>
+</FrameworkTabs>
+
+Explicit annotations are optional: you can pass a regular function with an inferred synchronous return type.
+In React 19, `React.FC` allows a Promise, so use `ViewRenderReactComponent<PopupProps>` or an inferred synchronous type for the strict `render` contract.
+
+<DocHeading level={3} id="container-examples" toc={false}>Content Container</DocHeading>
+
+`container` sets the outer element, while `render` sets its content.
+To choose a tag, a string such as `container: "main"` is enough.
+Pass an object to set element properties; use a function to call DOM methods or compute properties from the page options:
+
+<Tabs>
+    <Tab label="Container properties">
+```ts file="../../../../code/entrypoints/popup/container/options.popup.ts" title="src/popup.ts"
+```
+    </Tab>
+    <Tab label="Container factory">
+```ts file="../../../../code/entrypoints/popup/container/factory.popup.ts" title="src/popup.ts"
+```
+    </Tab>
+</Tabs>
+
+Both variants create a `main` element with the `popup-content` class; the factory also sets `aria-label` for assistive technologies.
+`render` creates an `h1` heading inside the container.
+Both functions receive the current file's options without `render` and `container`.
+
+In Vanilla, Addon Bone gets the `render` result, creates the container, adds it at the start of `body`, and places the content inside it.
+In React, the framework first prepares the React element, then creates and adds the container, and passes the element to React for rendering.
+React calls the component when it mounts and manages subsequent UI updates.
+
+Do not add the returned elements to `body` yourself.
+The container factory can be asynchronous: Addon Bone waits for its result before mounting.
+
+## Styles and Modules
+
+<ViewAssets />
+
+This example sets the Popup's width and styles the button and request result with SCSS.
+Keep `CurrentTab.tsx` from [Defining Popup](#defining-popup), add `popup.scss`, and replace the entrypoint:
+
+<Tabs>
+    <Tab label="Popup source">
+```tsx file="../../../../code/entrypoints/popup/styles/popup.tsx" title="src/popup.tsx"
+```
+    </Tab>
+    <Tab label="Tab data">
+```tsx file="../../../../code/entrypoints/popup/current-tab/CurrentTab.tsx" title="src/CurrentTab.tsx"
+```
+    </Tab>
+    <Tab label="Stylesheet">
+```scss file="../../../../code/entrypoints/popup/styles/popup.scss" title="src/popup.scss"
+```
+    </Tab>
+</Tabs>
+
+Addon Bone compiles SCSS to CSS and builds it as CSS Modules: `styles.popup` contains the generated class name.
+Sass is already included in the bundler; this example needs no separate installation or configuration.
+The `$accent` variable sets the main color, and `color.adjust` darkens it for the result text.
+Nested selectors style the button and paragraph inside the container.
+
+`className: styles.popup` applies the styles to the `main` container.
+Its width, including padding, is 320 pixels; long titles wrap.
+The component is passed directly to `render`.
+Use the same React dependencies and `activeTab` permission as in the original example.
+
+## HTML Configuration
+
+<ViewHtml />
+
+<DocHeading level={3} id="html-tags" toc={true}>Additional Resources and Meta Tags</DocHeading>
+
+For ready-to-use resources that the entrypoint does not import, set `links` and `scripts`.
+In this example, CSS sets spacing and a system font, an additional script sets `data-page="popup"` on `html`, and meta tags add a description and supported color schemes:
+
+<Tabs>
+    <Tab label="Popup source">
+```ts file="../../../../code/entrypoints/popup/html/popup.ts" title="src/popup.ts"
+```
+    </Tab>
+    <Tab label="Stylesheet">
+```css file="../../../../code/entrypoints/page/html/page.css" title="src/public/page.css"
+```
+    </Tab>
+    <Tab label="Additional script">
+```js file="../../../../code/entrypoints/popup/html/popup-extra.js" title="src/public/popup-extra.js"
+```
+    </Tab>
+    <Tab label="Generated HTML">
+```html file="../../../../code/entrypoints/popup/html/generated.html" title="popup.html"
+```
+    </Tab>
+</Tabs>
+
+Addon Bone copies files from `src/public` and adds references to them in the HTML.
+The Generated HTML tab highlights the tags added through `links`, `scripts`, and `metas`.
+You can list the same CSS and JavaScript through `tags`; do not duplicate resources in `tags` and `links` / `scripts`, or they will be included twice.
+
+<DocHeading level={3} id="html-template" toc={true}>Custom Template</DocHeading>
+
+Use a template when some markup needs to be in the HTML before `render` runs.
+Here, the footer is already in the document, and Addon Bone adds a `main` container with text before it:
+
+<Tabs>
+    <Tab label="Popup source">
+```ts file="../../../../code/entrypoints/popup/template/popup.ts" title="src/popup.ts"
+```
+    </Tab>
+    <Tab label="HTML template">
+```html file="../../../../code/entrypoints/popup/template/popup.html" title="src/popup.html"
+```
+    </Tab>
+</Tabs>
+
+The `./popup.html` path resolves alongside `popup.ts`.
+Do not add the entrypoint script to the template manually: Addon Bone connects the built file.
+If the template contains all the content you need, you can omit `render`.
+
+:::tip Keep Page Files Together
+For a Popup with its own template, consider using a `src/popup/` directory.
+Keep the entrypoint, HTML, styles, and related modules or assets there:
+
+```tree file="../../../../code/entrypoints/popup/template/directory.tree"
+```
+
+Move the example implementation to `popup/index.ts`, rename the template to `template.html`, and set `template: "./template.html"`.
+For React, use `index.tsx`.
+This layout is optional: a single `popup.ts` file is also supported.
+:::
+
+<DocHeading level={3} id="popup-csp" toc={true}>Content Security Policy</DocHeading>
+
+Use `csp` to control where the interface can load resources from and which code it can run.
+For example, enable `wasm` for a library that uses WebAssembly, and add `CspSource.Data` to `sources.image` to preview images from data URLs:
+
+<Tabs>
+    <Tab label="Popup source">
+```ts file="../../../../code/entrypoints/popup/csp/popup.ts" title="src/popup.ts"
+```
+    </Tab>
+    <Tab label="Generated Manifest V3">
+```json file="../../../../code/entrypoints/popup/csp/manifest-v3.json" title="manifest.json"
+```
+    </Tab>
+    <Tab label="Generated Manifest V2">
+```json file="../../../../code/entrypoints/popup/csp/manifest-v2.json" title="manifest.json"
+```
+    </Tab>
+</Tabs>
+
+Only the manifest fields relevant to the example are shown.
+These settings allow the required capabilities; your code handles processing and displaying images.
+The CSP of all built Popups is combined with the policies of other included extension pages and also applies to them.
+Sandbox has its own separate policy.
+
+For server requests, set a source in `csp.sources.connect` and a site access pattern in `hostPermissions`.
+These settings are independent: Addon Bone does not derive permissions from CSP or add CSP from permissions.
+
+In Chrome Manifest V3, JavaScript must be bundled with the extension: `scripts` does not allow remote code, inline event handlers, or `eval`.
+See the [CSP rules for extension pages](https://developer.chrome.com/docs/extensions/reference/manifest/content-security-policy) for details.
+
+## Multiple Popups
+
+Enable `multiplePopup: true` in `adnbn.config.ts` if the extension needs several interfaces for its button.
+Addon Bone creates HTML for each matching file but assigns only one Popup to the button in the manifest.
+This is a build setting; it does not open several windows at once.
+
+In this example, the user chooses the button's interface on the [Options](./options.mdx) page.
+The two Popups display different text so the result of switching is immediately visible.
+The form in Options gets the available variants through `getPopups()` and assigns the selected Popup through `changePopup`.
+The button labels are the aliases of the built Popups:
+
+<Tabs>
+    <Tab label="Project configuration">
+```ts file="../../../../code/entrypoints/popup/variants/config.ts" title="adnbn.config.ts"
+```
+    </Tab>
+    <Tab label="First Popup">
+```ts file="../../../../code/entrypoints/popup/variants/popup.ts" title="src/popup.ts"
+```
+    </Tab>
+    <Tab label="Second Popup">
+```ts file="../../../../code/entrypoints/popup/variants/second.popup.ts" title="src/second.popup.ts"
+```
+    </Tab>
+    <Tab label="Selection in Options">
+```tsx file="../../../../code/entrypoints/popup/variants/options.tsx" title="src/options.tsx"
+```
+    </Tab>
+</Tabs>
+
+Add `multiplePopup` to your existing configuration and keep the other settings.
+This scenario replaces the previous Popup files.
+The Options form needs React 19 or later; installation commands are in the [React section](#react).
+This example needs no additional permissions or files.
+If you already have an Options page, move the selection form into it instead of creating a second page.
+
+Build the extension, reload it, and open its settings.
+Click **second**, wait for `Popup selected.`, and click the extension button: it displays `This is the second popup.`.
+Click **popup** and open the Popup again: it now displays `This is the first popup.`.
+`getPopups().keys()` returns the aliases of the built Popups: `popup` and `second` in this example.
+Each button passes its alias to the handler, which calls `changePopup`; adding another Popup updates the list after the next build.
+
+[`useActionState`](https://react.dev/reference/react/useActionState) stores the success or error message and returns `isPending` while switching is in progress.
+During this time, the buttons are disabled and the form shows `Applying…`.
+With `formAction={() => apply(alias)}`, React runs the handler in an Action context and tracks the operation; no separate `startTransition` call is needed.
+
+To restore the selection after restarting the browser, save the alias in storage and apply it from [Background](./background.mdx) at startup.
+To navigate between screens in an already open Popup, update React state or use routing within its page.
+
+<DocHeading level={3} id="popup-apply" toc={true}>Initial Popup</DocHeading>
+
+With `multiplePopup: true`, the first built Popup with `apply: true` or no `apply` option becomes the initial Popup.
+The order starts with plugin files, followed by the shared layer and app; local files at the same level follow path order.
+For an explicit choice, set `apply: false` on the other variants, as in the example.
+With `multiplePopup: false`, Addon Bone first selects a single file by the [priority rules](#popup-selection), then checks its `apply` option.
+
+`apply: false` does not exclude the file from the build: its HTML and alias remain available, and its permissions and CSP are included.
+If none of the built Popups is applied, Addon Bone does not set `default_popup`.
+This set of Popups alone also does not add an `action` / `browser_action` field; the field may come from the `action` configuration or an `_execute_action` command.
+To assign a Popup only from code, declare `action: {}` in the project configuration and leave `apply: false` on all variants.
+
+<DocHeading level={3} id="popup-runtime" toc={true}>Switching at Runtime</DocHeading>
+
+`getPopups()` from `adnbn` returns a `PopupMap`: a `Map<PopupAlias, PopupMapEntry>` containing the aliases of built Popups and the data needed to switch between them.
+The `PopupMap`, `PopupAlias`, and `PopupMapEntry` types are also available from `adnbn`.
+`PopupMapEntry` has three optional fields:
+
+- `path?: string` — the HTML path inside the extension;
+- `tooltip?: string` — the original tooltip text or localization key, such as `@popup.account`;
+- `icon?: string` — the icon group name.
+
+The document title `title` is not part of this entry: it remains a page option and is available in `PopupProps`.
+`getPopups()` does not translate `tooltip`; if a menu needs labels for the variants, define them separately from the button's tooltip.
+Aliases depend on the filename or `as`; see the table in [Build Output](#build-output).
+In `.adnbn/popup.d.ts`, Addon Bone augments `PopupAliasRegistry` with variant names for TypeScript suggestions.
+
+`changePopup(alias, tab?)` returns `Promise<void>`.
+Call it from background or an extension page.
+Without the second argument, it changes the Popup for the button globally; pass a tab ID or tab object to set an override for that tab.
+The tab override takes precedence over the global value and resets when the tab closes.
+See [per-tab action settings](https://developer.chrome.com/docs/extensions/reference/api/action#per-tab_state) for details.
+
+The call changes what opens the next time the button is clicked; it does not replace an already open document or open a new window.
+If the selected Popup has `tooltip` or `icon` set, `changePopup` also updates the corresponding button properties.
+An omitted field preserves the button's current value; configuration values are not restored automatically.
+The HTML document title comes from the selected Popup's `title` when it loads.
+
+Handle call errors: the alias may be missing from the current build, or the browser may reject the change.
+The Popup path, tooltip, and icon are changed in sequence.
+If updating the tooltip or icon fails, changes already made remain in place.
+
+To open the currently assigned Popup programmatically, use `openActionPopup()` from `adnbn/browser`.
+This function returns `Promise<void>` and optionally accepts a window ID.
+Support depends on the browser and version: in Chrome Manifest V3, the method is available to regular extensions from Chrome 127; versions 118–126 allow it only for extensions installed by policy.
+Check compatibility with your target browser and handle opening failures.
+See the [Chrome `action.openPopup()` contract](https://developer.chrome.com/docs/extensions/reference/api/action#method-openPopup) and [browser compatibility](https://developer.mozilla.org/en-US/docs/Mozilla/Add-ons/WebExtensions/API/action/openPopup#browser_compatibility).
+
+<DocHeading level={3} id="popup-localization" toc={true}>Localized Tooltip</DocHeading>
+
+To translate the tooltip, pass a key in `tooltip` and add a message to a locale file.
+In this example, the document title stays `Account`, while the tooltip comes from the `popup.account` message.
+Set `lang: "en"` in your existing `adnbn.config.ts` and replace the previous Popup with this version:
+
+<Tabs>
+    <Tab label="Popup source">
+```ts file="../../../../code/entrypoints/popup/localization/popup.ts" title="src/popup.ts"
+```
+    </Tab>
+    <Tab label="Locale file">
+```yaml file="../../../../code/entrypoints/popup/localization/en.yaml" title="src/locales/en.yaml"
+```
+    </Tab>
+    <Tab label="Generated Manifest V3">
+```json file="../../../../code/entrypoints/popup/localization/manifest-v3.json" title="manifest.json"
+```
+    </Tab>
+</Tabs>
+
+Addon Bone creates `_locales/en/messages.json` with the `popup_account` message and writes the `__MSG_popup_account__` reference to `default_title`.
+Only the manifest fields relevant to the example are shown; for Manifest V2, the reference is in `browser_action.default_title`.
+Add locale files for other languages if the tooltip needs translations for them.
+
+When switching to a Popup with this `tooltip`, `changePopup` gets the translation through the browser's i18n API.
+The browser's locale determines the language, with a fallback to the default language when a translation is missing.
+Changing the interface language through Addon Bone's Locale API does not update this tooltip automatically.
+See [how the browser selects a message](https://developer.chrome.com/docs/extensions/reference/api/i18n#search-for-messages) for details.
+
+<Details title="Empty Tooltip Value">
+
+An empty string, `tooltip: ""`, differs from an omitted option: when switching, `changePopup` passes an empty value to the browser rather than preserving the current tooltip.
+If the browser's i18n API returns an empty translation or cannot find the message, the function also passes an empty string.
+
+An empty value does not guarantee a hidden tooltip: the browser controls how it is displayed and may show the extension's name.
+See [how the browser handles an empty value](https://developer.mozilla.org/en-US/docs/Mozilla/Add-ons/WebExtensions/API/action/setTitle) for details.
+
+</Details>
+
+## Options
+
+`PopupDefinition` options apply to an individual Popup: they set its content, HTML configuration, initial assignment to the button, and conditions for inclusion in the build. `PopupConfig` groups the button-specific fields.
+Set `multiplePopup` and `mergePopup` in the project configuration, outside `definePopup`.
+
+<DocHeading level={3} id="popup-action-options" toc={false}>Extension Button</DocHeading>
+
+<EntrypointSpec name="apply" type="boolean" manifest>
+    Determines whether this Popup can be the initial one for the extension button.
+    If omitted, Addon Bone uses <code>true</code>.
+    With <code>false</code>, the built Popup remains available through <code>changePopup</code> but is not assigned in the manifest.
+    Selection among several files is described in the <a href="#popup-apply">Initial Popup section</a>.
+</EntrypointSpec>
+
+<EntrypointSpec name="icon" type="IconName" manifest>
+    Accepts an <code>IconName</code>: the name of an icon group for the extension button, such as <code>icon: "toolbar"</code>.
+    This is a group name from <code>src/icons</code>, rather than a path to an individual image.
+    For example, <code>toolbar-16.png</code> and <code>toolbar-32.png</code> form a <code>toolbar</code> group with two sizes.
+    For the initial Popup, omitting the option uses <code>action.icon</code> from the configuration, then the general <code>icon</code>.
+    When switching through <code>changePopup</code>, a specified group replaces the button's icon; an omitted option preserves the current icon.
+    To change only the icon, use <code>changeActionIcon()</code>.
+</EntrypointSpec>
+
+<EntrypointSpec name="tooltip" type="string" manifest>
+    Sets the tooltip shown when the user hovers over the extension button.
+    Accepts plain text or a localization key, such as <code>tooltip: "@popup.account"</code>.
+    For the initial Popup, Addon Bone writes the value to <code>manifest.json</code>:
+    the <code>action.default_title</code> field for Manifest V3 or <code>browser_action.default_title</code> for Manifest V2.
+    The generated fields are shown in <a href="#build-output">Build Output</a>.
+    If omitted, the tooltip comes from <code>action.title</code> in the project configuration, then from the extension's name.
+    When switching through <code>changePopup</code>, a specified <code>tooltip</code> replaces the button's tooltip;
+    an omitted option preserves the current tooltip.
+    An empty string, <code>""</code>, sets the value explicitly rather than preserving the previous tooltip.
+    The translation example and empty value behavior are described in the <a href="#popup-localization">localization section</a>.
+</EntrypointSpec>
+
+<DocHeading level={3} id="view-options" toc={false}>Page Options</DocHeading>
+
+`render` and `container` control the content; the other options configure HTML and resource policy.
+See the [HTML configuration examples](#html-configuration) for resource, meta tag, and CSP formats.
+
+<ViewRender primary containerExamplesHref="#container-examples" />
+<View />
+
+<DocHeading level={3} id="popup-permissions" toc={false}>Permissions</DocHeading>
+
+Popup can access extension APIs directly.
+Opening the window itself needs no permission; declare permissions for its features, such as `activeTab` for current tab data after the user clicks the button.
+With `multiplePopup: true`, permissions from all built Popups are combined, including variants with `apply: false`.
+They belong to the extension as a whole and are not granted separately to each window.
+
+<PermissionIntro />
+
+<Details title="Permission Options">
+    <PermissionOptions />
+</Details>
+
+<DocHeading level={3} id="common-options" toc={false}>Common Options</DocHeading>
+
+All specified filters must match the current build.
+An excluded file does not generate HTML or appear in the list of available Popups.
+Only files for which Addon Bone creates pages contribute permissions and CSP.
+
+<Details title="Common Options">
+    <Entrypoint />
+</Details>
+
+## Build Output
+
+For the Quick Start, Addon Bone creates the Popup's HTML and script, writes the HTML path to `default_popup`, and the `tooltip` value to `default_title`:
+
+<Tabs>
+    <Tab label="Generated Manifest V3">
+```json file="../../../../code/entrypoints/popup/manifest-v3.json" title="manifest.json"
+```
+    </Tab>
+    <Tab label="Generated Manifest V2">
+```json file="../../../../code/entrypoints/popup/manifest-v2.json" title="manifest.json"
+```
+    </Tab>
+</Tabs>
+
+Only the fields related to Popup are shown; the full manifest also includes the extension's name, version, and other settings.
+For the `myapp` app in a Chrome Manifest V3 build, the main files are arranged as follows:
+
+```tree file="../../../../code/entrypoints/popup/output.tree"
+```
+
+The example shows simple script names; an actual build may include shared chunks and hashes.
+The HTML path depends on the filename, `as`, and output directory configuration:
+
+| Source File or Option | Alias | Default HTML |
+| --- | --- | --- |
+| `popup.ts` or `popup/index.ts` | `popup` | `popup.html` |
+| `account.popup.ts` or `account.popup/index.ts` | `account` | `account.popup.html` |
+| `as: "account"` | `account` | `account.popup.html` |
+
+Addon Bone updates `default_popup` automatically when the path changes.
+With `multiplePopup: true`, the other HTML files are also included in the build and available through `getPopups()`, but they do not have separate `default_popup` fields.
+Use distinct names or `as` values for variants so aliases do not depend on automatically added suffixes when names collide.
+
+## Multi-App Structure
+
+In a project with several apps, place the shared Popup in `src/shared` and an app-specific implementation in `src/apps/<app>`:
+
+```tree file="../../../../code/entrypoints/popup/multi-app.tree"
+```
+
+Enable multi-app mode in the project configuration:
+
+```ts file="../../../../code/entrypoints/newtab/multi-app.config.ts" title="adnbn.config.ts"
+```
+
+With `mergePopup: false`, the default, app files replace the shared set.
+If an app has no Popup files of its own, Addon Bone uses the shared set.
+With `mergePopup: true`, it collects candidates from both layers.
+Options from different files are not merged into one definition.
+
+`mergePopup` controls the set of candidates, while `multiplePopup` controls the number of generated pages.
+With `multiplePopup: false`, one Popup is still selected after merging and filtering; the app implementation takes precedence over the shared layer.
+With `multiplePopup: true`, matching files become separate pages; choose the initial one through `apply`.
+For shared and app variants that need to be included in the same build, use distinct names or `as` values.
+In a single-app project, use the regular `src`; a separate shared layer is not required.
+
+The app or shared set is selected before filters are applied.
+With merging disabled, discovering an app file and then excluding it does not automatically restore the shared implementation.
+Place variants in the selected set and configure filters so the required implementation remains in the build.
+
+## Best Practices
+
+- **Account for the window's short lifetime.** Save data when the user acts and move long-running tasks to the background context.
+- **Start with a ready interface or loading state.** Load data asynchronously after synchronous `render` and display errors.
+- **Keep the interface compact.** Set a width and wrap long text; check sizes in your target browsers.
+- **Request access for the task.** Use `activeTab` for tab data after a button click when permanent access is unnecessary.
+- **Choose the initial Popup explicitly.** With several interfaces, enable `multiplePopup` and leave `apply: true` only on the intended variant.
+- **Switch by alias.** Use `changePopup` to avoid depending on the HTML path; remember that the change is visible the next time the Popup opens.
+
+## Debugging
+
+1. **Popup is missing from the build.** Check the filename, location, filters, and selected app or shared set. When `popups/` contains entrypoint files, the top level is not used. Confirm that the required HTML exists in the build.
+2. **Clicking the button does not open a window.** Check `action.default_popup` or `browser_action.default_popup`, the `apply` value, and the HTML path. Reload the extension after building; check whether other code has changed the Popup for the active tab.
+3. **A different interface opens, or an alias is missing.** Check `multiplePopup`, filters, and the contents of `getPopups()`. With one Popup, the last candidate by priority is selected; with several, the first candidate whose `apply` allows it becomes the initial Popup.
+4. **The extension button click handler does not run.** When a Popup is assigned, the browser does not send `action.onClicked` / `browserAction.onClicked`. Move the action into a handler inside the Popup, or remove the Popup assignment if you only need the extension button's handler.
+5. **The window opens without content.** Check the `render` result and the Popup's own console. Vanilla needs a DOM element, a non-empty string, or a number; React needs a `.tsx` / `.jsx` file and installed dependencies.
+6. **HTML tags appear as text.** A string from `render` is displayed literally. Create DOM elements, or use JSX or a template for markup.
+7. **State resets after closing.** Each opening creates a new document. Check that data you need is written to storage rather than only to a variable or React state.
+8. **Switching did not change the open window.** Close and reopen the Popup. Check the second argument to `changePopup`: a per-tab setting can override the global value.
+9. **The tab URL is missing, or a browser API is blocked.** Check the built Popup's permissions in the generated manifest, temporary `activeTab` access, and restrictions on the current page. Reload the extension after changing permissions.
+10. **CSS, a script, or an asset does not load.** Check that the file exists in the build, its path in `links`, `scripts`, or `tags`, and CSP. Put ready-to-use resources in `src/public`; check the `template` path relative to the entrypoint.
+11. **The button's tooltip did not change or is empty.** Set `tooltip` rather than `title`: without `tooltip`, switching preserves the previous tooltip. For a localization key, check the message in the built `_locales` and the browser's language; an empty translation or one the browser cannot find is passed as an empty string when switching.
+
+Open developer tools for the Popup window itself, for example through **Inspect** in its context menu.
+The background console belongs to a different context and does not show all UI errors.

@@ -202,27 +202,13 @@ Vanilla вызывает `render(options)` при загрузке страни�
 
 Сохраните точку входа как `options.tsx`: расширение файла выберет React.
 Для JavaScript с JSX используйте `options.jsx`.
-Этот пример использует отдельный компонент счётчика, который обновляется при нажатии кнопки.
-Сохраните `Counter.tsx` рядом с точкой входа и выберите один из двух форматов `options.tsx`:
+В этом примере компонент счётчика объявлен в файле точки входа и передан в `render`:
 
-<Tabs>
-    <Tab label="Через defineOptions">
 ```tsx file="../../../../code/entrypoints/options/counter.options.tsx" title="src/options.tsx"
 ```
-    </Tab>
-    <Tab label="Именованные экспорты">
-```tsx file="../../../../code/entrypoints/options/counter.named-exports.options.tsx" title="src/options.tsx"
-```
-    </Tab>
-    <Tab label="Компонент счётчика">
-```tsx file="../../../../code/entrypoints/page/counter.component.page.tsx" title="src/Counter.tsx"
-```
-    </Tab>
-</Tabs>
 
-Оба формата подключают один `Counter.tsx`.
-В `defineOptions` передайте компонент через `render: Counter`; в формате с именованными экспортами объявите опции через `export const` и экспортируйте компонент напрямую через `export default Counter`.
-Выберите одну реализацию `options.tsx`; она заменяет предыдущую страницу из примеров.
+Передайте готовый компонент напрямую через `render: Counter`.
+Эта реализация `options.tsx` заменяет предыдущую страницу из примеров.
 
 Нажатие кнопки обновит состояние через `useState`, и React отобразит новое значение.
 Addon Bone создаёт контейнер и React root; вручную вызывать `createRoot` не нужно.

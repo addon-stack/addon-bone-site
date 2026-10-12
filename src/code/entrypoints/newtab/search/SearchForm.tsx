@@ -1,27 +1,16 @@
-import {browser} from "adnbn/browser";
+import {searchInCurrentTab} from "adnbn/browser";
 
-import React, {type SubmitEvent, useState} from "react";
+import React, {type SubmitEvent} from "react";
 
-export default function SearchForm() {
-	const [error, setError] = useState("");
-
+const SearchForm = () => {
 	const search = async (event: SubmitEvent<HTMLFormElement>) => {
 		event.preventDefault();
-		const data = new FormData(event.currentTarget);
-		const text = String(data.get("query") ?? "").trim();
-		if (!text) {
-			return;
-		}
+		const text = String(
+			new FormData(event.currentTarget).get("query") ?? "",
+		).trim();
 
-		setError("");
-		try {
-			await browser().search.query({
-				text,
-				disposition: "CURRENT_TAB",
-			});
-		} catch (error) {
-			setError("Could not start the search. Please try again.");
-			console.error(error);
+		if (text) {
+			await searchInCurrentTab(text);
 		}
 	};
 
@@ -31,7 +20,8 @@ export default function SearchForm() {
 				Search the web: <input type="search" name="query" required />
 			</label>
 			<button type="submit">Search</button>
-			{error && <p role="alert">{error}</p>}
 		</form>
 	);
-}
+};
+
+export default SearchForm;

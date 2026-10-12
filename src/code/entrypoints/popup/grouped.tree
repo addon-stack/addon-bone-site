@@ -1,0 +1,7 @@
+src
+└── popups/
+    ├── popup.ts
+    └── account.popup/
+        └── index.tsx
+adnbn.config.ts
+package.json
