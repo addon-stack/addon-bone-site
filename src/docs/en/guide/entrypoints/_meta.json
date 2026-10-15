@@ -4,15 +4,16 @@
   "command",
   "alert",
   "service",
-  "offscreen",
   "content-script",
   "relay",
   "page",
   "popup",
   "sidebar",
+  "offscreen",
   "sandbox",
   "devtools",
-  "history",
   "newtab",
-  "options"
+  "options",
+  "history",
+  "bookmarks"
 ]
