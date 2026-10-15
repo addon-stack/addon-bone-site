@@ -209,6 +209,15 @@ Keep the tone calm, direct, and precise.
 - Show Vanilla and React examples for page UI. Explain the current file-extension
   mapping and required dependencies; add plugin-provided adapters only after
   their implementation is verified in the framework.
+- In entrypoint Guides, document all supported source-file extensions in the
+  File Structure section, including framework- or adapter-specific variants.
+  Verify file discovery and the extension-to-framework mapping in the current
+  framework source for that entrypoint. When the same paths accept several
+  extensions, show the alternatives directly in the path patterns, such as
+  `*.page.{ts,tsx}` and `*.page/index.{ts,tsx}`. Explain the notation and which
+  rendering framework each extension selects beside the list. Keep TypeScript
+  variants primary and describe supported JavaScript equivalents separately.
+  Follow the approved Page format for equivalent path lists in every locale.
 - Preserve technical facts when simplifying wording: runtime context, async
   behavior, permissions, serialization limits, filters, and generated output.
 - Verify framework behavior against the current sibling `addon-bone` source and
