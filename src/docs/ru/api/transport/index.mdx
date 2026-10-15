@@ -33,7 +33,7 @@ import PropertyBadge from "@components/PropertyBadge";
 
 Общее ограничение типа API, который возвращает фабрика точки входа.
 
-```ts file="../../../../code/transport/api/transport-type.ts" title="TransportType"
+```ts file="../../../../code/api/transport/contracts/transport-type.ts" title="TransportType"
 ```
 
 Объектная ветка допускает методы, свойства и вложенные объекты, в том числе экземпляры классов. Функциональная ветка явно описывает функцию с результатом `Promise<any>`.
@@ -46,7 +46,7 @@ import PropertyBadge from "@components/PropertyBadge";
 
 Имя транспорта вместе с общими фильтрами точки входа.
 
-```ts file="../../../../code/transport/api/transport-options.ts" title="TransportOptions"
+```ts file="../../../../code/api/transport/contracts/transport-options.ts" title="TransportOptions"
 ```
 
 [`TransportConfig`](#transportconfig) задаёт обязательный `name`. [`EntrypointOptions`](/api/adnbn/entrypoint-options#entrypointoptions) добавляет фильтры браузера, приложения, режима, версии манифеста и debug-сборки. Тип не добавляет значения по умолчанию и сам не выполняет фильтрацию.
@@ -57,7 +57,7 @@ import PropertyBadge from "@components/PropertyBadge";
 
 Общий контракт фабрики API и обработчика запуска.
 
-```ts file="../../../../code/transport/api/transport-definition.ts" title="TransportDefinition"
+```ts file="../../../../code/api/transport/contracts/transport-definition.ts" title="TransportDefinition"
 ```
 
 **Параметры типов:** `O extends TransportOptions` — опции, передаваемые обработчикам; `T extends TransportType` — создаваемый API. Например, у сервиса `O` равен [`ServiceOptions`](/api/adnbn/service#serviceoptions).
@@ -80,7 +80,7 @@ import PropertyBadge from "@components/PropertyBadge";
 
 Частичное объявление до проверки обязательных полей.
 
-```ts file="../../../../code/transport/api/transport-unresolved-definition.ts" title="TransportUnresolvedDefinition"
+```ts file="../../../../code/api/transport/contracts/transport-unresolved-definition.ts" title="TransportUnresolvedDefinition"
 ```
 
 Делает необязательными все поля верхнего уровня [`TransportDefinition`](#transportdefinition), включая `init`. Не меняет вложенные типы и не означает, что точку входа можно запустить без фабрики. Используется там, где объявление ещё предстоит нормализовать и проверить.
@@ -91,7 +91,7 @@ import PropertyBadge from "@components/PropertyBadge";
 
 Объявление после определения имени и проверки фабрики.
 
-```ts file="../../../../code/transport/api/transport-resolved-definition.ts" title="TransportResolvedDefinition"
+```ts file="../../../../code/api/transport/contracts/transport-resolved-definition.ts" title="TransportResolvedDefinition"
 ```
 
 Сохраняет [`TransportDefinition`](#transportdefinition), но требует `name` и `init`. `main` и фильтры остаются необязательными. Здесь `Required<T, K>` — тип из `utility-types`, делающий обязательными только перечисленные ключи, а не стандартный `Required<T>` TypeScript.
@@ -104,7 +104,7 @@ import PropertyBadge from "@components/PropertyBadge";
 
 Выбирает исходный контракт из реестра по ключу.
 
-```ts file="../../../../code/transport/api/transport-target.ts" title="TransportTarget"
+```ts file="../../../../code/api/transport/contracts/transport-target.ts" title="TransportTarget"
 ```
 
 `T` — объект-реестр, `K` — один из его ключей. Результат `T[K]` не меняет методы и свойства: синхронный метод остаётся синхронным. Например, [`ServiceTarget`](/api/service/index#servicetarget) применяет этот принцип к реестру сервисов.
@@ -115,7 +115,7 @@ import PropertyBadge from "@components/PropertyBadge";
 
 Выбирает контракт из реестра и преобразует его для асинхронных вызовов.
 
-```ts file="../../../../code/transport/api/transport-proxy-target.ts" title="TransportProxyTarget"
+```ts file="../../../../code/api/transport/contracts/transport-proxy-target.ts" title="TransportProxyTarget"
 ```
 
 Параметры `T` и `K` имеют тот же смысл, что у [`TransportTarget`](#transporttarget). Преобразование выполняет [`RpcAsyncProxy`](#rpcasyncproxy). Тип не создаёт runtime-proxy — его возвращает соответствующий API, например [`getService` из `adnbn`](/api/adnbn/service#getservice).
@@ -126,7 +126,7 @@ import PropertyBadge from "@components/PropertyBadge";
 
 Преобразует свойства исходного контракта `T` в асинхронный API.
 
-```ts file="../../../../code/transport/api/rpc-async-proxy.ts" title="RpcAsyncProxy"
+```ts file="../../../../code/api/transport/contracts/rpc-async-proxy.ts" title="RpcAsyncProxy"
 ```
 
 | Член исходного типа | Член proxy |
@@ -152,7 +152,7 @@ import PropertyBadge from "@components/PropertyBadge";
 
 Тип объектного свойства в [`RpcAsyncProxy`](#rpcasyncproxy).
 
-```ts file="../../../../code/transport/api/rpc-async-proxy-object.ts" title="RpcAsyncProxyObject"
+```ts file="../../../../code/api/transport/contracts/rpc-async-proxy-object.ts" title="RpcAsyncProxyObject"
 ```
 
 Объединяет вложенный доступ, например `await service.nested.value()`, с возможностью вызвать сам объект как `service.nested()`.
@@ -169,7 +169,7 @@ import PropertyBadge from "@components/PropertyBadge";
 
 Внутренний общий контракт имени. Напрямую из `adnbn/transport` не экспортируется.
 
-```ts file="../../../../code/transport/api/transport-config.ts" title="TransportConfig"
+```ts file="../../../../code/api/transport/contracts/transport-config.ts" title="TransportConfig"
 ```
 
 <DocHeading level={3} id="transportconfig-name" toc={true}>`name`</DocHeading>
@@ -184,7 +184,7 @@ import PropertyBadge from "@components/PropertyBadge";
 
 Внутренний вариант общих опций для объявления точки входа. Не экспортируется из `adnbn/transport`.
 
-```ts file="../../../../code/transport/api/transport-entrypoint-options.ts" title="TransportEntrypointOptions"
+```ts file="../../../../code/api/transport/contracts/transport-entrypoint-options.ts" title="TransportEntrypointOptions"
 ```
 
 Делает все поля [`TransportOptions`](#transportoptions) необязательными, включая `name`. Обязательность полей обработчиков задаётся отдельно в [`TransportDefinition`](#transportdefinition).
@@ -195,7 +195,7 @@ import PropertyBadge from "@components/PropertyBadge";
 
 Внутренний тип фабрики API; не экспортируется из `adnbn/transport`.
 
-```ts file="../../../../code/transport/api/transport-init-getter.ts" title="TransportInitGetter"
+```ts file="../../../../code/api/transport/contracts/transport-init-getter.ts" title="TransportInitGetter"
 ```
 
 **Параметр:** `options` — `O`, конкретный тип опций, совместимый с [`TransportEntrypointOptions`](#transportentrypointoptions).
@@ -208,7 +208,7 @@ import PropertyBadge from "@components/PropertyBadge";
 
 Внутренний тип обработчика запуска; не экспортируется из `adnbn/transport`.
 
-```ts file="../../../../code/transport/api/transport-main-handler.ts" title="TransportMainHandler"
+```ts file="../../../../code/api/transport/contracts/transport-main-handler.ts" title="TransportMainHandler"
 ```
 
 **Параметры:** `instance` — созданный API типа `T extends TransportType`; `options` — опции типа `O extends TransportEntrypointOptions`.
@@ -221,7 +221,7 @@ import PropertyBadge from "@components/PropertyBadge";
 
 Внутренний общий словарь экземпляров. Не экспортируется из `adnbn/transport`.
 
-```ts file="../../../../code/transport/api/transport-dictionary.ts" title="TransportDictionary"
+```ts file="../../../../code/api/transport/contracts/transport-dictionary.ts" title="TransportDictionary"
 ```
 
 Допускает произвольные строковые ключи со значениями `any`. Используется в общих параметрах классов, в том числе [`ProxyService`](/api/service/index#proxyservice) и [`RegisterService`](/api/service/index#registerservice). Это не сгенерированный реестр сервисов приложения; его контракт принадлежит [`ServiceRegistry`](/api/service/index#serviceregistry).
@@ -232,7 +232,7 @@ import PropertyBadge from "@components/PropertyBadge";
 
 Внутренний тип ключа общего словаря. Не экспортируется из `adnbn/transport`.
 
-```ts file="../../../../code/transport/api/transport-name.ts" title="TransportName"
+```ts file="../../../../code/api/transport/contracts/transport-name.ts" title="TransportName"
 ```
 
 Для [`TransportDictionary`](#transportdictionary) результат — `string`. В отличие от [`ServiceName`](/api/service/index#servicename), этот тип не ограничивает строку именами сервисов, найденных при сборке.

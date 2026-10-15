@@ -26,7 +26,7 @@ import {Tab, Tabs} from "@rspress/core/theme";
 
 Возвращает группы иконок, включённые в текущую сборку расширения.
 
-```ts file="../../../../code/icons/api/get-icons.ts" title="getIcons"
+```ts file="../../../../code/api/adnbn/icons/contracts/get-icons.ts" title="getIcons"
 ```
 
 **Параметры:** отсутствуют. **Результат:** [`IconsMap`](#iconsmap). Функция синхронная; не читает файлы и не обращается к браузерному API. Данные подставляет сборка Addon Bone.
@@ -37,11 +37,11 @@ import {Tab, Tabs} from "@rspress/core/theme";
 
 <Tabs>
     <Tab label="Чтение группы">
-```ts file="../../../../code/icons/api/examples/read-icons.ts" title="src/icon-paths.ts"
+```ts file="../../../../code/api/adnbn/icons/examples/read-icons.ts" title="src/icon-paths.ts"
 ```
     </Tab>
     <Tab label="Полученный объект">
-```json file="../../../../code/icons/api/examples/active-icons.json" title="activeIcons"
+```json file="../../../../code/api/adnbn/icons/examples/active-icons.json" title="activeIcons"
 ```
     </Tab>
 </Tabs>
@@ -56,7 +56,7 @@ import {Tab, Tabs} from "@rspress/core/theme";
 
 Меняет иконку кнопки расширения для всех вкладок или одной вкладки, используя готовую группу из [`getIcons()`](#geticons).
 
-```ts file="../../../../code/icons/api/change-action-icon.ts" title="changeActionIcon"
+```ts file="../../../../code/api/adnbn/icons/contracts/change-action-icon.ts" title="changeActionIcon"
 ```
 
 **Параметры:**
@@ -72,7 +72,7 @@ import {Tab, Tabs} from "@rspress/core/theme";
 
 Для группы `active` из примера выше этот обработчик задаёт иконку только переданной вкладке:
 
-```ts file="../../../../code/icons/api/examples/action-icon.ts" title="src/action-icon.ts"
+```ts file="../../../../code/api/adnbn/icons/examples/action-icon.ts" title="src/action-icon.ts"
 ```
 
 Вызов `await changeActionIcon("active")` задаёт общую иконку; `await changeActionIcon()` выбирает общую группу `default`, если она существует. Общий вызов не снимает уже заданные переопределения отдельных вкладок.
@@ -85,7 +85,7 @@ import {Tab, Tabs} from "@rspress/core/theme";
 
 Передаёт группу иконок в `sidebarAction.setIcon` для изменения иконки боковой панели.
 
-```ts file="../../../../code/icons/api/change-sidebar-icon.ts" title="changeSidebarIcon"
+```ts file="../../../../code/api/adnbn/icons/contracts/change-sidebar-icon.ts" title="changeSidebarIcon"
 ```
 
 **Параметры:**
@@ -111,12 +111,12 @@ import {Tab, Tabs} from "@rspress/core/theme";
 
 Расширяемый интерфейс, ключи которого задают доступные имена групп для [`IconName`](#iconname).
 
-```ts file="../../../../code/icons/api/icon-name-registry.ts" title="IconNameRegistry"
+```ts file="../../../../code/api/adnbn/icons/contracts/icon-name-registry.ts" title="IconNameRegistry"
 ```
 
 В пакете интерфейс пуст. При сборке Addon Bone находит иконки и создаёт `.adnbn/icon.d.ts`: добавляет имена групп как ключи со значением `true`. Например, файлы `16.png`, `active16.png` и `active32.png` в `src/icons` дают две группы:
 
-```ts file="../../../../code/icons/api/examples/generated-registry.d.ts" title=".adnbn/icon.d.ts"
+```ts file="../../../../code/api/adnbn/icons/examples/generated-registry.d.ts" title=".adnbn/icon.d.ts"
 ```
 
 Это сгенерированная декларация для TypeScript. Подключайте настройки проекта через `.adnbn/tsconfig.json`, чтобы имена участвовали в проверке типов. Не редактируйте созданный файл вручную: обновляйте исходные иконки и пересобирайте проект.
@@ -129,7 +129,7 @@ import {Tab, Tabs} from "@rspress/core/theme";
 
 Имя группы иконок, которую принимают функции смены иконок, [`ActionOptions.icon`](/api/adnbn/configuration#actionoptions-icon), [`PopupConfig.icon`](/api/adnbn/popup#popupconfig-icon) и [`SidebarConfig.icon`](/api/adnbn/sidebar#sidebarconfig-icon).
 
-```ts file="../../../../code/icons/api/icon-name.ts" title="IconName"
+```ts file="../../../../code/api/adnbn/icons/contracts/icon-name.ts" title="IconName"
 ```
 
 Если [`IconNameRegistry`](#iconnameregistry) пуст, тип равен `string`. Когда в реестре появляются ключи, тип ограничивается его строковыми именами. Для декларации выше это `"default" | "active"`. Свободный `string` до генерации не гарантирует, что запрошенная группа существует во время выполнения.
@@ -144,7 +144,7 @@ import {Tab, Tabs} from "@rspress/core/theme";
 
 Результат [`getIcons()`](#geticons): карта имён групп и объектов с путями к изображениям по размерам.
 
-```ts file="../../../../code/icons/api/icons-map.ts" title="IconsMap"
+```ts file="../../../../code/api/adnbn/icons/contracts/icons-map.ts" title="IconsMap"
 ```
 
 Ключ внешней `Map` — [`IconName`](#iconname). Ключ вложенного объекта — размер в пикселях, значение — путь от корня расширения. Например, `icons.get("active")?.[32]` получает путь `/icons/active-32.png` при стандартном каталоге результата и наличии этого файла. Объявление `Record<number, string>` не означает, что в группе есть все размеры: отсутствующий размер возвращает `undefined` во время выполнения.

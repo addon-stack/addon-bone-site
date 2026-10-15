@@ -27,7 +27,7 @@ import {Tab, Tabs} from "@rspress/core/theme";
 
 Принимает объявление для `export default` точки входа Options. При сборке Addon Bone создаёт страницу и записывает путь к ней в `options_ui.page`.
 
-```ts file="../../../../code/entrypoints/options/api/define-options.ts" title="defineOptions"
+```ts file="../../../../code/api/adnbn/options/contracts/define-options.ts" title="defineOptions"
 ```
 
 **Параметр:** `options` — [`OptionsDefinition`](#optionsdefinition). **Обязательный параметр.** Все поля объекта можно опустить, поэтому `defineOptions({})` допустим.
@@ -42,7 +42,7 @@ import {Tab, Tabs} from "@rspress/core/theme";
 
 Объявление, которое принимает и возвращает [`defineOptions`](#defineoptions).
 
-```ts file="../../../../code/entrypoints/options/api/options-definition.ts" title="OptionsDefinition"
+```ts file="../../../../code/api/adnbn/options/contracts/options-definition.ts" title="OptionsDefinition"
 ```
 
 [`OptionsEntrypointOptions`](#optionsentrypointoptions) объединяет собственную настройку [`openInTab`](#optionsconfig-openintab), разрешения, CSP и опции страницы. [`ViewDefinition<OptionsProps>`](/api/adnbn/view#viewdefinition) добавляет контракт отображения: [`render`](/api/adnbn/view#viewrenderdefinition-render) и [`container`](/api/adnbn/view#viewrenderdefinition-container).
@@ -57,7 +57,7 @@ import {Tab, Tabs} from "@rspress/core/theme";
 
 Опции текущей страницы Options, которые Addon Bone передаёт в функцию `render`, React-компонент и функцию `container`.
 
-```ts file="../../../../code/entrypoints/options/api/options-props.ts" title="OptionsProps"
+```ts file="../../../../code/api/adnbn/options/contracts/options-props.ts" title="OptionsProps"
 ```
 
 Состав совпадает с [`OptionsEntrypointOptions`](#optionsentrypointoptions). Объект содержит поля объявления без `render` и `container`. Вычисленные при сборке значения в него автоматически не подставляются: например, при отсутствии `openInTab` обработчик получает `undefined`, хотя в манифест записывается `open_in_tab: true`.
@@ -70,7 +70,7 @@ import {Tab, Tabs} from "@rspress/core/theme";
 
 Собственная настройка страницы Options. Входит в [`OptionsDefinition`](#optionsdefinition) и [`OptionsProps`](#optionsprops) через [`OptionsEntrypointOptions`](#optionsentrypointoptions).
 
-```ts file="../../../../code/entrypoints/options/api/options-config.ts" title="OptionsConfig"
+```ts file="../../../../code/api/adnbn/options/contracts/options-config.ts" title="OptionsConfig"
 ```
 
 <DocHeading level={3} id="optionsconfig-openintab" toc={true}>`openInTab`</DocHeading>
@@ -97,11 +97,11 @@ Chrome и Firefox поддерживают встроенное отображе
 ```
     </Tab>
     <Tab label="Сгенерированный Manifest V3">
-```json file="../../../../code/entrypoints/options/api/embedded-manifest-v3.json" title="manifest.json"
+```json file="../../../../code/api/adnbn/options/examples/embedded-manifest-v3.json" title="manifest.json"
 ```
     </Tab>
     <Tab label="Сгенерированный Manifest V2">
-```json file="../../../../code/entrypoints/options/api/embedded-manifest-v2.json" title="manifest.json"
+```json file="../../../../code/api/adnbn/options/examples/embedded-manifest-v2.json" title="manifest.json"
 ```
     </Tab>
 </Tabs>
@@ -114,7 +114,7 @@ Chrome и Firefox поддерживают встроенное отображе
 
 Общие опции сборки страницы настроек. Внутренний тип: напрямую из `adnbn` не экспортируется. Для аннотации опций используйте публичный [`OptionsProps`](#optionsprops), а для объявления с `render` или `container` — [`OptionsDefinition`](#optionsdefinition).
 
-```ts file="../../../../code/entrypoints/options/api/options-entrypoint-options.ts" title="OptionsEntrypointOptions"
+```ts file="../../../../code/api/adnbn/options/contracts/options-entrypoint-options.ts" title="OptionsEntrypointOptions"
 ```
 
 | Контракт | Что добавляет |

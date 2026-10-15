@@ -20,7 +20,7 @@ API общих фильтров точек входа по браузеру, п�
 Базовый интерфейс, который входит в определения точек входа, в том числе [`BackgroundDefinition`](/api/adnbn/background#backgrounddefinition).
 Он не экспортируется непосредственно из `adnbn`; его поля доступны через определения конкретных точек входа.
 
-```ts file="../../../../code/entrypoints/common/api/entrypoint-options.ts" title="EntrypointOptions"
+```ts file="../../../../code/api/adnbn/entrypoint-options/contracts/entrypoint-options.ts" title="EntrypointOptions"
 ```
 
 Все поля необязательны. Addon Bone сравнивает их с параметрами текущей сборки: точка входа проходит фильтрацию, только если все заданные условия выполняются одновременно. Эти поля не изменяют параметры сборки.

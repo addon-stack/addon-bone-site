@@ -25,7 +25,7 @@ import {Tab, Tabs} from "@rspress/core/theme";
 
 Принимает конфигурацию для `export default` и проверяет её форму средствами TypeScript.
 
-```ts file="../../../../code/configuration/api/define-config.ts" title="defineConfig"
+```ts file="../../../../code/api/adnbn/configuration/contracts/define-config.ts" title="defineConfig"
 ```
 
 **Параметр:** `config` — [`ConfigDefinition`](#configdefinition). **Обязательный параметр.** Для настроек по умолчанию можно передать пустой объект: `defineConfig({})`.
@@ -34,7 +34,7 @@ import {Tab, Tabs} from "@rspress/core/theme";
 
 Минимальное объявление с явными именем и версией расширения:
 
-```ts file="../../../../code/configuration/basic.config.ts" title="adnbn.config.ts"
+```ts file="../../../../code/api/adnbn/configuration/examples/basic.config.ts" title="adnbn.config.ts"
 ```
 
 ## `ConfigDefinition`
@@ -43,7 +43,7 @@ import {Tab, Tabs} from "@rspress/core/theme";
 
 Значение, которое принимает [`defineConfig`](#defineconfig): объект [`UserConfig`](#userconfig) либо функция, возвращающая такой объект.
 
-```ts file="../../../../code/configuration/api/config-definition.ts" title="ConfigDefinition"
+```ts file="../../../../code/api/adnbn/configuration/contracts/config-definition.ts" title="ConfigDefinition"
 ```
 
 `UserConfigCallback` — внутренний алиас; напрямую из `adnbn` он не экспортируется. Callback принимает [`ReadonlyConfig`](#readonlyconfig) и синхронно возвращает [`UserConfig`](#userconfig). `Promise<UserConfig>` в этот тип не входит.
@@ -54,7 +54,7 @@ import {Tab, Tabs} from "@rspress/core/theme";
 
 В этом примере имя расширения зависит от браузера сборки:
 
-```ts file="../../../../code/configuration/callback.config.ts" title="adnbn.config.ts"
+```ts file="../../../../code/api/adnbn/configuration/examples/callback.config.ts" title="adnbn.config.ts"
 ```
 
 Для Firefox в манифест попадёт имя `Reading List for Firefox`, для остальных браузеров — `Reading List`.
@@ -65,7 +65,7 @@ import {Tab, Tabs} from "@rspress/core/theme";
 
 Настройки, которые разработчик записывает в файл конфигурации. Все поля можно опустить. `command` и `configFile` исключены: их задаёт запуск CLI.
 
-```ts file="../../../../code/configuration/api/user-config.ts" title="UserConfig"
+```ts file="../../../../code/api/adnbn/configuration/contracts/user-config.ts" title="UserConfig"
 ```
 
 `OptionalConfig` — внутренний тип, который не экспортируется из `adnbn`. Он делает поля [`Config`](#config) необязательными и дополнительно разрешает строковые значения для `lang` и [`workspace`](#config-workspace).
@@ -94,7 +94,7 @@ import {Tab, Tabs} from "@rspress/core/theme";
 
 Состав значений зависит от момента вызова обработчика: callback в [`ConfigDefinition`](#configdefinition) получает начальные параметры, до применения настроек из файла.
 
-```ts file="../../../../code/configuration/api/readonly-config.ts" title="ReadonlyConfig"
+```ts file="../../../../code/api/adnbn/configuration/contracts/readonly-config.ts" title="ReadonlyConfig"
 ```
 
 `Readonly` действует только на верхний уровень. Он не делает вложенные объекты глубоко неизменяемыми и не замораживает объект во время выполнения.
@@ -105,7 +105,7 @@ import {Tab, Tabs} from "@rspress/core/theme";
 
 Полная конфигурация, с которой работает сборка после загрузки пользовательских настроек. Обязательные поля этого интерфейса не означают, что их нужно перечислять в `adnbn.config.ts`: для файла используется [`UserConfig`](#userconfig).
 
-```ts file="../../../../code/configuration/api/config.ts" title="Config"
+```ts file="../../../../code/api/adnbn/configuration/contracts/config.ts" title="Config"
 ```
 
 Ниже указаны значения при обычном запуске CLI без явного переопределения соответствующего поля. Автоматические значения учитывают параметры из файла конфигурации.
@@ -202,7 +202,7 @@ URL для `manifest.homepage_url`. Принимает URL, имя переме�
 
 Например, для группы `active` положите иконку размером 16 × 16 в `src/icons/active16.png`. Эта конфигурация выбирает её для кнопки и задаёт подсказку `Reading List`:
 
-```ts file="../../../../code/configuration/action.config.ts" title="adnbn.config.ts"
+```ts file="../../../../code/api/adnbn/configuration/examples/action.config.ts" title="adnbn.config.ts"
 ```
 
 <DocHeading level={3} id="config-specific" toc={true}>`specific`</DocHeading>
@@ -221,7 +221,7 @@ URL для `manifest.homepage_url`. Принимает URL, имя переме�
 
 Например, для сборки Firefox укажите идентификатор расширения и минимальную версию браузера:
 
-```ts file="../../../../code/configuration/specific.config.ts" title="adnbn.config.ts"
+```ts file="../../../../code/api/adnbn/configuration/examples/specific.config.ts" title="adnbn.config.ts"
 ```
 
 В манифесте эти значения попадут в `browser_specific_settings.gecko.id` и `browser_specific_settings.gecko.strict_min_version`.
@@ -244,11 +244,11 @@ URL для `manifest.homepage_url`. Принимает URL, имя переме�
 
 <Tabs>
     <Tab label="Объект манифеста">
-```ts file="../../../../code/configuration/manifest.config.ts" title="adnbn.config.ts"
+```ts file="../../../../code/api/adnbn/configuration/examples/manifest.config.ts" title="adnbn.config.ts"
 ```
     </Tab>
     <Tab label="Callback с ManifestBuilder">
-```ts file="../../../../code/configuration/manifest-builder.config.ts" title="adnbn.config.ts"
+```ts file="../../../../code/api/adnbn/configuration/examples/manifest-builder.config.ts" title="adnbn.config.ts"
 ```
     </Tab>
 </Tabs>
@@ -279,7 +279,7 @@ URL для `manifest.homepage_url`. Принимает URL, имя переме�
 
 В этом примере исходники выбранного приложения находятся в `src/apps/<app>/src`, общий код — в `src/shared`:
 
-```ts file="../../../../code/configuration/workspace.config.ts" title="adnbn.config.ts"
+```ts file="../../../../code/api/adnbn/configuration/examples/workspace.config.ts" title="adnbn.config.ts"
 ```
 
 <DocHeading level={3} id="config-path-rules" toc={false}>Основа путей</DocHeading>
@@ -374,7 +374,7 @@ URL для `manifest.homepage_url`. Принимает URL, имя переме�
 
 Например, настройка добавляет метатег `color-scheme` в создаваемые страницы:
 
-```ts file="../../../../code/configuration/html.config.ts" title="adnbn.config.ts"
+```ts file="../../../../code/api/adnbn/configuration/examples/html.config.ts" title="adnbn.config.ts"
 ```
 
 У [`metas`](/api/adnbn/html#htmloptions-metas) используется [`HtmlMetaTagOptions`](/api/adnbn/html#htmlmetatagoptions) с `attributes`; строка вместо объекта метатега не поддерживается контрактом Addon Bone. Настройка `html` не объявляет новые точки входа. Для ограничения набора HTML-файлов есть поле [`files`](/api/adnbn/html#htmltagspluginoptions-files).
@@ -389,7 +389,7 @@ URL для `manifest.homepage_url`. Принимает URL, имя переме�
 
 В примере предупреждения о размере результата включаются только для production:
 
-```ts file="../../../../code/configuration/bundler.config.ts" title="adnbn.config.ts"
+```ts file="../../../../code/api/adnbn/configuration/examples/bundler.config.ts" title="adnbn.config.ts"
 ```
 
 Настройка выполняется во время сборки, не в браузере. Addon Bone добавляет некоторые параметры после неё: например, `watch` устанавливает `devtool: "inline-source-map"`.
@@ -411,7 +411,7 @@ URL для `manifest.homepage_url`. Принимает URL, имя переме�
 
 В примере разрешены переменные с префиксом `PUBLIC_`, отдельная переменная `FEATURE_READER` и служебные переменные:
 
-```ts file="../../../../code/configuration/env.config.ts" title="adnbn.config.ts"
+```ts file="../../../../code/api/adnbn/configuration/examples/env.config.ts" title="adnbn.config.ts"
 ```
 
 Файлы `.env` ищутся в исходниках приложения, каталоге приложения и `rootDir`. В каждом каталоге приоритет идёт от `.env.<mode>.<browser>.local` к `.env.<mode>.<browser>`, `.env.<browser>.local`, `.env.<browser>`, `.env.<mode>.local`, `.env.<mode>`, `.env.local`, `.env`. Первое найденное значение ключа имеет приоритет. Фильтр управляет включением в сборку; он не меняет правила загрузки `.env` в Node.js.
@@ -563,7 +563,7 @@ URL для `manifest.homepage_url`. Принимает URL, имя переме�
 
 Callback получает набор имён чанков-потребителей и задаёт имя общего чанка. Пустая строка или `undefined` выбирает автоматическое имя; это не отменяет создание чанка. В примере имена сортируются, чтобы результат не зависел от порядка обхода:
 
-```ts file="../../../../code/configuration/common-chunks.config.ts" title="adnbn.config.ts"
+```ts file="../../../../code/api/adnbn/configuration/examples/common-chunks.config.ts" title="adnbn.config.ts"
 ```
 
 `false` отключает эти правила Addon Bone. Это не общий запрет разделения кода: специальные правила для content script и динамические импорты обрабатываются отдельно.
@@ -610,7 +610,7 @@ Callback получает набор имён чанков-потребител�
 
 В примере сохраняются читаемые имена и добавляется хеш содержимого:
 
-```ts file="../../../../code/configuration/filenames.config.ts" title="adnbn.config.ts"
+```ts file="../../../../code/api/adnbn/configuration/examples/filenames.config.ts" title="adnbn.config.ts"
 ```
 
 <DocHeading level={3} id="config-cssfilename" toc={true}>`cssFilename`</DocHeading>
@@ -631,7 +631,7 @@ Callback получает набор имён чанков-потребител�
 
 Настройки внешнего вида кнопки расширения из [`Config.action`](#config-action).
 
-```ts file="../../../../code/configuration/api/action-options.ts" title="ActionOptions"
+```ts file="../../../../code/api/adnbn/configuration/contracts/action-options.ts" title="ActionOptions"
 ```
 
 <DocHeading level={3} id="actionoptions-icon" toc={true}>`icon`</DocHeading>

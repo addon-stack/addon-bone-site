@@ -32,7 +32,7 @@ import {Tab, Tabs} from "@rspress/core/theme";
 
 Принимает объявление для `export default` точки входа Page. При сборке Addon Bone создаёт HTML-документ и добавляет его имя и путь в таблицу страниц.
 
-```ts file="../../../../code/entrypoints/page/api/define-page.ts" title="definePage"
+```ts file="../../../../code/api/adnbn/page/contracts/define-page.ts" title="definePage"
 ```
 
 **Параметр:** `options` — [`PageDefinition`](#pagedefinition). **Обязательный параметр.** Все поля объекта можно опустить, поэтому `definePage({})` допустим.
@@ -47,7 +47,7 @@ import {Tab, Tabs} from "@rspress/core/theme";
 
 Преобразует имя Page в полный URL внутри расширения. Учитывает фактический путь HTML, включая [`as`](/api/adnbn/view#viewconfig-as) и [`htmlDir`](/api/adnbn/configuration#config-htmldir).
 
-```ts file="../../../../code/entrypoints/page/api/get-page-url.ts" title="getPageUrl"
+```ts file="../../../../code/api/adnbn/page/contracts/get-page-url.ts" title="getPageUrl"
 ```
 
 **Параметр:** `alias` — [`PageAlias`](#pagealias), имя включённой страницы. **Обязательный параметр.** Для собственной страницы это явный [`name`](#pageconfig-name) или имя, полученное из файла.
@@ -64,7 +64,7 @@ import {Tab, Tabs} from "@rspress/core/theme";
 
 Возвращает таблицу Page, включённых в текущую сборку. Подходит для списка страниц или проверки имени перед получением URL.
 
-```ts file="../../../../code/entrypoints/page/api/get-pages.ts" title="getPages"
+```ts file="../../../../code/api/adnbn/page/contracts/get-pages.ts" title="getPages"
 ```
 
 **Параметры:** отсутствуют. **Результат:** [`PageMap`](#pagemap), синхронно. Ключ — имя страницы, значение — путь к HTML относительно корня собранного расширения, например `guide.html` или `pages/guide.html` при `htmlDir: "pages"`.
@@ -79,7 +79,7 @@ import {Tab, Tabs} from "@rspress/core/theme";
 
 Объявление, которое принимает и возвращает [`definePage`](#definepage).
 
-```ts file="../../../../code/entrypoints/page/api/page-definition.ts" title="PageDefinition"
+```ts file="../../../../code/api/adnbn/page/contracts/page-definition.ts" title="PageDefinition"
 ```
 
 [`PageEntrypointOptions`](#pageentrypointoptions) объединяет имя страницы, внешний доступ, разрешения, CSP и опции HTML. [`ViewDefinition<PageProps>`](/api/adnbn/view#viewdefinition) добавляет контракт отображения: [`render`](/api/adnbn/view#viewrenderdefinition-render) и [`container`](/api/adnbn/view#viewrenderdefinition-container).
@@ -94,7 +94,7 @@ import {Tab, Tabs} from "@rspress/core/theme";
 
 Опции текущей Page, которые Addon Bone передаёт в функцию `render`, React-компонент и функцию `container`.
 
-```ts file="../../../../code/entrypoints/page/api/page-props.ts" title="PageProps"
+```ts file="../../../../code/api/adnbn/page/contracts/page-props.ts" title="PageProps"
 ```
 
 Состав совпадает с [`PageEntrypointOptions`](#pageentrypointoptions). Объект содержит поля объявления без `render` и `container`. Вычисленные при сборке значения в него автоматически не подставляются: например, если `name` не указан, `props.name` равен `undefined`, хотя у страницы есть имя в [`getPages()`](#getpages).
@@ -107,7 +107,7 @@ import {Tab, Tabs} from "@rspress/core/theme";
 
 Собственные опции Page. Входят в [`PageDefinition`](#pagedefinition) и [`PageProps`](#pageprops) через [`PageEntrypointOptions`](#pageentrypointoptions).
 
-```ts file="../../../../code/entrypoints/page/api/page-config.ts" title="PageConfig"
+```ts file="../../../../code/api/adnbn/page/contracts/page-config.ts" title="PageConfig"
 ```
 
 <DocHeading level={3} id="pageconfig-name" toc={true}>`name`</DocHeading>
@@ -164,12 +164,12 @@ import {Tab, Tabs} from "@rspress/core/theme";
 
 Расширяемый интерфейс, ключи которого задают доступные имена для [`PageAlias`](#pagealias).
 
-```ts file="../../../../code/entrypoints/page/api/page-alias-registry.ts" title="PageAliasRegistry"
+```ts file="../../../../code/api/adnbn/page/contracts/page-alias-registry.ts" title="PageAliasRegistry"
 ```
 
 Исходный интерфейс пуст. Addon Bone создаёт `.adnbn/page.d.ts` и дополняет модуль `adnbn` именами включённых Page. Например, для единственной страницы с `name: "help"` декларация содержит:
 
-```ts file="../../../../code/entrypoints/page/api/generated-registry.d.ts" title=".adnbn/page.d.ts"
+```ts file="../../../../code/api/adnbn/page/examples/generated-registry.d.ts" title=".adnbn/page.d.ts"
 ```
 
 Сгенерированные типы подключаются через `.adnbn/tsconfig.json`, как описано в [настройке TypeScript](/guide/configuration/typescript). Не редактируйте `.adnbn/page.d.ts` вручную: сборка обновляет его по найденным страницам.
@@ -182,7 +182,7 @@ import {Tab, Tabs} from "@rspress/core/theme";
 
 Имя Page для [`getPageUrl`](#getpageurl) и ключей [`PageMap`](#pagemap).
 
-```ts file="../../../../code/entrypoints/page/api/page-alias.ts" title="PageAlias"
+```ts file="../../../../code/api/adnbn/page/contracts/page-alias.ts" title="PageAlias"
 ```
 
 Если [`PageAliasRegistry`](#pagealiasregistry) пуст, тип допускает любую строку. После подключения сгенерированных деклараций он становится объединением строковых ключей реестра, например `"help" | "dashboard"`.
@@ -195,7 +195,7 @@ import {Tab, Tabs} from "@rspress/core/theme";
 
 Таблица соответствия имён Page относительным путям их HTML-файлов.
 
-```ts file="../../../../code/entrypoints/page/api/page-map.ts" title="PageMap"
+```ts file="../../../../code/api/adnbn/page/contracts/page-map.ts" title="PageMap"
 ```
 
 [`getPages()`](#getpages) возвращает такой `Map`. Ключ имеет тип [`PageAlias`](#pagealias), значение — `string` с путём внутри расширения. `map.get(alias)` может вернуть `undefined`, если записи нет. Для полного URL используйте [`getPageUrl(alias)`](#getpageurl).
@@ -206,7 +206,7 @@ import {Tab, Tabs} from "@rspress/core/theme";
 
 Общие опции сборки Page. Внутренний тип: напрямую из `adnbn` не экспортируется. Для аннотации опций используйте публичный [`PageProps`](#pageprops), а для объявления с `render` или `container` — [`PageDefinition`](#pagedefinition).
 
-```ts file="../../../../code/entrypoints/page/api/page-entrypoint-options.ts" title="PageEntrypointOptions"
+```ts file="../../../../code/api/adnbn/page/contracts/page-entrypoint-options.ts" title="PageEntrypointOptions"
 ```
 
 | Контракт | Что добавляет |

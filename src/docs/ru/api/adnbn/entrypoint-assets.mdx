@@ -29,7 +29,7 @@ import {Tab, Tabs} from "@rspress/core/theme";
 
 Возвращает JS- и CSS-файлы текущей точки входа: отдельно для начальной загрузки и для асинхронных частей кода — чанков, создаваемых, например, через `import()`.
 
-```ts file="../../../../code/entrypoint-assets/api/get-entrypoint-assets.ts" title="getEntrypointAssets"
+```ts file="../../../../code/api/adnbn/entrypoint-assets/contracts/get-entrypoint-assets.ts" title="getEntrypointAssets"
 ```
 
 **Параметры:** отсутствуют. **Результат:** [`EntrypointAssets`](#entrypointassets). В нём есть только `initial` и `async`; дополнительные ресурсы доступны через [`EntrypointAssetsMapEntry.assets`](#entrypointassetsmapentry-assets) в общей карте.
@@ -40,11 +40,11 @@ import {Tab, Tabs} from "@rspress/core/theme";
 
 <Tabs>
     <Tab label="Код Page">
-```ts file="../../../../code/entrypoints/page/api/assets/preview.page.ts" title="src/preview.page.ts"
+```ts file="../../../../code/api/adnbn/entrypoint-assets/examples/preview.page.ts" title="src/preview.page.ts"
 ```
     </Tab>
     <Tab label="Полученный объект">
-```json file="../../../../code/entrypoint-assets/api/examples/current-assets.json" title="getEntrypointAssets()"
+```json file="../../../../code/api/adnbn/entrypoint-assets/examples/current-assets.json" title="getEntrypointAssets()"
 ```
     </Tab>
 </Tabs>
@@ -59,7 +59,7 @@ import {Tab, Tabs} from "@rspress/core/theme";
 
 Возвращает карту файлов всех точек входа текущей сборки. Доступна только из фонового контекста, в том числе из выполняющихся в нём Service и Command.
 
-```ts file="../../../../code/entrypoint-assets/api/get-entrypoint-assets-map.ts" title="getEntrypointAssetsMap"
+```ts file="../../../../code/api/adnbn/entrypoint-assets/contracts/get-entrypoint-assets-map.ts" title="getEntrypointAssetsMap"
 ```
 
 **Параметры:** отсутствуют. **Результат:** [`EntrypointAssetsMap`](#entrypointassetsmap). Каждая запись содержит `initial`, `async` и `assets`, включая запись `background` для самой фоновой сборки.
@@ -68,11 +68,11 @@ import {Tab, Tabs} from "@rspress/core/theme";
 
 <Tabs>
     <Tab label="Код Background">
-```ts file="../../../../code/entrypoints/background/api/assets/background.ts" title="src/background.ts"
+```ts file="../../../../code/api/adnbn/entrypoint-assets/examples/background.ts" title="src/background.ts"
 ```
     </Tab>
     <Tab label="Полученный объект">
-```json file="../../../../code/entrypoint-assets/api/examples/assets-map.json" title="getEntrypointAssetsMap()"
+```json file="../../../../code/api/adnbn/entrypoint-assets/examples/assets-map.json" title="getEntrypointAssetsMap()"
 ```
     </Tab>
 </Tabs>
@@ -87,7 +87,7 @@ import {Tab, Tabs} from "@rspress/core/theme";
 
 Списки JS и CSS одной точки входа. Результат [`getEntrypointAssets()`](#getentrypointassets) и основа [`EntrypointAssetsMapEntry`](#entrypointassetsmapentry).
 
-```ts file="../../../../code/entrypoint-assets/api/entrypoint-assets.ts" title="EntrypointAssets"
+```ts file="../../../../code/api/adnbn/entrypoint-assets/contracts/entrypoint-assets.ts" title="EntrypointAssets"
 ```
 
 Оба поля всегда присутствуют и доступны только для чтения в TypeScript. Функции возвращают сохранённые объекты, а не копии: не изменяйте их через приведение типа. Если нужен собственный список, скопируйте массив, например `[...assets.initial.js]`.
@@ -112,7 +112,7 @@ JS и CSS асинхронных чанков, достижимых из точ�
 
 Два списка выходных файлов для [`initial`](#entrypointassets-initial) или [`async`](#entrypointassets-async).
 
-```ts file="../../../../code/entrypoint-assets/api/entrypoint-assets-files.ts" title="EntrypointAssetsFiles"
+```ts file="../../../../code/api/adnbn/entrypoint-assets/contracts/entrypoint-assets-files.ts" title="EntrypointAssetsFiles"
 ```
 
 Пути относительны корню результата сборки, используют `/` и не содержат префикс URL расширения. Например, `js/preview.page.js`. Для полного URL в контексте с доступом к extension API используйте `getUrl(path)` из `adnbn/browser`.
@@ -137,7 +137,7 @@ JavaScript-файлы соответствующей группы. Если фа
 
 Запись общей карты. Наследует [`initial`](#entrypointassets-initial) и [`async`](#entrypointassets-async) из [`EntrypointAssets`](#entrypointassets) и добавляет список других ресурсов.
 
-```ts file="../../../../code/entrypoint-assets/api/entrypoint-assets-map-entry.ts" title="EntrypointAssetsMapEntry"
+```ts file="../../../../code/api/adnbn/entrypoint-assets/contracts/entrypoint-assets-map-entry.ts" title="EntrypointAssetsMapEntry"
 ```
 
 <DocHeading level={3} id="entrypointassetsmapentry-assets" toc={true}>`assets`</DocHeading>
@@ -156,7 +156,7 @@ JavaScript-файлы соответствующей группы. Если фа
 
 Объект-словарь, который возвращает [`getEntrypointAssetsMap()`](#getentrypointassetsmap).
 
-```ts file="../../../../code/entrypoint-assets/api/entrypoint-assets-map.ts" title="EntrypointAssetsMap"
+```ts file="../../../../code/api/adnbn/entrypoint-assets/contracts/entrypoint-assets-map.ts" title="EntrypointAssetsMap"
 ```
 
 Ключ — имя точки входа сборщика, значение — [`EntrypointAssetsMapEntry`](#entrypointassetsmapentry). Это обычный объект, не JavaScript `Map`; перебирайте его через `Object.entries()` или `Object.keys()`.

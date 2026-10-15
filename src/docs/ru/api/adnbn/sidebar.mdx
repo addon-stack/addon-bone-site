@@ -30,7 +30,7 @@ import {Tab, Tabs} from "@rspress/core/theme";
 
 Принимает объявление для `export default` точки входа Sidebar. Addon Bone создаёт HTML-документ и назначает выбранный начальный вариант боковой панели через манифест.
 
-```ts file="../../../../code/entrypoints/sidebar/api/define-sidebar.ts" title="defineSidebar"
+```ts file="../../../../code/api/adnbn/sidebar/contracts/define-sidebar.ts" title="defineSidebar"
 ```
 
 **Параметр:** `options` — [`SidebarDefinition`](#sidebardefinition). **Обязательный параметр.** Все поля объекта можно опустить, поэтому `defineSidebar({})` допустим.
@@ -51,15 +51,15 @@ import {Tab, Tabs} from "@rspress/core/theme";
 
 <Tabs>
     <Tab label="Код Sidebar">
-```ts file="../../../../code/entrypoints/sidebar/api/sidebar.ts" title="src/sidebar.ts"
+```ts file="../../../../code/api/adnbn/sidebar/examples/declaration/sidebar.ts" title="src/sidebar.ts"
 ```
     </Tab>
     <Tab label="Сгенерированный Manifest V3: Chrome">
-```json file="../../../../code/entrypoints/sidebar/api/manifest-chrome-mv3.json" title="manifest.json"
+```json file="../../../../code/api/adnbn/sidebar/examples/declaration/manifest-chrome-mv3.json" title="manifest.json"
 ```
     </Tab>
     <Tab label="Сгенерированный манифест: Firefox (V2/V3)">
-```json file="../../../../code/entrypoints/sidebar/api/manifest-firefox.json" title="manifest.json"
+```json file="../../../../code/api/adnbn/sidebar/examples/declaration/manifest-firefox.json" title="manifest.json"
 ```
     </Tab>
 </Tabs>
@@ -72,7 +72,7 @@ import {Tab, Tabs} from "@rspress/core/theme";
 
 Назначает собранный вариант панели для всех вкладок или для одной вкладки. Функция меняет путь документа, затем применяет заданные [`label`](#sidebarconfig-label) и [`icon`](#sidebarconfig-icon), если браузер поддерживает соответствующие операции. Отдельного вызова открытия панели она не делает.
 
-```ts file="../../../../code/entrypoints/sidebar/api/change-sidebar.ts" title="changeSidebar"
+```ts file="../../../../code/api/adnbn/sidebar/contracts/change-sidebar.ts" title="changeSidebar"
 ```
 
 **Параметры:**
@@ -106,7 +106,7 @@ import {Tab, Tabs} from "@rspress/core/theme";
 
 Возвращает таблицу Sidebar текущей сборки. Подходит для списка вариантов и проверки имени перед переключением.
 
-```ts file="../../../../code/entrypoints/sidebar/api/get-sidebars.ts" title="getSidebars"
+```ts file="../../../../code/api/adnbn/sidebar/contracts/get-sidebars.ts" title="getSidebars"
 ```
 
 **Параметры:** отсутствуют. **Результат:** [`SidebarMap`](#sidebarmap), синхронно. Ключ — имя варианта, значение — [`SidebarMapEntry`](#sidebarmapentry) с путём HTML и исходными `label` и `icon` из объявления.
@@ -125,7 +125,7 @@ import {Tab, Tabs} from "@rspress/core/theme";
 
 Расширяемый интерфейс, ключи которого задают имена для [`SidebarAlias`](#sidebaralias).
 
-```ts file="../../../../code/entrypoints/sidebar/api/sidebar-alias-registry.ts" title="SidebarAliasRegistry"
+```ts file="../../../../code/api/adnbn/sidebar/contracts/sidebar-alias-registry.ts" title="SidebarAliasRegistry"
 ```
 
 Addon Bone дополняет его в `.adnbn/sidebar.d.ts` по выбранным вариантам. Подключите сгенерированные декларации через `.adnbn/tsconfig.json`, как описано в [настройке TypeScript](/guide/configuration/typescript).
@@ -148,7 +148,7 @@ Addon Bone дополняет его в `.adnbn/sidebar.d.ts` по выбран�
 
 Имя варианта для [`changeSidebar`](#changesidebar) и ключей [`SidebarMap`](#sidebarmap).
 
-```ts file="../../../../code/entrypoints/sidebar/api/sidebar-alias.ts" title="SidebarAlias"
+```ts file="../../../../code/api/adnbn/sidebar/contracts/sidebar-alias.ts" title="SidebarAlias"
 ```
 
 Если [`SidebarAliasRegistry`](#sidebaraliasregistry) пуст, тип допускает любую строку. После подключения сгенерированных деклараций он становится объединением строковых ключей, например `"sidebar" | "reader"`. Ручное расширение реестра само по себе не создаёт документ и не регистрирует вариант при выполнении.
@@ -159,7 +159,7 @@ Addon Bone дополняет его в `.adnbn/sidebar.d.ts` по выбран�
 
 Таблица вариантов, которую возвращает [`getSidebars`](#getsidebars).
 
-```ts file="../../../../code/entrypoints/sidebar/api/sidebar-map.ts" title="SidebarMap"
+```ts file="../../../../code/api/adnbn/sidebar/contracts/sidebar-map.ts" title="SidebarMap"
 ```
 
 Ключ имеет тип [`SidebarAlias`](#sidebaralias), значение — [`SidebarMapEntry`](#sidebarmapentry). `map.get(alias)` может вернуть `undefined`, если записи нет.
@@ -172,7 +172,7 @@ Addon Bone дополняет его в `.adnbn/sidebar.d.ts` по выбран�
 
 Данные одного собранного варианта для [`getSidebars()`](#getsidebars) и [`changeSidebar()`](#changesidebar). Интерфейс экспортируется из `adnbn`.
 
-```ts file="../../../../code/entrypoints/sidebar/api/sidebar-map-entry.ts" title="SidebarMapEntry"
+```ts file="../../../../code/api/adnbn/sidebar/contracts/sidebar-map-entry.ts" title="SidebarMapEntry"
 ```
 
 Запись содержит исходные параметры переключения. [`ManifestSidebar`](/api/adnbn/manifest#manifestsidebar) описывает параметры для билдера манифеста; у него отдельный контракт с полем `title`. Заголовок HTML из [`ViewConfig.title`](/api/adnbn/view#viewconfig-title) в `SidebarMapEntry` не входит.
@@ -201,7 +201,7 @@ Addon Bone дополняет его в `.adnbn/sidebar.d.ts` по выбран�
 
 Объявление, которое принимает и возвращает [`defineSidebar`](#definesidebar). Внутренний тип: напрямую из `adnbn` не экспортируется.
 
-```ts file="../../../../code/entrypoints/sidebar/api/sidebar-definition.ts" title="SidebarDefinition"
+```ts file="../../../../code/api/adnbn/sidebar/contracts/sidebar-definition.ts" title="SidebarDefinition"
 ```
 
 [`SidebarEntrypointOptions`](#sidebarentrypointoptions) объединяет собственные опции Sidebar, разрешения, CSP и настройки страницы. [`ViewDefinition<SidebarProps>`](/api/adnbn/view#viewdefinition) добавляет [`render`](/api/adnbn/view#viewrenderdefinition-render) и [`container`](/api/adnbn/view#viewrenderdefinition-container).
@@ -210,7 +210,7 @@ Addon Bone дополняет его в `.adnbn/sidebar.d.ts` по выбран�
 
 Для аннотаций получите тип из публичной функции. В примере `SidebarDefinition` и `SidebarProps` — локальные алиасы вашего модуля:
 
-```ts file="../../../../code/entrypoints/sidebar/api/inferred-types.ts" title="src/sidebar-types.ts"
+```ts file="../../../../code/api/adnbn/sidebar/examples/inferred-types.ts" title="src/sidebar-types.ts"
 ```
 
 ## `SidebarProps`
@@ -219,7 +219,7 @@ Addon Bone дополняет его в `.adnbn/sidebar.d.ts` по выбран�
 
 Опции текущей панели, которые Addon Bone передаёт в функцию `render`, React-компонент и функцию `container`. Внутренний тип: напрямую из `adnbn` не экспортируется; способ аннотации приведён у [`SidebarDefinition`](#sidebardefinition).
 
-```ts file="../../../../code/entrypoints/sidebar/api/sidebar-props.ts" title="SidebarProps"
+```ts file="../../../../code/api/adnbn/sidebar/contracts/sidebar-props.ts" title="SidebarProps"
 ```
 
 Состав совпадает с [`SidebarEntrypointOptions`](#sidebarentrypointoptions). Объект содержит поля объявления без `render` и `container`. Вычисленные при сборке значения в него не подставляются: например, при отсутствии `apply` обработчик получает `undefined`, хотя при выборе начальной панели используется `true`.
@@ -232,7 +232,7 @@ Addon Bone дополняет его в `.adnbn/sidebar.d.ts` по выбран�
 
 Собственные опции Sidebar. Внутренний интерфейс: напрямую из `adnbn` не экспортируется. Входит в [`SidebarDefinition`](#sidebardefinition) и [`SidebarProps`](#sidebarprops) через [`SidebarEntrypointOptions`](#sidebarentrypointoptions).
 
-```ts file="../../../../code/entrypoints/sidebar/api/sidebar-config.ts" title="SidebarConfig"
+```ts file="../../../../code/api/adnbn/sidebar/contracts/sidebar-config.ts" title="SidebarConfig"
 ```
 
 <DocHeading level={3} id="sidebarconfig-icon" toc={true}>`icon`</DocHeading>
@@ -285,7 +285,7 @@ Addon Bone дополняет его в `.adnbn/sidebar.d.ts` по выбран�
 
 Общие опции сборки Sidebar. Внутренний тип: напрямую из `adnbn` не экспортируется.
 
-```ts file="../../../../code/entrypoints/sidebar/api/sidebar-entrypoint-options.ts" title="SidebarEntrypointOptions"
+```ts file="../../../../code/api/adnbn/sidebar/contracts/sidebar-entrypoint-options.ts" title="SidebarEntrypointOptions"
 ```
 
 | Контракт | Что добавляет |

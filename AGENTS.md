@@ -140,7 +140,8 @@ Keep the tone calm, direct, and precise.
   to validate snippet endings, including formats that Biome does not process.
 - Preserve exact framework contracts in API declaration snippets. Scope lint
   exceptions for unused standalone declarations, `any`, `{}`, and callable
-  `void` unions to `src/code/**/api/**`; keep formatting and all other rules.
+  `void` unions to `src/code/api/**/contracts/**`; keep formatting and all other
+  rules. Keep executable API examples under the normal lint rules.
   In generated HTML snippets, allow an omitted `lang` attribute when the
   framework output omits it; do not invent generated attributes for the linter.
   Executable examples retain the normal lint rules. Use Biome's `reactClassic`
@@ -155,13 +156,21 @@ Keep the tone calm, direct, and precise.
   including `llms-full.txt`; verify both outputs after changing highlights.
 - Extract examples shared across documentation languages into separate files
   under `src/code/`, regardless of their length, and reuse the same file through
-  the code fence's `file` attribute in every locale. For entrypoint examples,
-  use `src/code/entrypoints/<entrypoint>/`. This includes source code,
-  configuration, generated manifests, locale-file examples, and file trees.
-  Keep the root of `src/code/` for guidance and snippet configuration. Group
-  related files for a larger scenario under its documentation topic, such as
-  `src/code/entrypoints/service/screenshot/`. Remove obsolete examples after
-  verifying that no documentation page or source file references them.
+  the code fence's `file` attribute in every locale. For entrypoint Guide
+  examples, use `src/code/entrypoints/<entrypoint>/`. For API reference snippets,
+  mirror the reference page under `src/code/api/`: root `adnbn` topics belong in
+  `api/adnbn/<topic>/`, and public subpaths in `api/<subpath>/`. Keep exact API
+  declarations in `contracts/` and usage or generated-output examples in
+  `examples/`. Choose the topic being explained, even when an example uses
+  another API: CSP examples using `definePage` belong to `api/adnbn/csp/`.
+  This includes source code, configuration, generated manifests, locale-file
+  examples, and file trees. Keep the root of `src/code/` for guidance and snippet
+  configuration. Group related source files and their generated output in one
+  scenario directory, such as `entrypoints/service/screenshot/` or
+  `api/adnbn/csp/examples/image/`. Reuse an existing Guide example from an API
+  page when it already explains the same behavior; do not duplicate it for the
+  directory layout. Remove obsolete examples after verifying that no
+  documentation page or source file references them.
 - Create separate versions only when the example itself contains localized
   content that differs between documentation languages, such as comments,
   user-facing strings, or translation values. Translated surrounding prose,

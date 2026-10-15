@@ -28,7 +28,7 @@ import PropertyBadge from "@components/PropertyBadge";
 
 Принимает объявление для `export default` точки входа Offscreen.
 
-```ts file="../../../../code/entrypoints/offscreen/api/define-offscreen.ts" title="defineOffscreen"
+```ts file="../../../../code/api/adnbn/offscreen/contracts/define-offscreen.ts" title="defineOffscreen"
 ```
 
 **Параметр:** `options` — [`OffscreenDefinition<T>`](#offscreendefinition). **Обязательный параметр.** В объекте обязателен `init`; остальные поля можно опустить.
@@ -43,7 +43,7 @@ import PropertyBadge from "@components/PropertyBadge";
 
 Возвращает proxy для вызова API скрытого документа из background, Service, Command или страницы расширения, например popup.
 
-```ts file="../../../../code/entrypoints/offscreen/api/get-offscreen.ts" title="getOffscreen"
+```ts file="../../../../code/api/adnbn/offscreen/contracts/get-offscreen.ts" title="getOffscreen"
 ```
 
 **Параметр:** `name` — [`OffscreenName`](/api/offscreen/index#offscreenname). **Обязательный параметр.** Имя включённой в сборку точки входа. Параметр типа `N` выбирает её контракт из реестра.
@@ -70,7 +70,7 @@ import PropertyBadge from "@components/PropertyBadge";
 
 Возвращает параметры Offscreen-документов из текущей сборки.
 
-```ts file="../../../../code/entrypoints/offscreen/api/get-offscreens.ts" title="getOffscreens"
+```ts file="../../../../code/api/adnbn/offscreen/contracts/get-offscreens.ts" title="getOffscreens"
 ```
 
 **Параметры:** отсутствуют.
@@ -87,7 +87,7 @@ import PropertyBadge from "@components/PropertyBadge";
 
 Объединяет объявление транспорта, опции Offscreen и контракт содержимого документа.
 
-```ts file="../../../../code/entrypoints/offscreen/api/offscreen-definition.ts" title="OffscreenDefinition"
+```ts file="../../../../code/api/adnbn/offscreen/contracts/offscreen-definition.ts" title="OffscreenDefinition"
 ```
 
 [`TransportDefinition`](/api/transport/index#transportdefinition) задаёт `init` и общий обработчик запуска. [`OffscreenEntrypointOptions`](#offscreen-options-composition) добавляет опции документа. [`ViewRenderDefinition`](/api/adnbn/view#viewrenderdefinition) добавляет `render` и `container`; это общий контракт отрисовки. Собственное поле интерфейса — уточнённый `main`.
@@ -116,7 +116,7 @@ Addon Bone ожидает завершения `main` перед отрисов�
 
 <DocHeading level={3} id="offscreen-options-composition" toc={false}>Унаследованные опции</DocHeading>
 
-```ts file="../../../../code/entrypoints/offscreen/api/offscreen-options.ts" title="OffscreenOptions и OffscreenEntrypointOptions"
+```ts file="../../../../code/api/adnbn/offscreen/contracts/offscreen-options.ts" title="OffscreenOptions и OffscreenEntrypointOptions"
 ```
 
 Оба алиаса внутренние: напрямую из `adnbn` и `adnbn/offscreen` они не экспортируются. `Partial` делает опции объявления необязательными, включая `name`; обязательным остаётся `init`.
@@ -138,7 +138,7 @@ Addon Bone ожидает завершения `main` перед отрисов�
 
 Частичное объявление до нормализации и проверки.
 
-```ts file="../../../../code/entrypoints/offscreen/api/offscreen-unresolved-definition.ts" title="OffscreenUnresolvedDefinition"
+```ts file="../../../../code/api/adnbn/offscreen/contracts/offscreen-unresolved-definition.ts" title="OffscreenUnresolvedDefinition"
 ```
 
 Делает необязательными все поля верхнего уровня [`OffscreenDefinition`](#offscreendefinition), в том числе `init`. Тип полезен для промежуточного представления объявления; он не разрешает запуск Offscreen без фабрики. `defineOffscreen` принимает полный `OffscreenDefinition<T>`.
@@ -149,7 +149,7 @@ Addon Bone ожидает завершения `main` перед отрисов�
 
 Причины создания нативного документа. Используются в [`OffscreenConfig.reasons`](#offscreenconfig-reasons).
 
-```ts file="../../../../code/entrypoints/offscreen/api/offscreen-reason.ts" title="OffscreenReason"
+```ts file="../../../../code/api/adnbn/offscreen/contracts/offscreen-reason.ts" title="OffscreenReason"
 ```
 
 | Член | Назначение |
@@ -178,7 +178,7 @@ Addon Bone ожидает завершения `main` перед отрисов�
 
 Строковое имя документа в [`OffscreenMap`](#offscreenmap).
 
-```ts file="../../../../code/entrypoints/offscreen/api/offscreen-alias.ts" title="OffscreenAlias"
+```ts file="../../../../code/api/adnbn/offscreen/contracts/offscreen-alias.ts" title="OffscreenAlias"
 ```
 
 Допускает любую строку. В отличие от [`OffscreenName`](/api/offscreen/index#offscreenname), не ограничен ключами сгенерированного реестра. Тип ключа не гарантирует наличие записи: `map.get(name)` может вернуть `undefined`.
@@ -189,7 +189,7 @@ Addon Bone ожидает завершения `main` перед отрисов�
 
 Карта параметров документов, возвращаемая [`getOffscreens`](#getoffscreens).
 
-```ts file="../../../../code/entrypoints/offscreen/api/offscreen-map.ts" title="OffscreenMap"
+```ts file="../../../../code/api/adnbn/offscreen/contracts/offscreen-map.ts" title="OffscreenMap"
 ```
 
 Ключ — [`OffscreenAlias`](#offscreenalias), значение — [`OffscreenParameters`](#offscreenparameters). Значения описывают создание документов; это не экземпляры их API и не proxy.
@@ -200,7 +200,7 @@ Addon Bone ожидает завершения `main` перед отрисов�
 
 Внутренний контракт опций создания документа. Напрямую из `adnbn` и `adnbn/offscreen` не экспортируется.
 
-```ts file="../../../../code/entrypoints/offscreen/api/offscreen-config.ts" title="OffscreenConfig"
+```ts file="../../../../code/api/adnbn/offscreen/contracts/offscreen-config.ts" title="OffscreenConfig"
 ```
 
 Наследует `name` от [`TransportConfig`](/api/transport/index#transportconfig). Собственные поля — `reasons` и `justification`.
@@ -237,7 +237,7 @@ Addon Bone ожидает завершения `main` перед отрисов�
 
 Внутренний тип обработчика [`OffscreenDefinition.main`](#offscreendefinition-main). Не экспортируется напрямую из `adnbn` и `adnbn/offscreen`.
 
-```ts file="../../../../code/entrypoints/offscreen/api/offscreen-main-handler.ts" title="OffscreenMainHandler"
+```ts file="../../../../code/api/adnbn/offscreen/contracts/offscreen-main-handler.ts" title="OffscreenMainHandler"
 ```
 
 **Параметры:** `offscreen` — зарегистрированный API типа `T extends TransportType`; `options` — [`OffscreenEntrypointOptions`](#offscreen-options-composition). Сигнатура использует частичные опции, хотя при запуске сборка уже определила `name`.
@@ -250,7 +250,7 @@ Addon Bone ожидает завершения `main` перед отрисов�
 
 Внутренний тип значения [`OffscreenMap`](#offscreenmap). Не экспортируется напрямую из `adnbn` и `adnbn/offscreen`.
 
-```ts file="../../../../code/entrypoints/offscreen/api/offscreen-parameters.ts" title="OffscreenParameters"
+```ts file="../../../../code/api/adnbn/offscreen/contracts/offscreen-parameters.ts" title="OffscreenParameters"
 ```
 
 Использует платформенный [`chrome.offscreen.CreateParameters`](https://developer.chrome.com/docs/extensions/reference/api/offscreen#type-CreateParameters). Сборка формирует все три обязательных поля:

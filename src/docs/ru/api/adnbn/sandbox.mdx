@@ -53,7 +53,7 @@ import {Tabs, Tab} from "@rspress/core/theme";
 
 Принимает объявление точки входа Sandbox.
 
-```ts file="../../../../code/entrypoints/sandbox/api/define-sandbox.ts" title="defineSandbox"
+```ts file="../../../../code/api/adnbn/sandbox/contracts/define-sandbox.ts" title="defineSandbox"
 ```
 
 **Параметр:** `options` — [`SandboxDefinition<T>`](#sandboxdefinition). **Обязательный параметр.** В объекте нужен `init`; остальные поля можно опустить.
@@ -68,7 +68,7 @@ import {Tabs, Tab} from "@rspress/core/theme";
 
 Возвращает асинхронный proxy для API Sandbox.
 
-```ts file="../../../../code/entrypoints/sandbox/api/get-sandbox.ts" title="getSandbox"
+```ts file="../../../../code/api/adnbn/sandbox/contracts/get-sandbox.ts" title="getSandbox"
 ```
 
 **Параметр:** `name` — [`SandboxName`](/api/sandbox/index#sandboxname). **Обязательный параметр.** Имя включённого в сборку Sandbox. `N` выбирает его контракт из реестра.
@@ -97,7 +97,7 @@ Addon Bone не записывает `sandbox.pages` и sandbox CSP в мани�
 
 Читает таблицу Sandbox-документов текущей сборки.
 
-```ts file="../../../../code/entrypoints/sandbox/api/get-sandboxes.ts" title="getSandboxes"
+```ts file="../../../../code/api/adnbn/sandbox/contracts/get-sandboxes.ts" title="getSandboxes"
 ```
 
 **Параметры:** отсутствуют. **Результат:** [`SandboxMap`](#sandboxmap) с итоговыми именами и [`SandboxParameters`](#sandboxparameters).
@@ -114,7 +114,7 @@ Addon Bone не записывает `sandbox.pages` и sandbox CSP в мани�
 
 Объединяет фабрику API, опции Sandbox и содержимое документа.
 
-```ts file="../../../../code/entrypoints/sandbox/api/sandbox-definition.ts" title="SandboxDefinition"
+```ts file="../../../../code/api/adnbn/sandbox/contracts/sandbox-definition.ts" title="SandboxDefinition"
 ```
 
 [`TransportDefinition`](/api/transport/index#transportdefinition) задаёт `init` и общий `main`; [`SandboxEntrypointOptions`](#sandboxentrypointoptions) — настройки документа; [`ViewRenderDefinition`](/api/adnbn/view#viewrenderdefinition) — `render` и `container`. Собственное поле интерфейса уточняет тип `main`.
@@ -145,7 +145,7 @@ Addon Bone регистрирует результат до вызова `main`.
 
 Частичное объявление до нормализации и проверки.
 
-```ts file="../../../../code/entrypoints/sandbox/api/sandbox-unresolved-definition.ts" title="SandboxUnresolvedDefinition"
+```ts file="../../../../code/api/adnbn/sandbox/contracts/sandbox-unresolved-definition.ts" title="SandboxUnresolvedDefinition"
 ```
 
 `Partial` делает необязательными все поля верхнего уровня [`SandboxDefinition`](#sandboxdefinition), включая `init`. Тип подходит для промежуточного объекта; он не позволяет запустить Sandbox без фабрики. `defineSandbox` принимает полный контракт.
@@ -156,7 +156,7 @@ Addon Bone регистрирует результат до вызова `main`.
 
 Обработчик запуска зарегистрированного API.
 
-```ts file="../../../../code/entrypoints/sandbox/api/sandbox-main-handler.ts" title="SandboxMainHandler"
+```ts file="../../../../code/api/adnbn/sandbox/contracts/sandbox-main-handler.ts" title="SandboxMainHandler"
 ```
 
 **Параметры:** `sandbox` — экземпляр `T extends` [`TransportType`](/api/transport/index#transporttype); `options` — [`SandboxEntrypointOptions`](#sandboxentrypointoptions).
@@ -169,7 +169,7 @@ Addon Bone регистрирует результат до вызова `main`.
 
 Имя API и параметры ожидания iframe и ответа.
 
-```ts file="../../../../code/entrypoints/sandbox/api/sandbox-config.ts" title="SandboxConfig"
+```ts file="../../../../code/api/adnbn/sandbox/contracts/sandbox-config.ts" title="SandboxConfig"
 ```
 
 Наследует `name` из внутреннего [`TransportConfig`](/api/transport/index#transportconfig). При использовании самого `SandboxConfig` имя обязательно; [`SandboxEntrypointOptions`](#sandboxentrypointoptions) делает его необязательным в объявлении.
@@ -208,7 +208,7 @@ Addon Bone регистрирует результат до вызова `main`.
 
 Полный состав опций Sandbox.
 
-```ts file="../../../../code/entrypoints/sandbox/api/sandbox-options.ts" title="SandboxOptions"
+```ts file="../../../../code/api/adnbn/sandbox/contracts/sandbox-options.ts" title="SandboxOptions"
 ```
 
 | Контракт | Что добавляет |
@@ -225,7 +225,7 @@ Addon Bone регистрирует результат до вызова `main`.
 
 Опции, допустимые в объявлении Sandbox.
 
-```ts file="../../../../code/entrypoints/sandbox/api/sandbox-entrypoint-options.ts" title="SandboxEntrypointOptions"
+```ts file="../../../../code/api/adnbn/sandbox/contracts/sandbox-entrypoint-options.ts" title="SandboxEntrypointOptions"
 ```
 
 Делает поля [`SandboxOptions`](#sandboxoptions) необязательными на верхнем уровне, включая `name`. Это не меняет вложенные типы и не делает необязательным `init` у [`SandboxDefinition`](#sandboxdefinition).
@@ -236,7 +236,7 @@ Addon Bone регистрирует результат до вызова `main`.
 
 Поле CSP в объявлении Sandbox.
 
-```ts file="../../../../code/entrypoints/sandbox/api/sandbox-csp-options.ts" title="SandboxCspOptions"
+```ts file="../../../../code/api/adnbn/sandbox/contracts/sandbox-csp-options.ts" title="SandboxCspOptions"
 ```
 
 
@@ -255,15 +255,15 @@ Addon Bone регистрирует результат до вызова `main`.
 
 <Tabs>
     <Tab label="Код Sandbox">
-        ```ts file="../../../../code/entrypoints/sandbox/api/csp/base.ts" title="src/sandbox.ts"
+        ```ts file="../../../../code/api/adnbn/sandbox/examples/csp/base/base.ts" title="src/sandbox.ts"
         ```
     </Tab>
     <Tab label="Сгенерированный Manifest V3">
-        ```json file="../../../../code/entrypoints/sandbox/api/csp/base.manifest-v3.json" title="manifest.json"
+        ```json file="../../../../code/api/adnbn/sandbox/examples/csp/base/base.manifest-v3.json" title="manifest.json"
         ```
     </Tab>
     <Tab label="Сгенерированный Manifest V2">
-        ```json file="../../../../code/entrypoints/sandbox/api/csp/base.manifest-v2.json" title="manifest.json"
+        ```json file="../../../../code/api/adnbn/sandbox/examples/csp/base/base.manifest-v2.json" title="manifest.json"
         ```
     </Tab>
 </Tabs>
@@ -274,7 +274,7 @@ Addon Bone регистрирует результат до вызова `main`.
 
 Настройки общей политики sandbox-документов.
 
-```ts file="../../../../code/entrypoints/sandbox/api/sandbox-csp-config.ts" title="SandboxCspConfig"
+```ts file="../../../../code/api/adnbn/sandbox/contracts/sandbox-csp-config.ts" title="SandboxCspConfig"
 ```
 
 Addon Bone всегда добавляет `sandbox allow-scripts`, `script-src 'self'` и источник `'self'` для `child-src`. `allow-same-origin` не поддерживается: [контракт Chrome](https://developer.chrome.com/docs/extensions/reference/manifest/sandbox) запрещает его для sandbox-страниц.
@@ -293,15 +293,15 @@ Addon Bone всегда добавляет `sandbox allow-scripts`, `script-src 
 
 <Tabs>
     <Tab label="Код Sandbox">
-        ```ts file="../../../../code/entrypoints/sandbox/api/csp/eval.ts" title="src/sandbox.ts"
+        ```ts file="../../../../code/api/adnbn/sandbox/examples/csp/eval/eval.ts" title="src/sandbox.ts"
         ```
     </Tab>
     <Tab label="Сгенерированный Manifest V3">
-        ```json file="../../../../code/entrypoints/sandbox/api/csp/eval.manifest-v3.json" title="manifest.json"
+        ```json file="../../../../code/api/adnbn/sandbox/examples/csp/eval/eval.manifest-v3.json" title="manifest.json"
         ```
     </Tab>
     <Tab label="Сгенерированный Manifest V2">
-        ```json file="../../../../code/entrypoints/sandbox/api/csp/eval.manifest-v2.json" title="manifest.json"
+        ```json file="../../../../code/api/adnbn/sandbox/examples/csp/eval/eval.manifest-v2.json" title="manifest.json"
         ```
     </Tab>
 </Tabs>
@@ -314,15 +314,15 @@ Addon Bone всегда добавляет `sandbox allow-scripts`, `script-src 
 
 <Tabs>
     <Tab label="Код Sandbox">
-        ```ts file="../../../../code/entrypoints/sandbox/api/csp/inline.ts" title="src/sandbox.ts"
+        ```ts file="../../../../code/api/adnbn/sandbox/examples/csp/inline/inline.ts" title="src/sandbox.ts"
         ```
     </Tab>
     <Tab label="Сгенерированный Manifest V3">
-        ```json file="../../../../code/entrypoints/sandbox/api/csp/inline.manifest-v3.json" title="manifest.json"
+        ```json file="../../../../code/api/adnbn/sandbox/examples/csp/inline/inline.manifest-v3.json" title="manifest.json"
         ```
     </Tab>
     <Tab label="Сгенерированный Manifest V2">
-        ```json file="../../../../code/entrypoints/sandbox/api/csp/inline.manifest-v2.json" title="manifest.json"
+        ```json file="../../../../code/api/adnbn/sandbox/examples/csp/inline/inline.manifest-v2.json" title="manifest.json"
         ```
     </Tab>
 </Tabs>
@@ -335,15 +335,15 @@ Addon Bone всегда добавляет `sandbox allow-scripts`, `script-src 
 
 <Tabs>
     <Tab label="Код Sandbox">
-        ```ts file="../../../../code/entrypoints/sandbox/api/csp/allow.ts" title="src/sandbox.ts"
+        ```ts file="../../../../code/api/adnbn/sandbox/examples/csp/allow/allow.ts" title="src/sandbox.ts"
         ```
     </Tab>
     <Tab label="Сгенерированный Manifest V3">
-        ```json file="../../../../code/entrypoints/sandbox/api/csp/allow.manifest-v3.json" title="manifest.json"
+        ```json file="../../../../code/api/adnbn/sandbox/examples/csp/allow/allow.manifest-v3.json" title="manifest.json"
         ```
     </Tab>
     <Tab label="Сгенерированный Manifest V2">
-        ```json file="../../../../code/entrypoints/sandbox/api/csp/allow.manifest-v2.json" title="manifest.json"
+        ```json file="../../../../code/api/adnbn/sandbox/examples/csp/allow/allow.manifest-v2.json" title="manifest.json"
         ```
     </Tab>
 </Tabs>
@@ -358,15 +358,15 @@ Addon Bone всегда добавляет `sandbox allow-scripts`, `script-src 
 
 <Tabs>
     <Tab label="Код Sandbox">
-        ```ts file="../../../../code/entrypoints/sandbox/api/csp/sources.ts" title="src/sandbox.ts"
+        ```ts file="../../../../code/api/adnbn/sandbox/examples/csp/image/image.ts" title="src/sandbox.ts"
         ```
     </Tab>
     <Tab label="Сгенерированный Manifest V3">
-        ```json file="../../../../code/entrypoints/sandbox/api/csp/sources.manifest-v3.json" title="manifest.json"
+        ```json file="../../../../code/api/adnbn/sandbox/examples/csp/image/image.manifest-v3.json" title="manifest.json"
         ```
     </Tab>
     <Tab label="Сгенерированный Manifest V2">
-        ```json file="../../../../code/entrypoints/sandbox/api/csp/sources.manifest-v2.json" title="manifest.json"
+        ```json file="../../../../code/api/adnbn/sandbox/examples/csp/image/image.manifest-v2.json" title="manifest.json"
         ```
     </Tab>
 </Tabs>
@@ -377,7 +377,7 @@ Addon Bone всегда добавляет `sandbox allow-scripts`, `script-src 
 
 Источники ресурсов по видам CSP.
 
-```ts file="../../../../code/entrypoints/sandbox/api/sandbox-csp-sources.ts" title="SandboxCspSources"
+```ts file="../../../../code/api/adnbn/sandbox/contracts/sandbox-csp-sources.ts" title="SandboxCspSources"
 ```
 
 Все поля принимают ``Array<SandboxSource | `${SandboxSource}`>``, где [`SandboxSource`](#sandboxsource) задаёт поддерживаемые строки. Произвольные домены, URL и схемы этот контракт и проверка объявления при сборке не принимают. Это отличается от [`CspSources`](/api/adnbn/csp#cspsources) обычных страниц.
@@ -392,15 +392,15 @@ Addon Bone всегда добавляет `sandbox allow-scripts`, `script-src 
 
 <Tabs>
     <Tab label="Код Sandbox">
-        ```ts file="../../../../code/entrypoints/sandbox/api/csp/connect.ts" title="src/sandbox.ts"
+        ```ts file="../../../../code/api/adnbn/sandbox/examples/csp/connect/connect.ts" title="src/sandbox.ts"
         ```
     </Tab>
     <Tab label="Сгенерированный Manifest V3">
-        ```json file="../../../../code/entrypoints/sandbox/api/csp/connect.manifest-v3.json" title="manifest.json"
+        ```json file="../../../../code/api/adnbn/sandbox/examples/csp/connect/connect.manifest-v3.json" title="manifest.json"
         ```
     </Tab>
     <Tab label="Сгенерированный Manifest V2">
-        ```json file="../../../../code/entrypoints/sandbox/api/csp/connect.manifest-v2.json" title="manifest.json"
+        ```json file="../../../../code/api/adnbn/sandbox/examples/csp/connect/connect.manifest-v2.json" title="manifest.json"
         ```
     </Tab>
 </Tabs>
@@ -413,15 +413,15 @@ Addon Bone всегда добавляет `sandbox allow-scripts`, `script-src 
 
 <Tabs>
     <Tab label="Код Sandbox">
-        ```ts file="../../../../code/entrypoints/sandbox/api/csp/image.ts" title="src/sandbox.ts"
+        ```ts file="../../../../code/api/adnbn/sandbox/examples/csp/image/image.ts" title="src/sandbox.ts"
         ```
     </Tab>
     <Tab label="Сгенерированный Manifest V3">
-        ```json file="../../../../code/entrypoints/sandbox/api/csp/image.manifest-v3.json" title="manifest.json"
+        ```json file="../../../../code/api/adnbn/sandbox/examples/csp/image/image.manifest-v3.json" title="manifest.json"
         ```
     </Tab>
     <Tab label="Сгенерированный Manifest V2">
-        ```json file="../../../../code/entrypoints/sandbox/api/csp/image.manifest-v2.json" title="manifest.json"
+        ```json file="../../../../code/api/adnbn/sandbox/examples/csp/image/image.manifest-v2.json" title="manifest.json"
         ```
     </Tab>
 </Tabs>
@@ -434,15 +434,15 @@ Addon Bone всегда добавляет `sandbox allow-scripts`, `script-src 
 
 <Tabs>
     <Tab label="Код Sandbox">
-        ```ts file="../../../../code/entrypoints/sandbox/api/csp/style.ts" title="src/sandbox.ts"
+        ```ts file="../../../../code/api/adnbn/sandbox/examples/csp/style/style.ts" title="src/sandbox.ts"
         ```
     </Tab>
     <Tab label="Сгенерированный Manifest V3">
-        ```json file="../../../../code/entrypoints/sandbox/api/csp/style.manifest-v3.json" title="manifest.json"
+        ```json file="../../../../code/api/adnbn/sandbox/examples/csp/style/style.manifest-v3.json" title="manifest.json"
         ```
     </Tab>
     <Tab label="Сгенерированный Manifest V2">
-        ```json file="../../../../code/entrypoints/sandbox/api/csp/style.manifest-v2.json" title="manifest.json"
+        ```json file="../../../../code/api/adnbn/sandbox/examples/csp/style/style.manifest-v2.json" title="manifest.json"
         ```
     </Tab>
 </Tabs>
@@ -455,15 +455,15 @@ Addon Bone всегда добавляет `sandbox allow-scripts`, `script-src 
 
 <Tabs>
     <Tab label="Код Sandbox">
-        ```ts file="../../../../code/entrypoints/sandbox/api/csp/font.ts" title="src/sandbox.ts"
+        ```ts file="../../../../code/api/adnbn/sandbox/examples/csp/font/font.ts" title="src/sandbox.ts"
         ```
     </Tab>
     <Tab label="Сгенерированный Manifest V3">
-        ```json file="../../../../code/entrypoints/sandbox/api/csp/font.manifest-v3.json" title="manifest.json"
+        ```json file="../../../../code/api/adnbn/sandbox/examples/csp/font/font.manifest-v3.json" title="manifest.json"
         ```
     </Tab>
     <Tab label="Сгенерированный Manifest V2">
-        ```json file="../../../../code/entrypoints/sandbox/api/csp/font.manifest-v2.json" title="manifest.json"
+        ```json file="../../../../code/api/adnbn/sandbox/examples/csp/font/font.manifest-v2.json" title="manifest.json"
         ```
     </Tab>
 </Tabs>
@@ -476,15 +476,15 @@ Addon Bone всегда добавляет `sandbox allow-scripts`, `script-src 
 
 <Tabs>
     <Tab label="Код Sandbox">
-        ```ts file="../../../../code/entrypoints/sandbox/api/csp/media.ts" title="src/sandbox.ts"
+        ```ts file="../../../../code/api/adnbn/sandbox/examples/csp/media/media.ts" title="src/sandbox.ts"
         ```
     </Tab>
     <Tab label="Сгенерированный Manifest V3">
-        ```json file="../../../../code/entrypoints/sandbox/api/csp/media.manifest-v3.json" title="manifest.json"
+        ```json file="../../../../code/api/adnbn/sandbox/examples/csp/media/media.manifest-v3.json" title="manifest.json"
         ```
     </Tab>
     <Tab label="Сгенерированный Manifest V2">
-        ```json file="../../../../code/entrypoints/sandbox/api/csp/media.manifest-v2.json" title="manifest.json"
+        ```json file="../../../../code/api/adnbn/sandbox/examples/csp/media/media.manifest-v2.json" title="manifest.json"
         ```
     </Tab>
 </Tabs>
@@ -497,15 +497,15 @@ Addon Bone всегда добавляет `sandbox allow-scripts`, `script-src 
 
 <Tabs>
     <Tab label="Код Sandbox">
-        ```ts file="../../../../code/entrypoints/sandbox/api/csp/worker.ts" title="src/sandbox.ts"
+        ```ts file="../../../../code/api/adnbn/sandbox/examples/csp/worker/worker.ts" title="src/sandbox.ts"
         ```
     </Tab>
     <Tab label="Сгенерированный Manifest V3">
-        ```json file="../../../../code/entrypoints/sandbox/api/csp/worker.manifest-v3.json" title="manifest.json"
+        ```json file="../../../../code/api/adnbn/sandbox/examples/csp/worker/worker.manifest-v3.json" title="manifest.json"
         ```
     </Tab>
     <Tab label="Сгенерированный Manifest V2">
-        ```json file="../../../../code/entrypoints/sandbox/api/csp/worker.manifest-v2.json" title="manifest.json"
+        ```json file="../../../../code/api/adnbn/sandbox/examples/csp/worker/worker.manifest-v2.json" title="manifest.json"
         ```
     </Tab>
 </Tabs>
@@ -518,15 +518,15 @@ Addon Bone всегда добавляет `sandbox allow-scripts`, `script-src 
 
 <Tabs>
     <Tab label="Код Sandbox">
-        ```ts file="../../../../code/entrypoints/sandbox/api/csp/child.ts" title="src/sandbox.ts"
+        ```ts file="../../../../code/api/adnbn/sandbox/examples/csp/child/child.ts" title="src/sandbox.ts"
         ```
     </Tab>
     <Tab label="Сгенерированный Manifest V3">
-        ```json file="../../../../code/entrypoints/sandbox/api/csp/child.manifest-v3.json" title="manifest.json"
+        ```json file="../../../../code/api/adnbn/sandbox/examples/csp/child/child.manifest-v3.json" title="manifest.json"
         ```
     </Tab>
     <Tab label="Сгенерированный Manifest V2">
-        ```json file="../../../../code/entrypoints/sandbox/api/csp/child.manifest-v2.json" title="manifest.json"
+        ```json file="../../../../code/api/adnbn/sandbox/examples/csp/child/child.manifest-v2.json" title="manifest.json"
         ```
     </Tab>
 </Tabs>
@@ -537,7 +537,7 @@ Addon Bone всегда добавляет `sandbox allow-scripts`, `script-src 
 
 Дополнительные разрешения директивы sandbox.
 
-```ts file="../../../../code/entrypoints/sandbox/api/sandbox-allow.ts" title="SandboxAllow"
+```ts file="../../../../code/api/adnbn/sandbox/contracts/sandbox-allow.ts" title="SandboxAllow"
 ```
 
 Используется в [`SandboxCspConfig.allow`](#sandboxcspconfig-allow). Принимаются члены enum или точные строковые значения без `allow-`; префикс добавляет генератор.
@@ -559,7 +559,7 @@ Addon Bone всегда добавляет `sandbox allow-scripts`, `script-src 
 
 Поддерживаемые ключевые слова и схемы источников.
 
-```ts file="../../../../code/entrypoints/sandbox/api/sandbox-source.ts" title="SandboxSource"
+```ts file="../../../../code/api/adnbn/sandbox/contracts/sandbox-source.ts" title="SandboxSource"
 ```
 
 Используется в [`SandboxCspSources`](#sandboxcspsources).
@@ -580,7 +580,7 @@ Addon Bone всегда добавляет `sandbox allow-scripts`, `script-src 
 
 Строковый ключ таблицы документов.
 
-```ts file="../../../../code/entrypoints/sandbox/api/sandbox-alias.ts" title="SandboxAlias"
+```ts file="../../../../code/api/adnbn/sandbox/contracts/sandbox-alias.ts" title="SandboxAlias"
 ```
 
 Любая строка. В отличие от [`SandboxName`](/api/sandbox/index#sandboxname), не ограничивается ключами сгенерированного реестра.
@@ -591,7 +591,7 @@ Addon Bone всегда добавляет `sandbox allow-scripts`, `script-src 
 
 Карта имён Sandbox и параметров создания.
 
-```ts file="../../../../code/entrypoints/sandbox/api/sandbox-map.ts" title="SandboxMap"
+```ts file="../../../../code/api/adnbn/sandbox/contracts/sandbox-map.ts" title="SandboxMap"
 ```
 
 Ключ — [`SandboxAlias`](#sandboxalias), значение — [`SandboxParameters`](#sandboxparameters). Возвращается из [`getSandboxes`](#getsandboxes); карта не хранит экземпляры API или DOM-элементы.
@@ -602,7 +602,7 @@ Addon Bone всегда добавляет `sandbox allow-scripts`, `script-src 
 
 Параметры iframe и ожидания запросов.
 
-```ts file="../../../../code/entrypoints/sandbox/api/sandbox-parameters.ts" title="SandboxParameters"
+```ts file="../../../../code/api/adnbn/sandbox/contracts/sandbox-parameters.ts" title="SandboxParameters"
 ```
 
 Объединяет URL с тремя настройками из [`SandboxConfig`](#sandboxconfig). Эти значения передаются в [`ProxySandbox`](/api/sandbox/index#proxysandbox).
@@ -629,7 +629,7 @@ Addon Bone всегда добавляет `sandbox allow-scripts`, `script-src 
 
 Объект таблицы параметров сборки.
 
-```ts file="../../../../code/entrypoints/sandbox/api/sandbox-parameters-map.ts" title="SandboxParametersMap"
+```ts file="../../../../code/api/adnbn/sandbox/contracts/sandbox-parameters-map.ts" title="SandboxParametersMap"
 ```
 
 Сопоставляет строковые имена с [`SandboxParameters`](#sandboxparameters). В отличие от [`SandboxMap`](#sandboxmap), это обычный объект `Record`, который сборщик помещает в виртуальный модуль. [`getSandboxes`](#getsandboxes) преобразует его в `Map`.
@@ -644,7 +644,7 @@ Addon Bone всегда добавляет `sandbox allow-scripts`, `script-src 
 
 Сообщение о готовности документа.
 
-```ts file="../../../../code/entrypoints/sandbox/api/sandbox-ready-message.ts" title="SandboxReadyMessage"
+```ts file="../../../../code/api/adnbn/sandbox/contracts/sandbox-ready-message.ts" title="SandboxReadyMessage"
 ```
 
 Addon Bone отправляет его владельцу iframe после запуска API и отображения документа. Это отдельное сообщение; в [`SandboxEnvelope`](#sandboxenvelope) оно не входит.
@@ -667,7 +667,7 @@ Addon Bone отправляет его владельцу iframe после за
 
 Сообщение вызова метода или чтения свойства.
 
-```ts file="../../../../code/entrypoints/sandbox/api/sandbox-request-message.ts" title="SandboxRequestMessage"
+```ts file="../../../../code/api/adnbn/sandbox/contracts/sandbox-request-message.ts" title="SandboxRequestMessage"
 ```
 
 Путь и аргументы создаёт proxy. Владелец iframe сопоставляет ответ с запросом по `requestId`.
@@ -702,7 +702,7 @@ Addon Bone отправляет его владельцу iframe после за
 
 Сообщение результата или ошибки вызова.
 
-```ts file="../../../../code/entrypoints/sandbox/api/sandbox-response-message.ts" title="SandboxResponseMessage"
+```ts file="../../../../code/api/adnbn/sandbox/contracts/sandbox-response-message.ts" title="SandboxResponseMessage"
 ```
 
 Контракт задаёт `ok: boolean` и два необязательных поля. TypeScript не связывает их через discriminated union; runtime заполняет `payload` при успехе или `error` при ошибке.
@@ -741,7 +741,7 @@ Addon Bone отправляет его владельцу iframe после за
 
 Объединение сообщений запроса и ответа.
 
-```ts file="../../../../code/entrypoints/sandbox/api/sandbox-envelope.ts" title="SandboxEnvelope"
+```ts file="../../../../code/api/adnbn/sandbox/contracts/sandbox-envelope.ts" title="SandboxEnvelope"
 ```
 
 Включает [`SandboxRequestMessage`](#sandboxrequestmessage) и [`SandboxResponseMessage`](#sandboxresponsemessage). Сигнал [`SandboxReadyMessage`](#sandboxreadymessage) обрабатывается отдельно при создании iframe.
@@ -752,7 +752,7 @@ Addon Bone отправляет его владельцу iframe после за
 
 Контракт подключения, отправки и получения сообщений.
 
-```ts file="../../../../code/entrypoints/sandbox/api/sandbox-port.ts" title="SandboxPort"
+```ts file="../../../../code/api/adnbn/sandbox/contracts/sandbox-port.ts" title="SandboxPort"
 ```
 
 Расположен под протоколом запросов и ответов. Встроенные реализации работают с родительской страницей и iframe. `ProxySandbox` и `RegisterSandbox` выбирают их самостоятельно и не принимают пользовательский порт в конструкторе.
@@ -781,7 +781,7 @@ Addon Bone отправляет его владельцу iframe после за
 
 Ключ общего реестра экземпляров в текущем контексте.
 
-```ts file="../../../../code/entrypoints/sandbox/api/sandbox-global-key.ts" title="SandboxGlobalKey"
+```ts file="../../../../code/api/adnbn/sandbox/contracts/sandbox-global-key.ts" title="SandboxGlobalKey"
 ```
 
 Используется внутренним менеджером для хранения реестра в `globalThis`. Не изменяйте его вручную; регистрацию выполняет `RegisterSandbox`.
@@ -792,7 +792,7 @@ Addon Bone отправляет его владельцу iframe после за
 
 Ключ runtime-маркера Sandbox-контекста.
 
-```ts file="../../../../code/entrypoints/sandbox/api/sandbox-global-access.ts" title="SandboxGlobalAccess"
+```ts file="../../../../code/api/adnbn/sandbox/contracts/sandbox-global-access.ts" title="SandboxGlobalAccess"
 ```
 
 Builder устанавливает значение `globalThis[SandboxGlobalAccess]` в `true` перед запуском API. Маркер используется при получении локального экземпляра; он не создаёт браузерную изоляцию.
@@ -803,7 +803,7 @@ Builder устанавливает значение `globalThis[SandboxGlobalAcc
 
 Префикс каналов и маркеров сообщений.
 
-```ts file="../../../../code/entrypoints/sandbox/api/sandbox-namespace.ts" title="SandboxNamespace"
+```ts file="../../../../code/api/adnbn/sandbox/contracts/sandbox-namespace.ts" title="SandboxNamespace"
 ```
 
 Канал конкретного Sandbox имеет вид `adnbn:sandbox:<name>`. Значение используется протоколом автоматически.
@@ -814,7 +814,7 @@ Builder устанавливает значение `globalThis[SandboxGlobalAcc
 
 Маркер сообщения готовности.
 
-```ts file="../../../../code/entrypoints/sandbox/api/sandbox-ready-message-type.ts" title="SandboxReadyMessageType"
+```ts file="../../../../code/api/adnbn/sandbox/contracts/sandbox-ready-message-type.ts" title="SandboxReadyMessageType"
 ```
 
 Значение `"adnbn:sandbox:ready"` для [`SandboxReadyMessage`](#sandboxreadymessage).
@@ -825,7 +825,7 @@ Builder устанавливает значение `globalThis[SandboxGlobalAcc
 
 Маркер сообщения запроса.
 
-```ts file="../../../../code/entrypoints/sandbox/api/sandbox-request-message-type.ts" title="SandboxRequestMessageType"
+```ts file="../../../../code/api/adnbn/sandbox/contracts/sandbox-request-message-type.ts" title="SandboxRequestMessageType"
 ```
 
 Значение `"adnbn:sandbox:request"` для [`SandboxRequestMessage`](#sandboxrequestmessage).
@@ -836,7 +836,7 @@ Builder устанавливает значение `globalThis[SandboxGlobalAcc
 
 Маркер сообщения ответа.
 
-```ts file="../../../../code/entrypoints/sandbox/api/sandbox-response-message-type.ts" title="SandboxResponseMessageType"
+```ts file="../../../../code/api/adnbn/sandbox/contracts/sandbox-response-message-type.ts" title="SandboxResponseMessageType"
 ```
 
 Значение `"adnbn:sandbox:response"` для [`SandboxResponseMessage`](#sandboxresponsemessage).

@@ -27,7 +27,7 @@ import PropertyBadge from "@components/PropertyBadge";
 
 Читает переменную окружения по имени и возвращает запасное значение, если переменная отсутствует.
 
-```ts file="../../../../code/environment/api/get-env.ts" title="getEnv"
+```ts file="../../../../code/api/adnbn/environment/contracts/get-env.ts" title="getEnv"
 ```
 
 | Параметр | Тип | Назначение |
@@ -58,7 +58,7 @@ Addon Bone формирует эти значения из параметров 
 
 Возвращает имя приложения из переменной `APP`.
 
-```ts file="../../../../code/environment/api/get-app.ts" title="getApp"
+```ts file="../../../../code/api/adnbn/environment/contracts/get-app.ts" title="getApp"
 ```
 
 **Результат:** `string` — значение параметра `app`, выбранного для сборки. Это идентификатор приложения в проекте; отображаемое имя расширения задаётся отдельно через `name`.
@@ -71,7 +71,7 @@ Addon Bone формирует эти значения из параметров 
 
 Возвращает целевой браузер из переменной `BROWSER`.
 
-```ts file="../../../../code/environment/api/get-browser.ts" title="getBrowser"
+```ts file="../../../../code/api/adnbn/environment/contracts/get-browser.ts" title="getBrowser"
 ```
 
 **Результат:** [`Browser`](#browser) — значение параметра `browser`, выбранного для сборки. Если сборку для Chrome загрузить в другой браузер, функция продолжит возвращать `Browser.Chrome`: она читает параметр сборки, а не определяет среду выполнения.
@@ -84,7 +84,7 @@ Addon Bone формирует эти значения из параметров 
 
 Сравнивает указанный браузер с результатом [`getBrowser`](#getbrowser).
 
-```ts file="../../../../code/environment/api/is-browser.ts" title="isBrowser"
+```ts file="../../../../code/api/adnbn/environment/contracts/is-browser.ts" title="isBrowser"
 ```
 
 **Параметр:** `browser` — [`Browser`](#browser). **Обязательный параметр.**
@@ -99,7 +99,7 @@ Addon Bone формирует эти значения из параметров 
 
 Строковое перечисление целевых браузеров. Используется в параметре сборки `browser`, функции [`isBrowser`](#isbrowser) и общих фильтрах [`includeBrowser`](/api/adnbn/entrypoint-options#entrypointoptions-includebrowser) и [`excludeBrowser`](/api/adnbn/entrypoint-options#entrypointoptions-excludebrowser).
 
-```ts file="../../../../code/environment/api/browser.ts" title="Browser"
+```ts file="../../../../code/api/adnbn/environment/contracts/browser.ts" title="Browser"
 ```
 
 `Browser.Chrome` и `Browser.Chromium` — разные значения. Сравнение с `Browser.Chromium` не означает проверку всех браузеров на базе Chromium: Edge и Opera имеют собственные значения.
@@ -112,7 +112,7 @@ Addon Bone формирует эти значения из параметров 
 
 Возвращает версию манифеста из переменной `MANIFEST_VERSION`.
 
-```ts file="../../../../code/environment/api/get-manifest-version.ts" title="getManifestVersion"
+```ts file="../../../../code/api/adnbn/environment/contracts/get-manifest-version.ts" title="getManifestVersion"
 ```
 
 **Результат:** [`ManifestVersion`](/api/adnbn/manifest#manifestversion), то есть `2 | 3`. Если переменная отсутствует, функция использует строку `"3"` и возвращает число `3`.
@@ -125,7 +125,7 @@ Addon Bone формирует эти значения из параметров 
 
 Строковое перечисление режимов сборки. Используется в параметре `mode` и служебной переменной `MODE`, которую можно прочитать через [`getEnv`](#getenv).
 
-```ts file="../../../../code/environment/api/mode.ts" title="Mode"
+```ts file="../../../../code/api/adnbn/environment/contracts/mode.ts" title="Mode"
 ```
 
 `Mode.Development` задаёт режим разработки, `Mode.Production` — режим production. `Mode.None` явно передаёт сборщику режим `none`; это отдельное значение, а не отсутствие настройки.
@@ -138,7 +138,7 @@ TypeScript-контракт фильтра [`EntrypointOptions.mode`](/api/adnbn
 
 Строковое перечисление команд CLI. В параметре `command` итоговой конфигурации показывает, какая команда запустила сборку.
 
-```ts file="../../../../code/environment/api/command.ts" title="Command"
+```ts file="../../../../code/api/adnbn/environment/contracts/command.ts" title="Command"
 ```
 
 | Значение | Назначение |
@@ -154,7 +154,7 @@ TypeScript-контракт фильтра [`EntrypointOptions.mode`](/api/adnbn
 
 Строковое перечисление вариантов структуры проекта. Используется в настройке `workspace`.
 
-```ts file="../../../../code/environment/api/workspace.ts" title="Workspace"
+```ts file="../../../../code/api/adnbn/environment/contracts/workspace.ts" title="Workspace"
 ```
 
 | Значение | Поведение |

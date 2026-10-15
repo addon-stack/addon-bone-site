@@ -72,7 +72,7 @@
       }
     },
     {
-      "includes": ["src/code/**/api/**"],
+      "includes": ["src/code/api/**/contracts/**"],
       "linter": {
         "rules": {
           "correctness": {

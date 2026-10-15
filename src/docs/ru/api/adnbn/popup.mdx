@@ -30,7 +30,7 @@ import {Tab, Tabs} from "@rspress/core/theme";
 
 Принимает объявление для `export default` точки входа Popup. При сборке Addon Bone создаёт её HTML-документ; выбранный начальный вариант назначается кнопке расширения через `default_popup`.
 
-```ts file="../../../../code/entrypoints/popup/api/define-popup.ts" title="definePopup"
+```ts file="../../../../code/api/adnbn/popup/contracts/define-popup.ts" title="definePopup"
 ```
 
 **Параметр:** `options` — [`PopupDefinition`](#popupdefinition). **Обязательный параметр.** Все поля объекта можно опустить, поэтому `definePopup({})` допустим.
@@ -60,7 +60,7 @@ import {Tab, Tabs} from "@rspress/core/theme";
 
 Назначает собранный Popup кнопке расширения для всех вкладок или для одной вкладки. Окно откроется при следующем нажатии кнопки; сам вызов не открывает Popup и не заменяет уже загруженный документ.
 
-```ts file="../../../../code/entrypoints/popup/api/change-popup.ts" title="changePopup"
+```ts file="../../../../code/api/adnbn/popup/contracts/change-popup.ts" title="changePopup"
 ```
 
 **Параметры:**
@@ -92,7 +92,7 @@ import {Tab, Tabs} from "@rspress/core/theme";
 
 Возвращает таблицу Popup, для которых текущая сборка создала HTML. Подходит для списка вариантов и проверки имени перед переключением.
 
-```ts file="../../../../code/entrypoints/popup/api/get-popups.ts" title="getPopups"
+```ts file="../../../../code/api/adnbn/popup/contracts/get-popups.ts" title="getPopups"
 ```
 
 **Параметры:** отсутствуют. **Результат:** [`PopupMap`](#popupmap), синхронно. Ключ — имя варианта, значение — [`PopupMapEntry`](#popupmapentry) с путём HTML и заданными опциями кнопки.
@@ -111,7 +111,7 @@ import {Tab, Tabs} from "@rspress/core/theme";
 
 Расширяемый интерфейс, ключи которого задают имена для [`PopupAlias`](#popupalias).
 
-```ts file="../../../../code/entrypoints/popup/api/popup-alias-registry.ts" title="PopupAliasRegistry"
+```ts file="../../../../code/api/adnbn/popup/contracts/popup-alias-registry.ts" title="PopupAliasRegistry"
 ```
 
 Addon Bone дополняет его в `.adnbn/popup.d.ts` по вариантам, включённым в сборку. Подключите сгенерированные декларации через `.adnbn/tsconfig.json`, как описано в [настройке TypeScript](/guide/configuration/typescript).
@@ -134,7 +134,7 @@ Addon Bone дополняет его в `.adnbn/popup.d.ts` по вариант�
 
 Имя Popup для [`changePopup`](#changepopup) и ключей [`PopupMap`](#popupmap).
 
-```ts file="../../../../code/entrypoints/popup/api/popup-alias.ts" title="PopupAlias"
+```ts file="../../../../code/api/adnbn/popup/contracts/popup-alias.ts" title="PopupAlias"
 ```
 
 Если [`PopupAliasRegistry`](#popupaliasregistry) пуст, тип допускает любую строку. После подключения сгенерированных деклараций он становится объединением строковых ключей реестра, например `"popup" | "account"`. Актуальную регистрацию имени при выполнении можно проверить через [`getPopups().has(alias)`](#getpopups).
@@ -145,7 +145,7 @@ Addon Bone дополняет его в `.adnbn/popup.d.ts` по вариант�
 
 Таблица вариантов, которую возвращает [`getPopups()`](#getpopups).
 
-```ts file="../../../../code/entrypoints/popup/api/popup-map.ts" title="PopupMap"
+```ts file="../../../../code/api/adnbn/popup/contracts/popup-map.ts" title="PopupMap"
 ```
 
 Ключ имеет тип [`PopupAlias`](#popupalias), значение — [`PopupMapEntry`](#popupmapentry). `map.get(alias)` может вернуть `undefined`, если записи нет. Наличие записи означает, что Popup собран, а не что он сейчас назначен кнопке или открыт.
@@ -156,7 +156,7 @@ Addon Bone дополняет его в `.adnbn/popup.d.ts` по вариант�
 
 Данные одного собранного Popup для переключения через [`changePopup`](#changepopup). Заголовок HTML-документа `title` и содержимое `render` сюда не входят.
 
-```ts file="../../../../code/entrypoints/popup/api/popup-map-entry.ts" title="PopupMapEntry"
+```ts file="../../../../code/api/adnbn/popup/contracts/popup-map-entry.ts" title="PopupMapEntry"
 ```
 
 <DocHeading level={3} id="popupmapentry-path" toc={true}>`path`</DocHeading>
@@ -183,7 +183,7 @@ Addon Bone дополняет его в `.adnbn/popup.d.ts` по вариант�
 
 Объявление, которое принимает и возвращает [`definePopup`](#definepopup). Внутренний тип: напрямую из `adnbn` не экспортируется.
 
-```ts file="../../../../code/entrypoints/popup/api/popup-definition.ts" title="PopupDefinition"
+```ts file="../../../../code/api/adnbn/popup/contracts/popup-definition.ts" title="PopupDefinition"
 ```
 
 [`PopupEntrypointOptions`](#popupentrypointoptions) объединяет собственные опции Popup, разрешения, CSP и настройки страницы. [`ViewDefinition<PopupProps>`](/api/adnbn/view#viewdefinition) добавляет [`render`](/api/adnbn/view#viewrenderdefinition-render) и [`container`](/api/adnbn/view#viewrenderdefinition-container).
@@ -192,7 +192,7 @@ Addon Bone дополняет его в `.adnbn/popup.d.ts` по вариант�
 
 Для аннотаций пользовательского кода получите тип из публичной функции. Ниже `PopupDefinition` и `PopupProps` — локальные алиасы вашего модуля; импортировать эти имена из `adnbn` в текущей версии нельзя:
 
-```ts file="../../../../code/entrypoints/popup/api/inferred-types.ts" title="src/popup-types.ts"
+```ts file="../../../../code/api/adnbn/popup/examples/inferred-types.ts" title="src/popup-types.ts"
 ```
 
 ## `PopupProps`
@@ -201,7 +201,7 @@ Addon Bone дополняет его в `.adnbn/popup.d.ts` по вариант�
 
 Опции текущего Popup, которые Addon Bone передаёт в функцию `render`, React-компонент и функцию `container`. Внутренний тип: напрямую из `adnbn` не экспортируется; вариант аннотации показан у [`PopupDefinition`](#popupdefinition).
 
-```ts file="../../../../code/entrypoints/popup/api/popup-props.ts" title="PopupProps"
+```ts file="../../../../code/api/adnbn/popup/contracts/popup-props.ts" title="PopupProps"
 ```
 
 Состав совпадает с [`PopupEntrypointOptions`](#popupentrypointoptions). Объект содержит поля объявления без `render` и `container`. Вычисленные при сборке значения не подставляются: при отсутствии `apply` обработчик получает `undefined`, хотя при выборе начального Popup используется `true`. Подсказка и иконка из конфигурации проекта также не добавляются в props автоматически.
@@ -214,7 +214,7 @@ Addon Bone дополняет его в `.adnbn/popup.d.ts` по вариант�
 
 Собственные опции Popup. Внутренний интерфейс: напрямую из `adnbn` не экспортируется. Входит в [`PopupDefinition`](#popupdefinition) и [`PopupProps`](#popupprops) через [`PopupEntrypointOptions`](#popupentrypointoptions).
 
-```ts file="../../../../code/entrypoints/popup/api/popup-config.ts" title="PopupConfig"
+```ts file="../../../../code/api/adnbn/popup/contracts/popup-config.ts" title="PopupConfig"
 ```
 
 <DocHeading level={3} id="popupconfig-icon" toc={true}>`icon`</DocHeading>
@@ -267,7 +267,7 @@ Addon Bone дополняет его в `.adnbn/popup.d.ts` по вариант�
 
 Общие опции сборки Popup. Внутренний тип: напрямую из `adnbn` не экспортируется.
 
-```ts file="../../../../code/entrypoints/popup/api/popup-entrypoint-options.ts" title="PopupEntrypointOptions"
+```ts file="../../../../code/api/adnbn/popup/contracts/popup-entrypoint-options.ts" title="PopupEntrypointOptions"
 ```
 
 | Контракт | Что добавляет |

@@ -29,7 +29,7 @@ import PropertyBadge from "@components/PropertyBadge";
 
 Возвращает зарегистрированный экземпляр сервиса в фоновом контексте.
 
-```ts file="../../../../code/service/api/get-service.ts" title="getService"
+```ts file="../../../../code/api/service/contracts/get-service.ts" title="getService"
 ```
 
 **Параметр:** `name` — [`ServiceName`](#servicename). **Обязательный параметр.** Параметр типа `N` сохраняет конкретное имя и выбирает его контракт из реестра.
@@ -52,7 +52,7 @@ import PropertyBadge from "@components/PropertyBadge";
 
 Связывает имя сервиса с исходным типом его API.
 
-```ts file="../../../../code/service/api/service-registry.ts" title="ServiceRegistry"
+```ts file="../../../../code/api/service/contracts/service-registry.ts" title="ServiceRegistry"
 ```
 
 В библиотеке интерфейс пустой. При сборке Addon Bone создаёт `.adnbn/service.d.ts`, который дополняет `ServiceRegistry` через `declare module "adnbn/service"`. Сгенерированный файл должен входить в TypeScript-проект потребителя.
@@ -67,7 +67,7 @@ import PropertyBadge from "@components/PropertyBadge";
 
 Строковые имена, объявленные в [`ServiceRegistry`](#serviceregistry).
 
-```ts file="../../../../code/service/api/service-name.ts" title="ServiceName"
+```ts file="../../../../code/api/service/contracts/service-name.ts" title="ServiceName"
 ```
 
 Используется обеими функциями `getService`: из [`adnbn`](/api/adnbn/service#getservice) и из [`adnbn/service`](#getservice). Если реестр не дополнен ни сгенерированными, ни пользовательскими декларациями, результат — `never`, поэтому TypeScript не разрешает передать строку.
@@ -80,7 +80,7 @@ import PropertyBadge from "@components/PropertyBadge";
 
 Исходный контракт сервиса, выбранного из реестра.
 
-```ts file="../../../../code/service/api/service-target.ts" title="ServiceTarget"
+```ts file="../../../../code/api/service/contracts/service-target.ts" title="ServiceTarget"
 ```
 
 `N` — ключ [`ServiceRegistry`](#serviceregistry). Общий [`TransportTarget`](/api/transport/index#transporttarget) возвращает тип по этому ключу без преобразования членов. Тип используется для результата прямого [`getService`](#getservice).
@@ -91,7 +91,7 @@ import PropertyBadge from "@components/PropertyBadge";
 
 Контракт сервиса для вызова через сообщения.
 
-```ts file="../../../../code/service/api/service-proxy-target.ts" title="ServiceProxyTarget"
+```ts file="../../../../code/api/service/contracts/service-proxy-target.ts" title="ServiceProxyTarget"
 ```
 
 Выбирает API из [`ServiceRegistry`](#serviceregistry) и применяет [`TransportProxyTarget`](/api/transport/index#transportproxytarget). Методы возвращают promise, простые свойства становятся функциями чтения, вложенные объекты сохраняют вложенный доступ. Это результат [`getService` из `adnbn`](/api/adnbn/service#getservice).
@@ -106,7 +106,7 @@ import PropertyBadge from "@components/PropertyBadge";
 
 Создаёт proxy сервиса по строковому имени. Для типизированного доступа к сервисам приложения обычно достаточно [`getService` из `adnbn`](/api/adnbn/service#getservice).
 
-```ts file="../../../../code/service/api/proxy-service.ts" title="ProxyService"
+```ts file="../../../../code/api/service/contracts/proxy-service.ts" title="ProxyService"
 ```
 
 Показана публичная часть объявления с сохранением наследования. `ProxyTransport` — внутренний базовый класс, не экспортируемый из `adnbn/transport`.
@@ -137,7 +137,7 @@ import PropertyBadge from "@components/PropertyBadge";
 
 Регистрирует сервис и его обработчик сообщений вручную. Используйте в background, когда регистрацией должен управлять ваш код. Для обычной точки входа эти действия выполняет Addon Bone по объявлению [`defineService`](/api/adnbn/service#defineservice).
 
-```ts file="../../../../code/service/api/register-service.ts" title="RegisterService"
+```ts file="../../../../code/api/service/contracts/register-service.ts" title="RegisterService"
 ```
 
 Показана публичная часть объявления с сохранением наследования. `RegisterTransport` — внутренний базовый класс; он предоставляет `register` и `destroy`. Напрямую из `adnbn/transport` этот класс не экспортируется.

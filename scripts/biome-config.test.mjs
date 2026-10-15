@@ -90,17 +90,31 @@ test("preserves API declarations while keeping executable snippets and HTML temp
 	);
 	const declaration = "type Handler = (value: any) => {};";
 	const reference = check(
-		"src/code/entrypoints/popup/api/probe.ts",
+		"src/code/api/adnbn/popup/contracts/probe.ts",
 		declaration,
 	);
 	assert.equal(reference.status, 0, reference.stderr);
+	assert.equal(
+		check(
+			"src/code/api/adnbn/sidebar/contracts/registry.ts",
+			"export interface SidebarAliasRegistry {}",
+		).status,
+		0,
+	);
 	const executable = check("src/code/entrypoints/popup/probe.ts", declaration);
 	assert.match(executable.stderr, /noExplicitAny/);
 	assert.match(executable.stderr, /noBannedTypes/);
 	assert.match(executable.stderr, /noUnusedVariables/);
+	const apiExample = check(
+		"src/code/api/adnbn/popup/examples/probe.ts",
+		declaration,
+	);
+	assert.match(apiExample.stderr, /noExplicitAny/);
+	assert.match(apiExample.stderr, /noBannedTypes/);
+	assert.match(apiExample.stderr, /noUnusedVariables/);
 	assert.equal(
 		check(
-			"src/code/entrypoints/popup/api/probe.tsx",
+			"src/code/api/adnbn/popup/contracts/probe.tsx",
 			"export default () => <button>Click</button>;",
 		).status,
 		1,

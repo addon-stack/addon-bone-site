@@ -51,7 +51,7 @@ import PropertyBadge from "@components/PropertyBadge";
 
 Билдер, который Addon Bone передаёт в callback настройки [`manifest`](/api/adnbn/configuration#config-manifest) и обработчик `manifest` плагина. Это интерфейс TypeScript: его можно импортировать через `import type`, но нельзя вызвать или создать через `new`.
 
-```ts file="../../../../code/manifest/api/manifest-builder.ts" title="ManifestBuilder"
+```ts file="../../../../code/api/adnbn/manifest/contracts/manifest-builder.ts" title="ManifestBuilder"
 ```
 
 **Параметр типа:** `T extends CoreManifest = Manifest` — тип объекта, возвращаемого [`get()`](#manifestbuilder-get). [`CoreManifest`](#coremanifest) описывает базовые поля манифеста, а [`Manifest`](#manifest) объединяет варианты для Chrome, Firefox и Safari. Параметр `T` не выбирает версию сборки: её задаёт [`manifestVersion`](/api/adnbn/configuration#config-manifestversion).
@@ -288,7 +288,7 @@ import PropertyBadge from "@components/PropertyBadge";
 
 Добавляет разрешения из [`ManifestPermissions`](#manifestpermissions), сохраняя прежние. Пустой `Set` ничего не меняет. Например, callback ниже добавляет два API-разрешения, отдельное необязательное разрешение и доступ к сайту:
 
-```ts file="../../../../code/manifest/permissions.config.ts" title="adnbn.config.ts"
+```ts file="../../../../code/api/adnbn/manifest/examples/permissions.config.ts" title="adnbn.config.ts"
 ```
 
 <DocHeading level={3} id="manifestbuilder-addoptionalpermission" toc={true}>`addOptionalPermission`</DocHeading>
@@ -369,7 +369,7 @@ import PropertyBadge from "@components/PropertyBadge";
 
 Например, положите изображение в `src/public/images/marker.png`. Сборка скопирует его в `images/marker.png`, а это правило откроет доступ страницам `https://example.com`:
 
-```ts file="../../../../code/manifest/resources.config.ts" title="adnbn.config.ts"
+```ts file="../../../../code/api/adnbn/manifest/examples/resources.config.ts" title="adnbn.config.ts"
 ```
 
 В MV2 Addon Bone выводит общий массив путей: ограничения `matches`, `extensionIds` и `useDynamicUrl` в этот формат не переносятся.
@@ -406,7 +406,7 @@ import PropertyBadge from "@components/PropertyBadge";
 
 Дополнительное поле можно задать без отдельного метода:
 
-```ts file="../../../../code/manifest/raw.config.ts" title="adnbn.config.ts"
+```ts file="../../../../code/api/adnbn/manifest/examples/raw.config.ts" title="adnbn.config.ts"
 ```
 
 `raw()` возвращает билдер, поэтому не возвращайте результат этого вызова из callback конфигурации. Верните `undefined` либо дополнительный объект манифеста. Для выбора MV2 или MV3 используйте [`manifestVersion`](/api/adnbn/configuration#config-manifestversion).
@@ -417,7 +417,7 @@ import PropertyBadge from "@components/PropertyBadge";
 
 Объект WebExtension-манифеста для поддерживаемых браузеров.
 
-```ts file="../../../../code/manifest/api/manifest.ts" title="Manifest"
+```ts file="../../../../code/api/adnbn/manifest/contracts/manifest.ts" title="Manifest"
 ```
 
 Объединяет внутренние варианты `ChromeManifest`, `FirefoxManifest` и `SafariManifest`. Они основаны на типах `chrome.runtime` и дополняют их браузерными полями, включая `browser_specific_settings`. Имена этих трёх вариантов напрямую из `adnbn` не экспортируются.
@@ -432,7 +432,7 @@ import PropertyBadge from "@components/PropertyBadge";
 
 Базовый контракт объекта манифеста.
 
-```ts file="../../../../code/manifest/api/core-manifest.ts" title="CoreManifest"
+```ts file="../../../../code/api/adnbn/manifest/contracts/core-manifest.ts" title="CoreManifest"
 ```
 
 Основан на `chrome.runtime.ManifestBase`, но ограничивает `manifest_version` типом [`ManifestVersion`](#manifestversion). Вспомогательные `ChromeManifestBase` и `ManifestFixed` показаны для точного состава алиаса и напрямую из `adnbn` не экспортируются.
@@ -445,7 +445,7 @@ import PropertyBadge from "@components/PropertyBadge";
 
 Частичный объект с дополнительными полями манифеста.
 
-```ts file="../../../../code/manifest/api/optional-manifest.ts" title="OptionalManifest"
+```ts file="../../../../code/api/adnbn/manifest/contracts/optional-manifest.ts" title="OptionalManifest"
 ```
 
 Делает поля [`Manifest`](#manifest) необязательными и исключает `manifest_version`. Принимается методом [`raw()`](#manifestbuilder-raw), настройкой [`Config.manifest`](/api/adnbn/configuration#config-manifest) и её callback.
@@ -458,7 +458,7 @@ import PropertyBadge from "@components/PropertyBadge";
 
 Поддерживаемые версии манифеста.
 
-```ts file="../../../../code/manifest/api/manifest-version.ts" title="ManifestVersion"
+```ts file="../../../../code/api/adnbn/manifest/contracts/manifest-version.ts" title="ManifestVersion"
 ```
 
 `2` выбирает Manifest V2, `3` — Manifest V3. Тип используется в [`Config.manifestVersion`](/api/adnbn/configuration#config-manifestversion), поле `manifest_version` и результате [`getManifestVersion()`](/api/adnbn/environment#getmanifestversion).
@@ -471,7 +471,7 @@ import PropertyBadge from "@components/PropertyBadge";
 
 Значения для [`Config.incognito`](/api/adnbn/configuration#config-incognito) и [`ManifestBuilder.setIncognito()`](#manifestbuilder-setincognito).
 
-```ts file="../../../../code/manifest/api/manifest-incognito.ts" title="ManifestIncognito"
+```ts file="../../../../code/api/adnbn/manifest/contracts/manifest-incognito.ts" title="ManifestIncognito"
 ```
 
 | Значение | Строка в манифесте | Поведение |
@@ -484,7 +484,7 @@ import PropertyBadge from "@components/PropertyBadge";
 
 Например, для запрета работы в приватных окнах:
 
-```ts file="../../../../code/manifest/incognito.config.ts" title="adnbn.config.ts"
+```ts file="../../../../code/api/adnbn/manifest/examples/incognito.config.ts" title="adnbn.config.ts"
 ```
 
 ## `ManifestIncognitoValue`
@@ -493,7 +493,7 @@ import PropertyBadge from "@components/PropertyBadge";
 
 Значение режима инкогнито в настройках и билдере.
 
-```ts file="../../../../code/manifest/api/manifest-incognito-value.ts" title="ManifestIncognitoValue"
+```ts file="../../../../code/api/adnbn/manifest/contracts/manifest-incognito-value.ts" title="ManifestIncognitoValue"
 ```
 
 Принимает члены [`ManifestIncognito`](#manifestincognito) или соответствующие строки: `"spanning"`, `"split"`, `"not_allowed"`.
@@ -506,7 +506,7 @@ import PropertyBadge from "@components/PropertyBadge";
 
 Ссылка на существующую точку сборки.
 
-```ts file="../../../../code/manifest/api/manifest-entry.ts" title="ManifestEntry"
+```ts file="../../../../code/api/adnbn/manifest/contracts/manifest-entry.ts" title="ManifestEntry"
 ```
 
 Внутренний алиас `Entry` равен `string`; он показан вместе с интерфейсом и отдельно из `adnbn` не экспортируется.
@@ -523,7 +523,7 @@ import PropertyBadge from "@components/PropertyBadge";
 
 Описание фоновой точки для билдера.
 
-```ts file="../../../../code/manifest/api/manifest-background.ts" title="ManifestBackground"
+```ts file="../../../../code/api/adnbn/manifest/contracts/manifest-background.ts" title="ManifestBackground"
 ```
 
 Объединяет [`ManifestEntry`](#manifestentry) и [`BackgroundConfig`](/api/adnbn/background#backgroundconfig). Собственных дополнительных полей у алиаса нет.
@@ -536,7 +536,7 @@ import PropertyBadge from "@components/PropertyBadge";
 
 Описание одной команды в манифесте.
 
-```ts file="../../../../code/manifest/api/manifest-command.ts" title="ManifestCommand"
+```ts file="../../../../code/api/adnbn/manifest/contracts/manifest-command.ts" title="ManifestCommand"
 ```
 
 Алиас существующего [`CommandConfig`](/api/adnbn/command#commandconfig). Обязательное поле `name` задаёт имя команды. `description` задаёт её описание; `global` — признак глобальной команды. `defaultKey`, `windowsKey`, `macKey`, `chromeosKey` и `linuxKey` содержат сочетания клавиш для соответствующих платформ. Эти поля можно опустить.
@@ -549,7 +549,7 @@ import PropertyBadge from "@components/PropertyBadge";
 
 Набор описаний команд.
 
-```ts file="../../../../code/manifest/api/manifest-commands.ts" title="ManifestCommands"
+```ts file="../../../../code/api/adnbn/manifest/contracts/manifest-commands.ts" title="ManifestCommands"
 ```
 
 `Set` с элементами [`ManifestCommand`](#manifestcommand). Принимается методом [`setCommands()`](#manifestbuilder-setcommands). Пустой набор снимает команды, добавленные этим методом; команды из `raw` сохраняются.
@@ -562,7 +562,7 @@ import PropertyBadge from "@components/PropertyBadge";
 
 Описание content script для манифеста.
 
-```ts file="../../../../code/manifest/api/manifest-content-script.ts" title="ManifestContentScript"
+```ts file="../../../../code/api/adnbn/manifest/contracts/manifest-content-script.ts" title="ManifestContentScript"
 ```
 
 Объединяет [`ManifestEntry`](#manifestentry) и `ContentScriptConfig`. `entry` обязателен: по нему сборка выбирает готовые JS и CSS.
@@ -577,7 +577,7 @@ import PropertyBadge from "@components/PropertyBadge";
 
 Набор описаний content script.
 
-```ts file="../../../../code/manifest/api/manifest-content-scripts.ts" title="ManifestContentScripts"
+```ts file="../../../../code/api/adnbn/manifest/contracts/manifest-content-scripts.ts" title="ManifestContentScripts"
 ```
 
 `Set` с элементами [`ManifestContentScript`](#manifestcontentscript). Принимается методом [`setContentScripts()`](#manifestbuilder-setcontentscripts). Пустой набор очищает описания этого метода, но сохраняет `content_scripts` из `raw`.
@@ -590,7 +590,7 @@ import PropertyBadge from "@components/PropertyBadge";
 
 Путь и параметры popup кнопки расширения для [`setPopup()`](#manifestbuilder-setpopup). Для точки входа [`definePopup`](/api/adnbn/popup#definepopup) Addon Bone создаёт этот объект автоматически из начального варианта, выбранного с учётом [`PopupConfig.apply`](/api/adnbn/popup#popupconfig-apply): `path` получает путь собранного HTML, `icon` — значение [`PopupConfig.icon`](/api/adnbn/popup#popupconfig-icon), а `title` — значение [`PopupConfig.tooltip`](/api/adnbn/popup#popupconfig-tooltip) после преобразования маркера локализации.
 
-```ts file="../../../../code/manifest/api/manifest-popup.ts" title="ManifestPopup"
+```ts file="../../../../code/api/adnbn/manifest/contracts/manifest-popup.ts" title="ManifestPopup"
 ```
 
 <DocHeading level={3} id="manifestpopup-icon" toc={true}>`icon`</DocHeading>
@@ -621,7 +621,7 @@ import PropertyBadge from "@components/PropertyBadge";
 
 Для runtime-таблицы [`SidebarMap`](/api/adnbn/sidebar#sidebarmap) используется отдельный публичный интерфейс [`SidebarMapEntry`](/api/adnbn/sidebar#sidebarmapentry). Его поле `label` сохраняет исходный текст или маркер локализации; перевод выполняется при [`changeSidebar()`](/api/adnbn/sidebar#changesidebar). Ниже описано применение полей билдером манифеста.
 
-```ts file="../../../../code/manifest/api/manifest-sidebar.ts" title="ManifestSidebar"
+```ts file="../../../../code/api/adnbn/manifest/contracts/manifest-sidebar.ts" title="ManifestSidebar"
 ```
 
 <DocHeading level={3} id="manifestsidebar-icon" toc={true}>`icon`</DocHeading>
@@ -648,7 +648,7 @@ import PropertyBadge from "@components/PropertyBadge";
 
 Описание страницы настроек для [`ManifestBuilder.setOptions()`](#manifestbuilder-setoptions). При использовании [`defineOptions`](/api/adnbn/options#defineoptions) Addon Bone формирует этот объект из выбранной точки входа автоматически: берёт путь созданного HTML и настройку [`OptionsConfig.openInTab`](/api/adnbn/options#optionsconfig-openintab).
 
-```ts file="../../../../code/manifest/api/manifest-options.ts" title="ManifestOptions"
+```ts file="../../../../code/api/adnbn/manifest/contracts/manifest-options.ts" title="ManifestOptions"
 ```
 
 <DocHeading level={3} id="manifestoptions-path" toc={true}>`path`</DocHeading>
@@ -669,7 +669,7 @@ import PropertyBadge from "@components/PropertyBadge";
 
 Замена одной встроенной страницы браузера.
 
-```ts file="../../../../code/manifest/api/manifest-override.ts" title="ManifestOverride"
+```ts file="../../../../code/api/adnbn/manifest/contracts/manifest-override.ts" title="ManifestOverride"
 ```
 
 <DocHeading level={3} id="manifestoverride-page" toc={true}>`page`</DocHeading>
@@ -690,7 +690,7 @@ import PropertyBadge from "@components/PropertyBadge";
 
 Идентификаторы встроенных страниц для замены.
 
-```ts file="../../../../code/manifest/api/manifest-override-page.ts" title="ManifestOverridePage"
+```ts file="../../../../code/api/adnbn/manifest/contracts/manifest-override-page.ts" title="ManifestOverridePage"
 ```
 
 | Значение | Страница |
@@ -707,7 +707,7 @@ import PropertyBadge from "@components/PropertyBadge";
 
 Путь sandbox-страницы в результате сборки.
 
-```ts file="../../../../code/manifest/api/manifest-sandbox.ts" title="ManifestSandbox"
+```ts file="../../../../code/api/adnbn/manifest/contracts/manifest-sandbox.ts" title="ManifestSandbox"
 ```
 
 Строка пути относительно корня расширения, например `"sandbox.html"`. Используется в [`addSandbox()`](#manifestbuilder-addsandbox) и [`appendSandboxes()`](#manifestbuilder-appendsandboxes).
@@ -720,7 +720,7 @@ import PropertyBadge from "@components/PropertyBadge";
 
 Карта размеров и путей одной группы иконок.
 
-```ts file="../../../../code/manifest/api/manifest-icon.ts" title="ManifestIcon"
+```ts file="../../../../code/api/adnbn/manifest/contracts/manifest-icon.ts" title="ManifestIcon"
 ```
 
 Ключ `Map` — размер иконки в пикселях, значение — путь к готовому файлу относительно корня расширения. Например, `new Map([[16, "icons/16.png"], [32, "icons/32.png"]])`.
@@ -733,7 +733,7 @@ import PropertyBadge from "@components/PropertyBadge";
 
 Реестр именованных групп иконок.
 
-```ts file="../../../../code/manifest/api/manifest-icons.ts" title="ManifestIcons"
+```ts file="../../../../code/api/adnbn/manifest/contracts/manifest-icons.ts" title="ManifestIcons"
 ```
 
 Ключ — имя группы, значение — [`ManifestIcon`](#manifesticon). Группа `default` служит запасной; если нет и её, билдер использует первую доступную группу.
@@ -748,7 +748,7 @@ import PropertyBadge from "@components/PropertyBadge";
 
 Имя разрешения браузерного API.
 
-```ts file="../../../../code/manifest/api/manifest-permission.ts" title="ManifestPermission"
+```ts file="../../../../code/api/adnbn/manifest/contracts/manifest-permission.ts" title="ManifestPermission"
 ```
 
 Алиас `chrome.runtime.ManifestPermission` из типов Chrome. Используется в [`addPermission()`](#manifestbuilder-addpermission) и [`ManifestPermissions`](#manifestpermissions). Например, `"storage"` или `"tabs"`.
@@ -761,7 +761,7 @@ import PropertyBadge from "@components/PropertyBadge";
 
 Набор обязательных API-разрешений.
 
-```ts file="../../../../code/manifest/api/manifest-permissions.ts" title="ManifestPermissions"
+```ts file="../../../../code/api/adnbn/manifest/contracts/manifest-permissions.ts" title="ManifestPermissions"
 ```
 
 `Set` с элементами [`ManifestPermission`](#manifestpermission). Используется в [`setPermissions()`](#manifestbuilder-setpermissions) и [`appendPermissions()`](#manifestbuilder-appendpermissions).
@@ -774,7 +774,7 @@ import PropertyBadge from "@components/PropertyBadge";
 
 Имя необязательного API-разрешения.
 
-```ts file="../../../../code/manifest/api/manifest-optional-permission.ts" title="ManifestOptionalPermission"
+```ts file="../../../../code/api/adnbn/manifest/contracts/manifest-optional-permission.ts" title="ManifestOptionalPermission"
 ```
 
 Алиас `chrome.runtime.ManifestOptionalPermission`. Используется в [`addOptionalPermission()`](#manifestbuilder-addoptionalpermission) и [`ManifestOptionalPermissions`](#manifestoptionalpermissions).
@@ -787,7 +787,7 @@ import PropertyBadge from "@components/PropertyBadge";
 
 Набор необязательных API-разрешений.
 
-```ts file="../../../../code/manifest/api/manifest-optional-permissions.ts" title="ManifestOptionalPermissions"
+```ts file="../../../../code/api/adnbn/manifest/contracts/manifest-optional-permissions.ts" title="ManifestOptionalPermissions"
 ```
 
 `Set` с элементами [`ManifestOptionalPermission`](#manifestoptionalpermission). Передаётся в [`setOptionalPermissions()`](#manifestbuilder-setoptionalpermissions) и [`appendOptionalPermissions()`](#manifestbuilder-appendoptionalpermissions).
@@ -800,7 +800,7 @@ import PropertyBadge from "@components/PropertyBadge";
 
 Набор шаблонов доступа к сайтам.
 
-```ts file="../../../../code/manifest/api/manifest-host-permissions.ts" title="ManifestHostPermissions"
+```ts file="../../../../code/api/adnbn/manifest/contracts/manifest-host-permissions.ts" title="ManifestHostPermissions"
 ```
 
 `Set<string>` с шаблонами вида `"https://example.com/*"`. Тип используется и для обязательных, и для необязательных host-разрешений; назначение задаёт выбранный метод билдера.
@@ -813,7 +813,7 @@ import PropertyBadge from "@components/PropertyBadge";
 
 Правило доступа к ресурсам расширения.
 
-```ts file="../../../../code/manifest/api/manifest-accessible-resource.ts" title="ManifestAccessibleResource"
+```ts file="../../../../code/api/adnbn/manifest/contracts/manifest-accessible-resource.ts" title="ManifestAccessibleResource"
 ```
 
 <DocHeading level={3} id="manifestaccessibleresource-resources" toc={true}>`resources`</DocHeading>
@@ -846,7 +846,7 @@ import PropertyBadge from "@components/PropertyBadge";
 
 Набор правил доступа к ресурсам.
 
-```ts file="../../../../code/manifest/api/manifest-accessible-resources.ts" title="ManifestAccessibleResources"
+```ts file="../../../../code/api/adnbn/manifest/contracts/manifest-accessible-resources.ts" title="ManifestAccessibleResources"
 ```
 
 `Set` с элементами [`ManifestAccessibleResource`](#manifestaccessibleresource). Принимается методами [`setAccessibleResource()`](#manifestbuilder-setaccessibleresource) и [`appendAccessibleResources()`](#manifestbuilder-appendaccessibleresources).
@@ -859,7 +859,7 @@ import PropertyBadge from "@components/PropertyBadge";
 
 Браузерные настройки в формате Addon Bone.
 
-```ts file="../../../../code/manifest/api/browser-specific.ts" title="BrowserSpecific"
+```ts file="../../../../code/api/adnbn/manifest/contracts/browser-specific.ts" title="BrowserSpecific"
 ```
 
 Используется в [`Config.specific`](/api/adnbn/configuration#config-specific), [`setSpecific()`](#manifestbuilder-setspecific) и [`mergeSpecific()`](#manifestbuilder-mergespecific). При генерации имена полей преобразуются из camelCase в формат `browser_specific_settings`.
@@ -888,7 +888,7 @@ import PropertyBadge from "@components/PropertyBadge";
 
 Настройки манифеста для Firefox.
 
-```ts file="../../../../code/manifest/api/gecko-specific.ts" title="GeckoSpecific"
+```ts file="../../../../code/api/adnbn/manifest/contracts/gecko-specific.ts" title="GeckoSpecific"
 ```
 
 Наследует [`VersionSpecific`](#versionspecific): `strictMinVersion` и `strictMaxVersion`. Собственные поля описаны ниже.
@@ -917,7 +917,7 @@ import PropertyBadge from "@components/PropertyBadge";
 
 Границы поддерживаемых версий браузера.
 
-```ts file="../../../../code/manifest/api/version-specific.ts" title="VersionSpecific"
+```ts file="../../../../code/api/adnbn/manifest/contracts/version-specific.ts" title="VersionSpecific"
 ```
 
 <DocHeading level={3} id="versionspecific-strictminversion" toc={true}>`strictMinVersion`</DocHeading>
@@ -938,7 +938,7 @@ import PropertyBadge from "@components/PropertyBadge";
 
 Обязательные и необязательные категории данных Firefox.
 
-```ts file="../../../../code/manifest/api/data-collection-permissions.ts" title="DataCollectionPermissions"
+```ts file="../../../../code/api/adnbn/manifest/contracts/data-collection-permissions.ts" title="DataCollectionPermissions"
 ```
 
 Принимает члены [`DataCollectionPermission`](#datacollectionpermission) или соответствующие строки. Генератор удаляет повторы и неизвестные значения, сортирует списки и исключает из необязательных категорий те, которые уже объявлены обязательными.
@@ -963,7 +963,7 @@ import PropertyBadge from "@components/PropertyBadge";
 
 Идентификаторы категорий данных для Firefox.
 
-```ts file="../../../../code/manifest/api/data-collection-permission.ts" title="DataCollectionPermission"
+```ts file="../../../../code/api/adnbn/manifest/contracts/data-collection-permission.ts" title="DataCollectionPermission"
 ```
 
 | Член enum | Строковое значение | Категория |

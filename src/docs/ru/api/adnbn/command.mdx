@@ -28,7 +28,7 @@ import PropertyBadge from "@components/PropertyBadge";
 
 Принимает объявление команды для `export default` точки входа Command.
 
-```ts file="../../../../code/entrypoints/command/api/define-command.ts" title="defineCommand"
+```ts file="../../../../code/api/adnbn/command/contracts/define-command.ts" title="defineCommand"
 ```
 
 **Параметр:** `options` — [`CommandDefinition`](#commanddefinition). **Обязательный параметр.** В объекте обязателен обработчик `execute`; имя можно опустить.
@@ -41,7 +41,7 @@ import PropertyBadge from "@components/PropertyBadge";
 
 Объявляет команду кнопки расширения. Её сочетание клавиш выполняет действие кнопки; обработчик подписывается на событие нажатия кнопки, а не на обычное событие команды.
 
-```ts file="../../../../code/entrypoints/command/api/define-execute-action-command.ts" title="defineExecuteActionCommand"
+```ts file="../../../../code/api/adnbn/command/contracts/define-execute-action-command.ts" title="defineExecuteActionCommand"
 ```
 
 **Параметр:** `options` — [`ExecuteActionCommandDefinition`](#executeactioncommanddefinition). **Обязательный параметр.** Принимает опции команды, кроме `name`.
@@ -56,7 +56,7 @@ import PropertyBadge from "@components/PropertyBadge";
 
 Объект объявления команды с обязательным обработчиком и опциями сборки.
 
-```ts file="../../../../code/entrypoints/command/api/command-definition.ts" title="CommandDefinition"
+```ts file="../../../../code/api/adnbn/command/contracts/command-definition.ts" title="CommandDefinition"
 ```
 
 Все унаследованные поля можно опустить по контракту TypeScript. При этом сборка требует хотя бы одно из полей `defaultKey`, `windowsKey`, `macKey`, `chromeosKey`, `linuxKey`. Это условие действует и для команды кнопки расширения. Без клавиш сборка завершается ошибкой `At least one suggested key must be defined`.
@@ -69,7 +69,7 @@ import PropertyBadge from "@components/PropertyBadge";
 
 <DocHeading level={3} id="commandoptions" toc={false}>Унаследованные опции</DocHeading>
 
-```ts file="../../../../code/entrypoints/command/api/command-options.ts" title="CommandEntrypointOptions"
+```ts file="../../../../code/api/adnbn/command/contracts/command-options.ts" title="CommandEntrypointOptions"
 ```
 
 `CommandOptions` и `CommandEntrypointOptions` — внутренние алиасы; напрямую из `adnbn` они не экспортируются. `Partial` делает необязательными все поля [`CommandConfig`](#commandconfig), включая `name`, и общие фильтры [`EntrypointOptions`](/api/adnbn/entrypoint-options#entrypointoptions).
@@ -82,7 +82,7 @@ import PropertyBadge from "@components/PropertyBadge";
 
 Опции [`defineExecuteActionCommand`](#defineexecuteactioncommand).
 
-```ts file="../../../../code/entrypoints/command/api/execute-action-command-definition.ts" title="ExecuteActionCommandDefinition"
+```ts file="../../../../code/api/adnbn/command/contracts/execute-action-command-definition.ts" title="ExecuteActionCommandDefinition"
 ```
 
 Сохраняет обязательный `execute` и остальные опции [`CommandDefinition`](#commanddefinition), но исключает `name`: имя назначает функция объявления. Условие о наличии хотя бы одного сочетания клавиш также сохраняется.
@@ -93,7 +93,7 @@ import PropertyBadge from "@components/PropertyBadge";
 
 Обработчик поля [`CommandDefinition.execute`](#commanddefinition-execute).
 
-```ts file="../../../../code/entrypoints/command/api/command-execute.ts" title="CommandExecute"
+```ts file="../../../../code/api/adnbn/command/contracts/command-execute.ts" title="CommandExecute"
 ```
 
 | Параметр | Тип | Значение при вызове |
@@ -115,7 +115,7 @@ import PropertyBadge from "@components/PropertyBadge";
 
 Настройки команды, используемые при формировании манифеста. В этом интерфейсе `name` обязателен; в объекте [`CommandDefinition`](#commanddefinition) его делает необязательным `Partial`.
 
-```ts file="../../../../code/entrypoints/command/api/command-config.ts" title="CommandConfig"
+```ts file="../../../../code/api/adnbn/command/contracts/command-config.ts" title="CommandConfig"
 ```
 
 Унаследованные `persistent` и поля разрешений описаны в [`BackgroundConfig`](/api/adnbn/background#backgroundconfig) и [`PermissionsOptions`](/api/adnbn/permissions#permissionsoptions).
@@ -198,7 +198,7 @@ import PropertyBadge from "@components/PropertyBadge";
 
 Частичное объявление команды до проверки обязательных полей.
 
-```ts file="../../../../code/entrypoints/command/api/command-unresolved-definition.ts" title="CommandUnresolvedDefinition"
+```ts file="../../../../code/api/adnbn/command/contracts/command-unresolved-definition.ts" title="CommandUnresolvedDefinition"
 ```
 
 Делает необязательными все поля [`CommandDefinition`](#commanddefinition), включая `execute`. Тип экспортируется из `adnbn`, но не заменяет контракт [`defineCommand`](#definecommand): функция объявления по-прежнему требует `execute`.
@@ -211,7 +211,7 @@ import PropertyBadge from "@components/PropertyBadge";
 
 Зарезервированное имя команды кнопки расширения.
 
-```ts file="../../../../code/entrypoints/command/api/command-execute-action-name.ts" title="CommandExecuteActionName"
+```ts file="../../../../code/api/adnbn/command/contracts/command-execute-action-name.ts" title="CommandExecuteActionName"
 ```
 
 [`defineExecuteActionCommand`](#defineexecuteactioncommand) присваивает это значение автоматически. Его также можно передать в `name` при объявлении через [`defineCommand`](#definecommand).

@@ -25,7 +25,7 @@ import PropertyBadge from "@components/PropertyBadge";
 
 Принимает объявление сервиса для `export default` точки входа Service.
 
-```ts file="../../../../code/entrypoints/service/api/define-service.ts" title="defineService"
+```ts file="../../../../code/api/adnbn/service/contracts/define-service.ts" title="defineService"
 ```
 
 **Параметр:** `options` — [`ServiceDefinition<T>`](#servicedefinition). **Обязательный параметр.** В объекте обязателен `init`; `main`, имя и опции сборки можно опустить.
@@ -40,7 +40,7 @@ import PropertyBadge from "@components/PropertyBadge";
 
 Возвращает proxy для обращения к сервису из content script, popup, offscreen и других контекстов расширения вне background.
 
-```ts file="../../../../code/entrypoints/service/api/get-service.ts" title="getService"
+```ts file="../../../../code/api/adnbn/service/contracts/get-service.ts" title="getService"
 ```
 
 **Параметр:** `name` — [`ServiceName`](/api/service/index#servicename). **Обязательный параметр.** Имя включённого в сборку сервиса. Параметр типа `N` сохраняет конкретное имя, чтобы выбрать соответствующий контракт.
@@ -63,7 +63,7 @@ import PropertyBadge from "@components/PropertyBadge";
 
 Объявление сервиса, которое принимает и возвращает [`defineService`](#defineservice). Тип объединяет общий контракт инициализации транспорта с опциями сервиса.
 
-```ts file="../../../../code/entrypoints/service/api/service-definition.ts" title="ServiceDefinition"
+```ts file="../../../../code/api/adnbn/service/contracts/service-definition.ts" title="ServiceDefinition"
 ```
 
 <span id="transportdefinition" />
@@ -106,7 +106,7 @@ import PropertyBadge from "@components/PropertyBadge";
 
 Внутренний тип настроек сервиса. Не экспортируется напрямую ни из `adnbn`, ни из `adnbn/service`.
 
-```ts file="../../../../code/entrypoints/service/api/service-config.ts" title="ServiceConfig"
+```ts file="../../../../code/api/adnbn/service/contracts/service-config.ts" title="ServiceConfig"
 ```
 
 У этого алиаса нет собственных полей: `name` приходит из [`TransportConfig`](/api/transport/index#transportconfig), а настройки фонового контекста — из [`BackgroundConfig`](/api/adnbn/background#backgroundconfig). Поле `persistent` описано в [`BackgroundConfig`](/api/adnbn/background#backgroundconfig-persistent), разрешения — в [`PermissionsOptions`](/api/adnbn/permissions#permissionsoptions).
@@ -125,7 +125,7 @@ import PropertyBadge from "@components/PropertyBadge";
 
 <DocHeading level={3} id="serviceoptions" toc={false}>Состав опций</DocHeading>
 
-```ts file="../../../../code/entrypoints/service/api/service-options.ts" title="ServiceOptions и ServiceEntrypointOptions"
+```ts file="../../../../code/api/adnbn/service/contracts/service-options.ts" title="ServiceOptions и ServiceEntrypointOptions"
 ```
 
 [`ServiceConfig`](#serviceconfig) содержит имя и фоновые настройки. [`EntrypointOptions`](/api/adnbn/entrypoint-options#entrypointoptions) добавляет общие фильтры включения файла в сборку. `ServiceEntrypointOptions` делает все эти поля необязательными в объявлении; обязательным остаётся `init` из [`TransportDefinition`](/api/transport/index#transportdefinition).

@@ -32,7 +32,7 @@ import PropertyBadge from "@components/PropertyBadge";
 
 Объявление HTML-документа с опциями сборки и отображения.
 
-```ts file="../../../../code/view/api/view-definition.ts" title="ViewDefinition"
+```ts file="../../../../code/api/adnbn/view/contracts/view-definition.ts" title="ViewDefinition"
 ```
 
 **Параметр типа:** `T extends ViewConfig` — опции, которые получают обработчики отображения. Ограничение [`ViewConfig`](#viewconfig) задаёт `as`, `title` и `template`; конкретная точка входа может добавлять другие поля. Например, Page использует [`PageProps`](/api/adnbn/page#pageprops), Popup — [`PopupProps`](/api/adnbn/popup#popupprops), Sidebar — [`SidebarProps`](/api/adnbn/sidebar#sidebarprops), Options — [`OptionsProps`](/api/adnbn/options#optionsprops), а переопределения — [`NewtabProps`](/api/adnbn/override#newtabprops), [`BookmarksProps`](/api/adnbn/override#bookmarksprops) и [`HistoryProps`](/api/adnbn/override#historyprops).
@@ -47,7 +47,7 @@ import PropertyBadge from "@components/PropertyBadge";
 
 Статические настройки документа, которые Addon Bone читает при сборке.
 
-```ts file="../../../../code/view/api/view-options.ts" title="ViewOptions"
+```ts file="../../../../code/api/adnbn/view/contracts/view-options.ts" title="ViewOptions"
 ```
 
 | Контракт | Что добавляет |
@@ -66,7 +66,7 @@ import PropertyBadge from "@components/PropertyBadge";
 
 Функция поля [`render`](#viewrenderdefinition-render).
 
-```ts file="../../../../code/view/api/view-render-handler.ts" title="ViewRenderHandler"
+```ts file="../../../../code/api/adnbn/view/contracts/view-render-handler.ts" title="ViewRenderHandler"
 ```
 
 **Параметр:** `props` — `T`, опции текущего документа. В обычном View это объект объявления без `render` и `container`. Вычисленные при сборке значения, например итоговый HTML-путь или автоматически выбранный заголовок, в props не подставляются. Транспортные точки входа дополнительно отделяют опции своего API от опций отображения.
@@ -81,7 +81,7 @@ import PropertyBadge from "@components/PropertyBadge";
 
 Объединяет значения, поддерживаемые адаптерами отображения.
 
-```ts file="../../../../code/view/api/view-render-value.ts" title="ViewRenderValue"
+```ts file="../../../../code/api/adnbn/view/contracts/view-render-value.ts" title="ViewRenderValue"
 ```
 
 Параметр `T extends ViewConfig` задаёт props для React-компонента. Ветви объединения — [`ViewVanillaRenderValue`](#viewvanillarendervalue) и [`ViewReactRenderValue<T>`](#viewreactrendervalue).
@@ -94,7 +94,7 @@ import PropertyBadge from "@components/PropertyBadge";
 
 Результат Vanilla-отрисовки или готовое значение поля `render`.
 
-```ts file="../../../../code/view/api/view-vanilla-render-value.ts" title="ViewVanillaRenderValue"
+```ts file="../../../../code/api/adnbn/view/contracts/view-vanilla-render-value.ts" title="ViewVanillaRenderValue"
 ```
 
 | Значение | Поведение Vanilla |
@@ -112,7 +112,7 @@ import PropertyBadge from "@components/PropertyBadge";
 
 React-узел или компонент, который получает props страницы.
 
-```ts file="../../../../code/view/api/view-react-render-value.ts" title="ViewReactRenderValue"
+```ts file="../../../../code/api/adnbn/view/contracts/view-react-render-value.ts" title="ViewReactRenderValue"
 ```
 
 `ReactNode` — тип, импортируемый из пакета `react`. Из него исключён `Promise`, поэтому контракт допускает синхронные значения: JSX-элементы, фрагменты, порталы, текст, числа и коллекции React-узлов. Функциональная ветвь — [`ViewRenderReactComponent<T>`](#viewrenderreactcomponent).
@@ -127,7 +127,7 @@ React-адаптер доступен во всех перечисленных �
 
 Синхронный клиентский React-компонент для поля `render`.
 
-```ts file="../../../../code/view/api/view-render-react-component.ts" title="ViewRenderReactComponent"
+```ts file="../../../../code/api/adnbn/view/contracts/view-render-react-component.ts" title="ViewRenderReactComponent"
 ```
 
 **Параметр:** `props` — `T extends ViewConfig`, опции текущей страницы. **Результат:** `ReactNode` без `Promise`.
@@ -140,7 +140,7 @@ React-адаптер доступен во всех перечисленных �
 
 Общие настройки выходного документа. Внутренний интерфейс: напрямую из `adnbn` не экспортируется, но входит в публичный [`ViewOptions`](#viewoptions).
 
-```ts file="../../../../code/view/api/view-config.ts" title="ViewConfig"
+```ts file="../../../../code/api/adnbn/view/contracts/view-config.ts" title="ViewConfig"
 ```
 
 <DocHeading level={3} id="viewconfig-as" toc={true}>`as`</DocHeading>
@@ -173,7 +173,7 @@ React-адаптер доступен во всех перечисленных �
 
 Общий контракт содержимого и контейнера. Внутренний интерфейс: напрямую из `adnbn` не экспортируется. Включён в [`ViewDefinition`](#viewdefinition), а также используется объявлениями [`OffscreenDefinition`](/api/adnbn/offscreen#offscreendefinition) и [`SandboxDefinition`](/api/adnbn/sandbox#sandboxdefinition).
 
-```ts file="../../../../code/view/api/view-render-definition.ts" title="ViewRenderDefinition"
+```ts file="../../../../code/api/adnbn/view/contracts/view-render-definition.ts" title="ViewRenderDefinition"
 ```
 
 <DocHeading level={3} id="viewrenderdefinition-render" toc={true}>`render`</DocHeading>
@@ -200,7 +200,7 @@ React-адаптер доступен во всех перечисленных �
 
 Имя HTML-тега для создания контейнера. Внутренний тип: не экспортируется из `adnbn`.
 
-```ts file="../../../../code/view/api/view-container-tag.ts" title="ViewContainerTag"
+```ts file="../../../../code/api/adnbn/view/contracts/view-container-tag.ts" title="ViewContainerTag"
 ```
 
 Принимает имена из стандартного `HTMLElementTagNameMap`, кроме `html` и `body`, например `"div"`, `"main"` или `"section"`. Произвольный селектор и имя пользовательского элемента в этот тип не входят. Для собственного элемента используйте [`ViewContainerFactory`](#viewcontainerfactory).
@@ -211,7 +211,7 @@ React-адаптер доступен во всех перечисленных �
 
 Тег контейнера и свойства соответствующего DOM-элемента. Внутренний тип: не экспортируется из `adnbn`.
 
-```ts file="../../../../code/view/api/view-container-options.ts" title="ViewContainerOptions"
+```ts file="../../../../code/api/adnbn/view/contracts/view-container-options.ts" title="ViewContainerOptions"
 ```
 
 <DocHeading level={3} id="viewcontaineroptions-tagname" toc={true}>`tagName`</DocHeading>
@@ -228,7 +228,7 @@ React-адаптер доступен во всех перечисленных �
 
 Функция подготовки контейнера. Внутренний тип: не экспортируется из `adnbn`.
 
-```ts file="../../../../code/view/api/view-container-factory.ts" title="ViewContainerFactory"
+```ts file="../../../../code/api/adnbn/view/contracts/view-container-factory.ts" title="ViewContainerFactory"
 ```
 
 **Параметр:** `props` — `T extends ViewConfig`, тот же объект опций, который передаётся в отображение текущего документа.

@@ -27,7 +27,7 @@ import PropertyBadge from "@components/PropertyBadge";
 
 Связывает имена Sandbox с исходными типами их API.
 
-```ts file="../../../../code/sandbox/api/sandbox-registry.ts" title="SandboxRegistry"
+```ts file="../../../../code/api/sandbox/contracts/sandbox-registry.ts" title="SandboxRegistry"
 ```
 
 В пакете интерфейс пуст. При подготовке проекта Addon Bone создаёт `.adnbn/sandbox.d.ts`, который дополняет `adnbn/sandbox` контрактами включённых точек входа. Подключите сгенерированные декларации к TypeScript-проекту. Тип также реэкспортируется из `adnbn`.
@@ -40,7 +40,7 @@ import PropertyBadge from "@components/PropertyBadge";
 
 Имена, доступные в типизированном API.
 
-```ts file="../../../../code/sandbox/api/sandbox-name.ts" title="SandboxName"
+```ts file="../../../../code/api/sandbox/contracts/sandbox-name.ts" title="SandboxName"
 ```
 
 Выбирает строковые ключи [`SandboxRegistry`](#sandboxregistry). Без деклараций приложения результат — `never`; произвольная строка не становится допустимым именем. Тип также доступен из `adnbn` и используется параметром [`getSandbox`](/api/adnbn/sandbox#getsandbox).
@@ -51,7 +51,7 @@ import PropertyBadge from "@components/PropertyBadge";
 
 Контракт удалённого доступа к API по ключу реестра.
 
-```ts file="../../../../code/sandbox/api/sandbox-proxy-target.ts" title="SandboxProxyTarget"
+```ts file="../../../../code/api/sandbox/contracts/sandbox-proxy-target.ts" title="SandboxProxyTarget"
 ```
 
 `N` — ключ [`SandboxRegistry`](#sandboxregistry). [`RpcAsyncProxy`](/api/transport/index#rpcasyncproxy) превращает методы в асинхронные вызовы, простые свойства — в функции чтения, а объектные свойства — во вложенные proxy. Тип также экспортируется из `adnbn`.
@@ -68,7 +68,7 @@ import PropertyBadge from "@components/PropertyBadge";
 
 Создаёт proxy с явно заданными именем и параметрами iframe. Для обычного обращения используйте [`getSandbox` из `adnbn`](/api/adnbn/sandbox#getsandbox): он берёт параметры из таблицы сборки.
 
-```ts file="../../../../code/sandbox/api/proxy-sandbox.ts" title="ProxySandbox"
+```ts file="../../../../code/api/sandbox/contracts/proxy-sandbox.ts" title="ProxySandbox"
 ```
 
 Показана собственная публичная часть класса. `ProxyTransport` — внутренний базовый класс. Параметр `N extends` [`TransportName`](/api/transport/index#transportname) допускает строковое имя и сам не ограничивается реестром приложения. `T` задаёт тип возвращаемого proxy; по умолчанию это [`RpcAsyncProxy`](/api/transport/index#rpcasyncproxy) от внутреннего [`TransportDictionary`](/api/transport/index#transportdictionary). Для имени приложения задавайте `T` как [`SandboxProxyTarget<N>`](#sandboxproxytarget).
@@ -99,7 +99,7 @@ import PropertyBadge from "@components/PropertyBadge";
 
 Регистрирует API и обработчик сообщений внутри Sandbox вручную. В обычной точке входа Addon Bone делает это после [`init`](/api/adnbn/sandbox#sandboxdefinition-init).
 
-```ts file="../../../../code/sandbox/api/register-sandbox.ts" title="RegisterSandbox"
+```ts file="../../../../code/api/sandbox/contracts/register-sandbox.ts" title="RegisterSandbox"
 ```
 
 Показана собственная публичная часть класса. Внутренний `RegisterTransport` предоставляет `register` и `destroy`. Параметры типов: `N extends` [`TransportName`](/api/transport/index#transportname) — имя; `T extends object` — экземпляр; `A extends any[]` — кортеж аргументов фабрики, по умолчанию `[]`. Значение `T` по умолчанию берётся из [`TransportDictionary`](/api/transport/index#transportdictionary).

@@ -30,7 +30,7 @@ import PropertyBadge from "@components/PropertyBadge";
 
 Возвращает зарегистрированный экземпляр API внутри текущего Offscreen-документа.
 
-```ts file="../../../../code/offscreen/api/get-offscreen.ts" title="getOffscreen"
+```ts file="../../../../code/api/offscreen/contracts/get-offscreen.ts" title="getOffscreen"
 ```
 
 **Параметр:** `name` — [`OffscreenName`](#offscreenname). **Обязательный параметр.** Параметр типа `N` сохраняет конкретное имя, чтобы выбрать его контракт.
@@ -53,7 +53,7 @@ import PropertyBadge from "@components/PropertyBadge";
 
 Связывает имена Offscreen с исходными типами их API.
 
-```ts file="../../../../code/offscreen/api/offscreen-registry.ts" title="OffscreenRegistry"
+```ts file="../../../../code/api/offscreen/contracts/offscreen-registry.ts" title="OffscreenRegistry"
 ```
 
 В библиотеке интерфейс пустой. Сборка создаёт `.adnbn/offscreen.d.ts` с дополнением `declare module "adnbn/offscreen"`. Подключите сгенерированный файл к TypeScript-проекту потребителя, чтобы имена и контракты стали доступны.
@@ -68,7 +68,7 @@ import PropertyBadge from "@components/PropertyBadge";
 
 Строковые ключи [`OffscreenRegistry`](#offscreenregistry).
 
-```ts file="../../../../code/offscreen/api/offscreen-name.ts" title="OffscreenName"
+```ts file="../../../../code/api/offscreen/contracts/offscreen-name.ts" title="OffscreenName"
 ```
 
 Используется обеими функциями `getOffscreen`: из `adnbn` и из `adnbn/offscreen`. Пока реестр не дополнен сгенерированными или пользовательскими декларациями, тип равен `never`, и TypeScript не разрешает передать строковое имя.
@@ -81,7 +81,7 @@ import PropertyBadge from "@components/PropertyBadge";
 
 Исходный контракт API, выбранного из реестра.
 
-```ts file="../../../../code/offscreen/api/offscreen-target.ts" title="OffscreenTarget"
+```ts file="../../../../code/api/offscreen/contracts/offscreen-target.ts" title="OffscreenTarget"
 ```
 
 `N` — ключ [`OffscreenRegistry`](#offscreenregistry). Общий [`TransportTarget`](/api/transport/index#transporttarget) возвращает тип по этому ключу без преобразования членов. Это результат прямого [`getOffscreen`](#getoffscreen).
@@ -92,7 +92,7 @@ import PropertyBadge from "@components/PropertyBadge";
 
 Контракт выбранного API для удалённых вызовов.
 
-```ts file="../../../../code/offscreen/api/offscreen-proxy-target.ts" title="OffscreenProxyTarget"
+```ts file="../../../../code/api/offscreen/contracts/offscreen-proxy-target.ts" title="OffscreenProxyTarget"
 ```
 
 Выбирает тип из [`OffscreenRegistry`](#offscreenregistry) и применяет [`TransportProxyTarget`](/api/transport/index#transportproxytarget). Методы возвращают promise, простые свойства становятся функциями чтения, вложенные объекты сохраняют вложенный доступ.
@@ -107,7 +107,7 @@ import PropertyBadge from "@components/PropertyBadge";
 
 Создаёт proxy с явно заданными параметрами документа. Для обычных вызовов используйте [`getOffscreen` из `adnbn`](/api/adnbn/offscreen#getoffscreen): он выбирает параметры из таблицы сборки.
 
-```ts file="../../../../code/offscreen/api/proxy-offscreen.ts" title="ProxyOffscreen"
+```ts file="../../../../code/api/offscreen/contracts/proxy-offscreen.ts" title="ProxyOffscreen"
 ```
 
 Показана публичная часть объявления. `ProxyTransport` — внутренний базовый класс. Алиас `CreateParameters` обозначает платформенные параметры; напрямую из `adnbn/offscreen` он не экспортируется.
@@ -138,7 +138,7 @@ import PropertyBadge from "@components/PropertyBadge";
 
 Регистрирует API и обработчик сообщений внутри Offscreen-документа вручную. Для обычной точки входа эту регистрацию выполняет Addon Bone после [`init`](/api/adnbn/offscreen#offscreendefinition-init).
 
-```ts file="../../../../code/offscreen/api/register-offscreen.ts" title="RegisterOffscreen"
+```ts file="../../../../code/api/offscreen/contracts/register-offscreen.ts" title="RegisterOffscreen"
 ```
 
 Показана публичная часть объявления. Внутренний `RegisterTransport` предоставляет методы `register` и `destroy`.
@@ -177,7 +177,7 @@ import PropertyBadge from "@components/PropertyBadge";
 
 Фоновый обработчик запросов на создание скрытых документов в Manifest V2 и Firefox. Addon Bone подключает и запускает его автоматически, если в такой сборке есть Offscreen-точки входа.
 
-```ts file="../../../../code/offscreen/api/offscreen-background.ts" title="OffscreenBackground"
+```ts file="../../../../code/api/offscreen/contracts/offscreen-background.ts" title="OffscreenBackground"
 ```
 
 `OffscreenBridge` — внутренний базовый класс; он не экспортируется напрямую из `adnbn/offscreen`. Показан собственный публичный метод `build`. Конструктор вызывается без аргументов.

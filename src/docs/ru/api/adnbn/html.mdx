@@ -30,7 +30,7 @@ Addon Bone использует контракты [`@rspackjs/plugin-html-tags`
 
 Настройки добавления тегов через [`config.html`](/api/adnbn/configuration#config-html). Применяются к HTML, который уже создаёт сборка; сами документы эта опция не создаёт.
 
-```ts file="../../../../code/html/api/html-options.ts" title="HtmlOptions"
+```ts file="../../../../code/api/adnbn/html/contracts/html-options.ts" title="HtmlOptions"
 ```
 
 Сохраняет поля [`HtmlTagsPluginOptions`](#htmltagspluginoptions), но сужает `metas` до объекта или массива объектов. Общие настройки порядка и путей приходят из [`CommonOptions`](#commonoptions). Функции преобразования путей разрешены в `config.html`.
@@ -51,11 +51,11 @@ Addon Bone использует контракты [`@rspackjs/plugin-html-tags`
 
 <Tabs>
     <Tab label="Код Page">
-```ts file="../../../../code/entrypoints/page/api/html/metas.page.ts" title="src/preview.page.ts"
+```ts file="../../../../code/api/adnbn/html/examples/metas/metas.page.ts" title="src/preview.page.ts"
 ```
     </Tab>
     <Tab label="Сгенерированный HTML">
-```html file="../../../../code/entrypoints/page/api/html/metas.generated.html" title="preview.html"
+```html file="../../../../code/api/adnbn/html/examples/metas/metas.generated.html" title="preview.html"
 ```
     </Tab>
 </Tabs>
@@ -66,7 +66,7 @@ Addon Bone использует контракты [`@rspackjs/plugin-html-tags`
 
 Вариант [`HtmlOptions`](#htmloptions) для статического чтения из файла точки входа. Входит в [`ViewOptions`](/api/adnbn/view#viewoptions); поля `links`, `scripts`, `tags` и `metas` располагаются непосредственно в объекте [`definePage`](/api/adnbn/page#definepage), [`definePopup`](/api/adnbn/popup#definepopup), [`defineSidebar`](/api/adnbn/sidebar#definesidebar) и других функций объявления.
 
-```ts file="../../../../code/html/api/html-entrypoint-options.ts" title="HtmlEntrypointOptions"
+```ts file="../../../../code/api/adnbn/html/contracts/html-entrypoint-options.ts" title="HtmlEntrypointOptions"
 ```
 
 Внутренний [`HtmlStaticOptions<T>`](#htmlstaticoptions) рекурсивно исключает функции. Поэтому `hash` и `publicPath` здесь принимают только `boolean | string`, а `addHash` и `addPublicPath` задать нельзя, в том числе внутри отдельного тега. Для callback-функций используйте `config.html`.
@@ -85,7 +85,7 @@ Addon Bone использует контракты [`@rspackjs/plugin-html-tags`
 
 Публичный алиас внешнего `MetaTagOptions`. Описывает одну запись в [`metas`](#htmloptions-metas). Ниже показаны исходный контракт и алиас Addon Bone:
 
-```ts file="../../../../code/html/api/html-meta-tag-options.ts" title="HtmlMetaTagOptions"
+```ts file="../../../../code/api/adnbn/html/contracts/html-meta-tag-options.ts" title="HtmlMetaTagOptions"
 ```
 
 Наследует [`BaseTagOptions`](#basetagoptions): обработку пути, `sourcePath` и glob-настройки. Поле `append` не управляет размещением метатегов: они добавляются в конец текущего списка тегов `<head>`.
@@ -110,7 +110,7 @@ Addon Bone использует контракты [`@rspackjs/plugin-html-tags`
 
 Синхронная функция преобразования пути ресурса с hash сборки. `AddHashFunction` — исходное имя типа в `@rspackjs/plugin-html-tags`.
 
-```ts file="../../../../code/html/api/html-hash-handler.ts" title="HtmlHashHandler"
+```ts file="../../../../code/api/adnbn/html/contracts/html-hash-handler.ts" title="HtmlHashHandler"
 ```
 
 **Параметры:** `assetPath` — текущий путь после обработки public path; `hash` — hash компиляции, строка. **Результат:** полный путь ресурса, строка; `Promise` не поддерживается.
@@ -119,7 +119,7 @@ Addon Bone использует контракты [`@rspackjs/plugin-html-tags`
 
 Например, этот callback добавляет параметр `build`, сохраняя уже существующие параметры URL. Файл `assets/print.css` берётся из примера [`links`](#htmltagspluginoptions-links); итоговая ссылка имеет вид `assets/print.css?build=…`, где значение зависит от сборки.
 
-```ts file="../../../../code/html/api/examples/hash-handler.config.ts" title="adnbn.config.ts"
+```ts file="../../../../code/api/adnbn/html/examples/hash-handler/hash-handler.config.ts" title="adnbn.config.ts"
 ```
 
 ## `HtmlPublicPathHandler`
@@ -128,7 +128,7 @@ Addon Bone использует контракты [`@rspackjs/plugin-html-tags`
 
 Синхронная функция преобразования пути перед добавлением hash. `AddPublicPathFunction` — исходное имя типа в `@rspackjs/plugin-html-tags`.
 
-```ts file="../../../../code/html/api/html-public-path-handler.ts" title="HtmlPublicPathHandler"
+```ts file="../../../../code/api/adnbn/html/contracts/html-public-path-handler.ts" title="HtmlPublicPathHandler"
 ```
 
 **Параметры:** `assetPath` — путь тега до добавления префикса; `publicPath` — public path, переданный генератором HTML. **Результат:** полный путь ресурса, строка; `Promise` не поддерживается.
@@ -141,7 +141,7 @@ Addon Bone использует контракты [`@rspackjs/plugin-html-tags`
 
 Внутренний вспомогательный тип Addon Bone. Напрямую из `adnbn` не экспортируется; для пользовательских аннотаций используйте [`HtmlEntrypointOptions`](#htmlentrypointoptions).
 
-```ts file="../../../../code/html/api/html-static-options.ts" title="HtmlStaticOptions"
+```ts file="../../../../code/api/adnbn/html/contracts/html-static-options.ts" title="HtmlStaticOptions"
 ```
 
 Преобразует функции в `never`, рекурсивно обрабатывает элементы массивов и свойства объектов, а остальные значения сохраняет. Поэтому ограничения статических HTML-опций действуют и на вложенные записи тегов.
@@ -152,7 +152,7 @@ Addon Bone использует контракты [`@rspackjs/plugin-html-tags`
 
 Внешний интерфейс из `@rspackjs/plugin-html-tags`, на котором основан [`HtmlOptions`](#htmloptions). Из `adnbn` под этим именем не экспортируется. Наследует [`CommonOptions`](#commonoptions).
 
-```ts file="../../../../code/html/api/html-tags-plugin-options.ts" title="HtmlTagsPluginOptions"
+```ts file="../../../../code/api/adnbn/html/contracts/html-tags-plugin-options.ts" title="HtmlTagsPluginOptions"
 ```
 
 В исходном интерфейсе `metas` допускает строки. В контракте Addon Bone это поле заменено на [`HtmlOptions.metas`](#htmloptions-metas), где разрешены только объекты и массивы объектов.
@@ -179,19 +179,19 @@ Addon Bone использует контракты [`@rspackjs/plugin-html-tags`
 
 <Tabs>
     <Tab label="Код Page">
-```ts file="../../../../code/entrypoints/page/api/html/assets.page.ts" title="src/preview.page.ts"
+```ts file="../../../../code/api/adnbn/html/examples/assets/assets.page.ts" title="src/preview.page.ts"
 ```
     </Tab>
     <Tab label="Готовый CSS">
-```css file="../../../../code/entrypoints/page/api/html/print.css" title="assets/print.css"
+```css file="../../../../code/api/adnbn/html/examples/assets/print.css" title="assets/print.css"
 ```
     </Tab>
     <Tab label="Готовый JavaScript">
-```js file="../../../../code/entrypoints/page/api/html/init.js" title="assets/init.js"
+```js file="../../../../code/api/adnbn/html/examples/assets/init.js" title="assets/init.js"
 ```
     </Tab>
     <Tab label="Сгенерированный HTML">
-```html file="../../../../code/entrypoints/page/api/html/assets.generated.html" title="preview.html"
+```html file="../../../../code/api/adnbn/html/examples/assets/assets.generated.html" title="preview.html"
 ```
     </Tab>
 </Tabs>
@@ -214,11 +214,11 @@ Addon Bone использует контракты [`@rspackjs/plugin-html-tags`
 
 <Tabs>
     <Tab label="Конфигурация">
-```ts file="../../../../code/html/api/examples/file-filter.config.ts" title="adnbn.config.ts"
+```ts file="../../../../code/api/adnbn/html/examples/file-filter/file-filter.config.ts" title="adnbn.config.ts"
 ```
     </Tab>
     <Tab label="Сгенерированный HTML">
-```html file="../../../../code/html/api/examples/file-filter.generated.html" title="preview.html"
+```html file="../../../../code/api/adnbn/html/examples/file-filter/file-filter.generated.html" title="preview.html"
 ```
     </Tab>
 </Tabs>
@@ -247,7 +247,7 @@ Addon Bone использует контракты [`@rspackjs/plugin-html-tags`
 
 Внешний контракт общих опций из `@rspackjs/plugin-html-tags`; из `adnbn` напрямую не экспортируется. Используется объектом [`HtmlOptions`](#htmloptions) и отдельными записями через [`BaseTagOptions`](#basetagoptions).
 
-```ts file="../../../../code/html/api/common-options.ts" title="CommonOptions"
+```ts file="../../../../code/api/adnbn/html/contracts/common-options.ts" title="CommonOptions"
 ```
 
 Настройки отдельного тега переопределяют соответствующие настройки общего объекта. Логическое `true` включает текущий обработчик и не сбрасывает унаследованную функцию преобразования. Сначала преобразуется public path, затем добавляется hash. В статическом [`HtmlEntrypointOptions`](#htmlentrypointoptions) функциональные значения этих полей исключены.
@@ -277,11 +277,11 @@ Addon Bone использует контракты [`@rspackjs/plugin-html-tags`
 
 <Tabs>
     <Tab label="Конфигурация">
-```ts file="../../../../code/html/api/examples/paths.config.ts" title="adnbn.config.ts"
+```ts file="../../../../code/api/adnbn/html/examples/paths/paths.config.ts" title="adnbn.config.ts"
 ```
     </Tab>
     <Tab label="Сгенерированный HTML">
-```html file="../../../../code/html/api/examples/paths.generated.html" title="preview.html"
+```html file="../../../../code/api/adnbn/html/examples/paths/paths.generated.html" title="preview.html"
 ```
     </Tab>
 </Tabs>
@@ -331,7 +331,7 @@ Addon Bone использует контракты [`@rspackjs/plugin-html-tags`
 
 Внешний контракт общих полей ресурса из `@rspackjs/plugin-html-tags`; из `adnbn` напрямую не экспортируется. Наследует [`CommonOptions`](#commonoptions).
 
-```ts file="../../../../code/html/api/base-tag-options.ts" title="BaseTagOptions"
+```ts file="../../../../code/api/adnbn/html/contracts/base-tag-options.ts" title="BaseTagOptions"
 ```
 
 <DocHeading level={3} id="basetagoptions-glob" toc={true}>`glob`</DocHeading>
@@ -368,7 +368,7 @@ Addon Bone использует контракты [`@rspackjs/plugin-html-tags`
 
 Внешний контракт объекта из [`links`](#htmltagspluginoptions-links); из `adnbn` напрямую не экспортируется. Наследует [`BaseTagOptions`](#basetagoptions).
 
-```ts file="../../../../code/html/api/link-tag-options.ts" title="LinkTagOptions"
+```ts file="../../../../code/api/adnbn/html/contracts/link-tag-options.ts" title="LinkTagOptions"
 ```
 
 <DocHeading level={3} id="linktagoptions-path" toc={true}>`path`</DocHeading>
@@ -387,7 +387,7 @@ Addon Bone использует контракты [`@rspackjs/plugin-html-tags`
 
 Внешний контракт объекта из [`scripts`](#htmltagspluginoptions-scripts); из `adnbn` напрямую не экспортируется. Наследует [`BaseTagOptions`](#basetagoptions).
 
-```ts file="../../../../code/html/api/script-tag-options.ts" title="ScriptTagOptions"
+```ts file="../../../../code/api/adnbn/html/contracts/script-tag-options.ts" title="ScriptTagOptions"
 ```
 
 <DocHeading level={3} id="scripttagoptions-path" toc={true}>`path`</DocHeading>
@@ -414,7 +414,7 @@ Addon Bone использует контракты [`@rspackjs/plugin-html-tags`
 
 Внешний вариант [`LinkTagOptions`](#linktagoptions) для смешанного списка [`tags`](#htmltagspluginoptions-tags); из `adnbn` напрямую не экспортируется.
 
-```ts file="../../../../code/html/api/maybe-link-tag-options.ts" title="MaybeLinkTagOptions"
+```ts file="../../../../code/api/adnbn/html/contracts/maybe-link-tag-options.ts" title="MaybeLinkTagOptions"
 ```
 
 <DocHeading level={3} id="maybelinktagoptions-type" toc={true}>`type`</DocHeading>
@@ -427,7 +427,7 @@ Addon Bone использует контракты [`@rspackjs/plugin-html-tags`
 
 Внешний вариант [`ScriptTagOptions`](#scripttagoptions) для [`tags`](#htmltagspluginoptions-tags); из `adnbn` напрямую не экспортируется.
 
-```ts file="../../../../code/html/api/maybe-script-tag-options.ts" title="MaybeScriptTagOptions"
+```ts file="../../../../code/api/adnbn/html/contracts/maybe-script-tag-options.ts" title="MaybeScriptTagOptions"
 ```
 
 <DocHeading level={3} id="maybescripttagoptions-type" toc={true}>`type`</DocHeading>
@@ -440,7 +440,7 @@ Addon Bone использует контракты [`@rspackjs/plugin-html-tags`
 
 Внешний контракт связи пакета с глобальной переменной; из `adnbn` напрямую не экспортируется.
 
-```ts file="../../../../code/html/api/external-object.ts" title="ExternalObject"
+```ts file="../../../../code/api/adnbn/html/contracts/external-object.ts" title="ExternalObject"
 ```
 
 <DocHeading level={3} id="externalobject-packagename" toc={true}>`packageName`</DocHeading>
@@ -457,7 +457,7 @@ Addon Bone использует контракты [`@rspackjs/plugin-html-tags`
 
 Внешний словарь HTML-атрибутов; из `adnbn` напрямую не экспортируется.
 
-```ts file="../../../../code/html/api/attributes-object.ts" title="AttributesObject"
+```ts file="../../../../code/api/adnbn/html/contracts/attributes-object.ts" title="AttributesObject"
 ```
 
 Ключ — имя атрибута. Строки сохраняются, числа преобразуются в строки. Логическое `true` задаёт атрибут без строкового значения, `false` исключает его из сериализованного HTML. Для строковых атрибутов, например `aria-hidden="false"`, передавайте строку `"false"`.
@@ -470,7 +470,7 @@ Addon Bone использует контракты [`@rspackjs/plugin-html-tags`
 
 Внешний тип явного вида записи в `tags`; из `adnbn` напрямую не экспортируется.
 
-```ts file="../../../../code/html/api/type-string.ts" title="TypeString"
+```ts file="../../../../code/api/adnbn/html/contracts/type-string.ts" title="TypeString"
 ```
 
 `"css"` создаёт `<link>`, `"js"` — `<script>`. Это выбор HTML-тега, а не инструкция компилировать исходный файл или переключить его язык.

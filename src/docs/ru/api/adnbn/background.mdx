@@ -23,7 +23,7 @@ API объявления фоновой точки входа. Все экспо
 
 Принимает объявление фоновой точки входа для `export default`.
 
-```ts file="../../../../code/entrypoints/background/api/define-background.ts" title="defineBackground"
+```ts file="../../../../code/api/adnbn/background/contracts/define-background.ts" title="defineBackground"
 ```
 
 **Параметр:** `options` — [`BackgroundDefinition`](#backgrounddefinition). Аргумент обязателен; все его поля необязательны, поэтому допускается `defineBackground({})`.
@@ -36,7 +36,7 @@ API объявления фоновой точки входа. Все экспо
 
 Объект, который принимает и возвращает [`defineBackground`](#definebackground).
 
-```ts file="../../../../code/entrypoints/background/api/background-definition.ts" title="BackgroundDefinition"
+```ts file="../../../../code/api/adnbn/background/contracts/background-definition.ts" title="BackgroundDefinition"
 ```
 
 <DocHeading level={3} id="backgrounddefinition-main" toc={false}><code>main</code></DocHeading>
@@ -47,7 +47,7 @@ API объявления фоновой точки входа. Все экспо
 
 <DocHeading level={3} id="backgroundoptions" toc={false}>Унаследованные опции</DocHeading>
 
-```ts file="../../../../code/entrypoints/background/api/background-options.ts" title="BackgroundEntrypointOptions"
+```ts file="../../../../code/api/adnbn/background/contracts/background-options.ts" title="BackgroundEntrypointOptions"
 ```
 
 Эти два алиаса связывают типы внутри фреймворка и не экспортируются из `adnbn`.
@@ -66,7 +66,7 @@ API объявления фоновой точки входа. Все экспо
 
 Обработчик поля [`BackgroundDefinition.main`](#backgrounddefinition-main).
 
-```ts file="../../../../code/entrypoints/background/api/background-main-handler.ts" title="BackgroundMainHandler"
+```ts file="../../../../code/api/adnbn/background/contracts/background-main-handler.ts" title="BackgroundMainHandler"
 ```
 
 **Параметр:** `options` — [`BackgroundOptions`](#backgroundoptions), опции текущего файла без `main`. Опции других файлов сюда не объединяются; отсутствующие поля не заполняются значениями по умолчанию.
@@ -85,7 +85,7 @@ API объявления фоновой точки входа. Все экспо
 
 Настройки фонового контекста, входящие в [`BackgroundDefinition`](#backgrounddefinition).
 
-```ts file="../../../../code/entrypoints/background/api/background-config.ts" title="BackgroundConfig"
+```ts file="../../../../code/api/adnbn/background/contracts/background-config.ts" title="BackgroundConfig"
 ```
 
 <span id="backgroundconfig-permissions" />
