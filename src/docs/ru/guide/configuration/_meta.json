@@ -1,1 +1,9 @@
-["config"]
+[
+  "config",
+  "manifest",
+  "plugins",
+  "rspack",
+  "typescript",
+  "import-resolution",
+  "env-vars"
+]

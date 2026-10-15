@@ -1,14 +1,49 @@
 [
   {
+    "type": "section-header",
+    "label": "getStarted"
+  },
+  "introduction",
+  "installation",
+  "glossary",
+  "tech-stack",
+  {
+    "type": "section-header",
+    "label": "essentials"
+  },
+  "structure",
+  {
     "type": "dir",
     "name": "entrypoints",
     "label": "entrypoints",
-    "collapsed": false
+    "collapsed": true
   },
   {
     "type": "dir",
     "name": "configuration",
     "label": "configuration",
     "collapsed": true
-  }
+  },
+  {
+    "type": "dir",
+    "name": "tech",
+    "label": "languagesFrameworks",
+    "collapsed": true
+  },
+  "extension-apis",
+  "storage",
+  "messaging",
+  "locales",
+  "icons",
+  "assets",
+  "publishing",
+  "testing",
+  {
+    "type": "section-header",
+    "label": "resources"
+  },
+  "compare",
+  "faq",
+  "community",
+  "migrate"
 ]
