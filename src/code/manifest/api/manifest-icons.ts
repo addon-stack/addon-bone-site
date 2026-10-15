@@ -1,0 +1,1 @@
+export type ManifestIcons = Map<string, ManifestIcon>;

@@ -1,0 +1,1 @@
+declare function defineNewtab(options: NewtabDefinition): NewtabDefinition;

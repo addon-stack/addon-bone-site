@@ -1,0 +1,1 @@
+export type SidebarMap = Map<SidebarAlias, SidebarMapEntry>;

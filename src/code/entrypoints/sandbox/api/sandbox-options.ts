@@ -1,0 +1,1 @@
+export type SandboxOptions = SandboxConfig & SandboxCspOptions & ViewOptions;

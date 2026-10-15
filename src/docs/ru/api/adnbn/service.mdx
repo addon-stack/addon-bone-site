@@ -1,0 +1,133 @@
+---
+description: "API сервисов Addon Bone: defineService, getService, ServiceDefinition, контракты init и main, имя сервиса и унаследованные опции."
+---
+
+<span id="service-api" />
+
+# API сервисов
+
+import DocHeading from "@components/DocHeading";
+import PropertyBadge from "@components/PropertyBadge";
+
+Функции и типы для объявления API в фоновом контексте и его вызова из других частей расширения. Перечисленные экспорты доступны из `adnbn`. Примеры использования, жизненный цикл и прямой доступ из background — в [руководстве Service](/guide/entrypoints/service).
+
+| Экспорт | Вид | Назначение |
+| --- | --- | --- |
+| [`defineService`](#defineservice) | function | Объявление сервиса. |
+| [`getService`](#getservice) | function | Получение асинхронного proxy сервиса. |
+| [`ServiceDefinition`](#servicedefinition) | type | Объект объявления с `init`, `main` и опциями. |
+
+Связанный внутренний тип [`ServiceConfig`](#serviceconfig) описан ниже отдельно. Напрямую из `adnbn` он не экспортируется.
+
+## `defineService`
+
+<PropertyBadge text="function" type="info" outline />
+
+Принимает объявление сервиса для `export default` точки входа Service.
+
+```ts file="../../../../code/entrypoints/service/api/define-service.ts" title="defineService"
+```
+
+**Параметр:** `options` — [`ServiceDefinition<T>`](#servicedefinition). **Обязательный параметр.** В объекте обязателен `init`; `main`, имя и опции сборки можно опустить.
+
+**Параметр типа:** `T extends TransportType` — API, который возвращает `init`: объект, экземпляр класса или функция. Контракт [`TransportType`](/api/transport/index#transporttype) описан в справочнике транспорта. Обычно TypeScript выводит `T` из возвращаемого значения.
+
+**Результат:** [`ServiceDefinition<T>`](#servicedefinition) — тот же объект без копирования и подстановки значений по умолчанию. Сам вызов `defineService` не выполняет `init` и не регистрирует сервис.
+
+## `getService`
+
+<PropertyBadge text="function" type="info" outline />
+
+Возвращает proxy для обращения к сервису из content script, popup, offscreen и других контекстов расширения вне background.
+
+```ts file="../../../../code/entrypoints/service/api/get-service.ts" title="getService"
+```
+
+**Параметр:** `name` — [`ServiceName`](/api/service/index#servicename). **Обязательный параметр.** Имя включённого в сборку сервиса. Параметр типа `N` сохраняет конкретное имя, чтобы выбрать соответствующий контракт.
+
+**Результат:** [`ServiceProxyTarget<N>`](/api/service/index#serviceproxytarget). Функция возвращает proxy синхронно; `await` нужен при вызове его методов и чтении свойств. Создание proxy не отправляет запрос, не создаёт экземпляр сервиса и не проверяет его доступность. Сообщение отправляется при вызове через proxy.
+
+Метод вызывается как `await service.status()`, простое свойство читается как `await service.version()`, а вложенный метод — как `await service.cache.clear()`. Правила преобразования методов и свойств описаны в [`RpcAsyncProxy`](/api/transport/index#rpcasyncproxy), требования к аргументам и результатам — в [ограничениях передачи данных](/api/transport/index#rpcasyncproxy-serialization).
+
+**Ошибки вызова:** исключение в методе сервиса или ошибка доставки сообщения отклоняет возвращаемый promise. Обрабатывайте её через `try` / `catch`. Если путь метода или свойства отсутствует, Addon Bone возвращает ошибку `Property not found at path "…" in "…"`. Автоматического повтора запроса нет.
+
+**Ограничение контекста:** вызов этой функции в background синхронно выбрасывает ошибку `You are trying to get proxy service "…" from background. You can get original service instead`. Для фонового кода используйте [`getService` из `adnbn/service`](/api/service/index#getservice): он возвращает зарегистрированный экземпляр, сохраняя синхронные методы и обычное чтение свойств.
+
+<span id="service-proxy-types" />
+
+Имена и контракты берутся из [`ServiceRegistry`](/api/service/index#serviceregistry). Типы имени и результата описаны в справочнике [`adnbn/service`](/api/service/index).
+
+## `ServiceDefinition`
+
+<PropertyBadge text="type" type="info" outline />
+
+Объявление сервиса, которое принимает и возвращает [`defineService`](#defineservice). Тип объединяет общий контракт инициализации транспорта с опциями сервиса.
+
+```ts file="../../../../code/entrypoints/service/api/service-definition.ts" title="ServiceDefinition"
+```
+
+<span id="transportdefinition" />
+<span id="transporttype" />
+
+[`TransportDefinition`](/api/transport/index#transportdefinition) задаёт поля `init` и `main`. Здесь его параметр `O` равен [`ServiceOptions`](#serviceoptions), а `T` — типу создаваемого API, ограниченному [`TransportType`](/api/transport/index#transporttype). Общие объявления этих типов находятся в справочнике транспорта; ниже описано их поведение для сервиса.
+
+<DocHeading level={3} id="servicedefinition-init" toc={true}>`init`</DocHeading>
+
+**Тип:** [`TransportInitGetter<ServiceOptions, T>`](/api/transport/index#transportinitgetter). **Обязательное поле.** Синхронная фабрика API сервиса; получает [`ServiceOptions`](#serviceoptions) и возвращает `T`.
+
+**Параметр:** `options` — опции текущего файла без `init` и `main`. `name` уже определён сборкой, включая возможный числовой суффикс. Опции других сервисов не объединяются; остальные отсутствующие поля не заполняются значениями по умолчанию.
+
+**Результат:** `T` — объект, экземпляр класса или функция, которые Addon Bone регистрирует как API сервиса.
+
+**Вызов:** при запуске сервиса в фоновом контексте, до регистрации обработчика сообщений и до `main`. Новый запуск фонового контекста создаёт новый экземпляр.
+
+`init` выполняется синхронно. Не объявляйте саму фабрику как `async`: Addon Bone не ожидает её promise и зарегистрирует его вместо готового API. Асинхронную работу выполняйте в методах сервиса или в [`main`](#servicedefinition-main).
+
+**Ошибка:** если `init` выбрасывает исключение, сервис не регистрируется, а в фоновой консоли появляется `Failed to build entrypoint:` с причиной. Автоматического повторного вызова `init` нет.
+
+<DocHeading level={3} id="servicedefinition-main" toc={true}>`main`</DocHeading>
+
+**Тип:** [`TransportMainHandler<ServiceOptions, T>`](/api/transport/index#transportmainhandler). При отсутствии дополнительный обработчик запуска не вызывается.
+
+| Параметр | Тип | Значение при вызове |
+| --- | --- | --- |
+| `instance` | `T` | Зарегистрированный экземпляр, возвращённый `init`. Это исходный API без преобразования в асинхронный proxy. |
+| `options` | [`ServiceOptions`](#serviceoptions) | Тот же объект опций, который передан в `init`. |
+
+**Результат:** `Awaiter<void>`, то есть `void | Promise<void>`. `Awaiter<T>` — внутренний тип `T | Promise<T>`; он не экспортируется из `adnbn`.
+
+**Вызов:** после регистрации экземпляра и обработчика сообщений. К этому моменту сервис уже может принимать вызовы. Addon Bone ожидает promise внутри запуска этой точки входа, но не блокирует обращения к сервису до завершения `main`. Если методам нужны подготовленные данные, они должны дождаться подготовки сами.
+
+**Ошибка:** исключение или отклонённый promise выводится в фоновую консоль с сообщением `Failed to build entrypoint:`. Уже зарегистрированный экземпляр остаётся доступным; автоматического отката регистрации и повтора `main` нет.
+
+## `ServiceConfig`
+
+<PropertyBadge text="type" type="info" outline />
+
+Внутренний тип настроек сервиса. Не экспортируется напрямую ни из `adnbn`, ни из `adnbn/service`.
+
+```ts file="../../../../code/entrypoints/service/api/service-config.ts" title="ServiceConfig"
+```
+
+У этого алиаса нет собственных полей: `name` приходит из [`TransportConfig`](/api/transport/index#transportconfig), а настройки фонового контекста — из [`BackgroundConfig`](/api/adnbn/background#backgroundconfig). Поле `persistent` описано в [`BackgroundConfig`](/api/adnbn/background#backgroundconfig-persistent), разрешения — в [`PermissionsOptions`](/api/adnbn/permissions#permissionsoptions).
+
+<DocHeading level={3} id="serviceconfig-name" toc={true}>`name`</DocHeading>
+
+**Тип:** `string`. **Обязательное поле в [`TransportConfig`](/api/transport/index#transportconfig) и `ServiceConfig`.** В [`ServiceDefinition`](#servicedefinition) его можно опустить благодаря `Partial`.
+
+Поле задаёт имя, по которому вызывающий код получает сервис через [`getService`](#getservice).
+
+При отсутствии опции Addon Bone определяет имя по файлу или каталогу: `tabs.service.ts` и `tabs.service/index.ts` дают `tabs`, а `service.ts` — `service`.
+
+Явное имя после удаления пробелов по краям должно содержать от 1 до 100 символов. Первый символ — буква Unicode, `_` или `$`; остальные — буквы Unicode, цифры, `_` или `$`. Пустая строка и дефис в явном имени завершают сборку ошибкой. Для имени из файла это ограничение не применяется: например, `user-settings.service.ts` даёт `user-settings`.
+
+Если имена нескольких локальных сервисов совпадают, сборка добавляет суффиксы: `settings`, `settings1`, `settings2`. Один сервис не заменяет другой. Для стабильного имени задавайте уникальное значение, а альтернативные реализации разделяйте [фильтрами включения](/api/adnbn/entrypoint-options#entrypointoptions). В `options.name` и сгенерированном реестре используется окончательное имя.
+
+<DocHeading level={3} id="serviceoptions" toc={false}>Состав опций</DocHeading>
+
+```ts file="../../../../code/entrypoints/service/api/service-options.ts" title="ServiceOptions и ServiceEntrypointOptions"
+```
+
+[`ServiceConfig`](#serviceconfig) содержит имя и фоновые настройки. [`EntrypointOptions`](/api/adnbn/entrypoint-options#entrypointoptions) добавляет общие фильтры включения файла в сборку. `ServiceEntrypointOptions` делает все эти поля необязательными в объявлении; обязательным остаётся `init` из [`TransportDefinition`](/api/transport/index#transportdefinition).
+
+`ServiceOptions` и `ServiceEntrypointOptions` — внутренние алиасы; они не экспортируются из публичных путей пакета.

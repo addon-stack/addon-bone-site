@@ -1,0 +1,24 @@
+{
+  "background": {
+    "initial": {
+      "js": ["js/background.js"],
+      "css": []
+    },
+    "async": {
+      "js": [],
+      "css": []
+    },
+    "assets": []
+  },
+  "preview.page": {
+    "initial": {
+      "js": ["js/preview.page.js"],
+      "css": []
+    },
+    "async": {
+      "js": [],
+      "css": []
+    },
+    "assets": []
+  }
+}

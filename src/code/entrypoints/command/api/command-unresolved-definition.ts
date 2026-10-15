@@ -1,0 +1,1 @@
+export type CommandUnresolvedDefinition = Partial<CommandDefinition>;

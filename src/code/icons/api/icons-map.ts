@@ -1,0 +1,1 @@
+export type IconsMap = Map<IconName, Record<number, string>>;

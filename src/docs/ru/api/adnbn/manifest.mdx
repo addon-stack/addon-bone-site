@@ -1,0 +1,984 @@
+---
+description: "API манифеста Addon Bone: методы ManifestBuilder, объединение полей, разрешения, ресурсы и перечисление ManifestIncognito."
+---
+
+# API манифеста
+
+import DocHeading from "@components/DocHeading";
+import PropertyBadge from "@components/PropertyBadge";
+
+Интерфейс для изменения создаваемого `manifest.json`, типы его полей и браузерных настроек. Все перечисленные экспорты доступны из `adnbn`; интерфейсы и типы импортируются через `import type`. Использование callback в `adnbn.config.ts` описано у настройки [`manifest`](/api/adnbn/configuration#config-manifest).
+
+| Экспорт | Вид | Назначение |
+| --- | --- | --- |
+| [`ManifestBuilder`](#manifestbuilder) | interface | Изменение и чтение манифеста во время сборки. |
+| [`Manifest`](#manifest) | type | Объект WebExtension-манифеста для поддерживаемых браузеров. |
+| [`CoreManifest`](#coremanifest) | type | Базовый контракт объекта манифеста. |
+| [`OptionalManifest`](#optionalmanifest) | type | Частичный объект с дополнительными полями манифеста. |
+| [`ManifestVersion`](#manifestversion) | type | Поддерживаемые версии манифеста. |
+| [`ManifestIncognito`](#manifestincognito) | enum | Режим работы расширения в приватных окнах. |
+| [`ManifestIncognitoValue`](#manifestincognitovalue) | type | Значение режима инкогнито в настройках и билдере. |
+| [`ManifestEntry`](#manifestentry) | interface | Ссылка на существующую точку сборки. |
+| [`ManifestBackground`](#manifestbackground) | type | Описание фоновой точки для билдера. |
+| [`ManifestCommand`](#manifestcommand) | type | Описание одной команды в манифесте. |
+| [`ManifestCommands`](#manifestcommands) | type | Набор описаний команд. |
+| [`ManifestContentScript`](#manifestcontentscript) | type | Описание content script для манифеста. |
+| [`ManifestContentScripts`](#manifestcontentscripts) | type | Набор описаний content script. |
+| [`ManifestPopup`](#manifestpopup) | interface | Путь и параметры popup кнопки расширения. |
+| [`ManifestSidebar`](#manifestsidebar) | interface | Путь и параметры боковой панели. |
+| [`ManifestOptions`](#manifestoptions) | interface | Описание страницы настроек расширения. |
+| [`ManifestOverride`](#manifestoverride) | interface | Замена одной встроенной страницы браузера. |
+| [`ManifestOverridePage`](#manifestoverridepage) | type | Идентификаторы встроенных страниц для замены. |
+| [`ManifestSandbox`](#manifestsandbox) | type | Путь sandbox-страницы в результате сборки. |
+| [`ManifestIcon`](#manifesticon) | type | Карта размеров и путей одной группы иконок. |
+| [`ManifestIcons`](#manifesticons) | type | Реестр именованных групп иконок. |
+| [`ManifestPermission`](#manifestpermission) | type | Имя разрешения браузерного API. |
+| [`ManifestPermissions`](#manifestpermissions) | type | Набор обязательных API-разрешений. |
+| [`ManifestOptionalPermission`](#manifestoptionalpermission) | type | Имя необязательного API-разрешения. |
+| [`ManifestOptionalPermissions`](#manifestoptionalpermissions) | type | Набор необязательных API-разрешений. |
+| [`ManifestHostPermissions`](#manifesthostpermissions) | type | Набор шаблонов доступа к сайтам. |
+| [`ManifestAccessibleResource`](#manifestaccessibleresource) | interface | Правило доступа к ресурсам расширения. |
+| [`ManifestAccessibleResources`](#manifestaccessibleresources) | type | Набор правил доступа к ресурсам. |
+| [`BrowserSpecific`](#browserspecific) | interface | Браузерные настройки в формате Addon Bone. |
+| [`GeckoSpecific`](#geckospecific) | interface | Настройки манифеста для Firefox. |
+| [`VersionSpecific`](#versionspecific) | interface | Границы поддерживаемых версий браузера. |
+| [`DataCollectionPermissions`](#datacollectionpermissions) | interface | Обязательные и необязательные категории данных Firefox. |
+| [`DataCollectionPermission`](#datacollectionpermission) | enum | Идентификаторы категорий данных для Firefox. |
+
+## `ManifestBuilder`
+
+<PropertyBadge text="interface" type="info" outline />
+
+Билдер, который Addon Bone передаёт в callback настройки [`manifest`](/api/adnbn/configuration#config-manifest) и обработчик `manifest` плагина. Это интерфейс TypeScript: его можно импортировать через `import type`, но нельзя вызвать или создать через `new`.
+
+```ts file="../../../../code/manifest/api/manifest-builder.ts" title="ManifestBuilder"
+```
+
+**Параметр типа:** `T extends CoreManifest = Manifest` — тип объекта, возвращаемого [`get()`](#manifestbuilder-get). [`CoreManifest`](#coremanifest) описывает базовые поля манифеста, а [`Manifest`](#manifest) объединяет варианты для Chrome, Firefox и Safari. Параметр `T` не выбирает версию сборки: её задаёт [`manifestVersion`](/api/adnbn/configuration#config-manifestversion).
+
+**Результат методов:** все методы изменения возвращают `this`, поэтому вызовы можно объединять в цепочку. Они выполняются синхронно. Исключения по возвращаемому типу — `get()` и `getWebAccessibleResources()`.
+
+**Аргументы:** каждый метод изменения принимает один аргумент. Если в сигнатуре нет `?`, аргумент обязателен. Коллекции `Set` и `Map` передаются именно как `Set` и `Map`; массив подходит только для параметров `Iterable` и полей, объявленных массивами.
+
+<DocHeading level={3} id="manifestbuilder-order" toc={false}>Когда применяются изменения</DocHeading>
+
+Обработчики `manifest` пользовательских плагинов выполняются перед встроенными. Встроенные обработчики заполняют настройки и точки входа, затем Addon Bone читает `manifest` из `package.json` и вызывает callback `manifest` из конфигурации. Поэтому callback может переопределить уже заполненное значение через `set…`. Результат callback, если это объект, добавляется через [`raw()`](#manifestbuilder-raw).
+
+После компиляции Addon Bone связывает точки входа с выходными файлами, вызывает `get()` и записывает `manifest.json`. Карту зависимостей заполняет сама сборка: `setDependencies()` не входит в публичный `ManifestBuilder`, а `ManifestDependencies` и `ManifestDependency` не экспортируются из `adnbn`. Сам вызов метода билдера не создаёт точку входа, не компилирует исходник и не копирует ресурс.
+
+В режиме `watch` для очередной компиляции создаётся новый билдер. Сохраняйте настройки в callback или обработчике плагина; не рассчитывайте на состояние экземпляра от предыдущей сборки.
+
+<DocHeading level={3} id="manifestbuilder-setname" toc={true}>`setName`</DocHeading>
+
+**Сигнатура:** `setName(name: string): this`.
+
+Задаёт `name` — имя расширения. Непустая строка имеет приоритет над `name` из `raw`. При пустой строке билдер использует значение из `raw`, затем `"__MSG_app_name__"`. Обычная сборка заранее задаёт имя из конфигурации.
+
+<DocHeading level={3} id="manifestbuilder-setshortname" toc={true}>`setShortName`</DocHeading>
+
+**Сигнатура:** `setShortName(shortName?: string): this`.
+
+Задаёт `short_name`. Пустая строка или вызов без аргумента снимает значение этого метода: тогда используется `short_name` из `raw`, а при его отсутствии поле не записывается.
+
+<DocHeading level={3} id="manifestbuilder-setdescription" toc={true}>`setDescription`</DocHeading>
+
+**Сигнатура:** `setDescription(description?: string): this`.
+
+Задаёт `description`. При пустой строке или отсутствии аргумента используется описание из `raw`; если его тоже нет, поле отсутствует. Метод принимает готовый текст или строку манифеста вида `"__MSG_description__"`: он не преобразует ключи `@…` самостоятельно.
+
+<DocHeading level={3} id="manifestbuilder-setauthor" toc={true}>`setAuthor`</DocHeading>
+
+**Сигнатура:** `setAuthor(author?: string): this`.
+
+Задаёт строку `author`. Пустая строка или отсутствие аргумента возвращает выбор к `author` из `raw`; без обоих значений поле отсутствует. Метод не читает переменную окружения по переданной строке.
+
+<DocHeading level={3} id="manifestbuilder-sethomepage" toc={true}>`setHomepage`</DocHeading>
+
+**Сигнатура:** `setHomepage(homepage?: string): this`.
+
+Задаёт `homepage_url`. Передавайте готовый URL; сам метод не проверяет его и не читает `.env`. При пустой строке или отсутствии аргумента используется URL из `raw`, иначе поле отсутствует.
+
+<DocHeading level={3} id="manifestbuilder-setversion" toc={true}>`setVersion`</DocHeading>
+
+**Сигнатура:** `setVersion(version?: string): this`.
+
+Задаёт `version` без преобразования строки через semver. Пустая строка или отсутствие аргумента выбирает `version` из `raw`, затем `"0.0.0"`. Дополнительная строка `version_name` задаётся через [`raw()`](#manifestbuilder-raw).
+
+<DocHeading level={3} id="manifestbuilder-setincognito" toc={true}>`setIncognito`</DocHeading>
+
+**Сигнатура:** `setIncognito(incognito?: ManifestIncognitoValue): this`.
+
+Задаёт `incognito`. Тип [`ManifestIncognitoValue`](#manifestincognitovalue) допускает [`ManifestIncognito`](#manifestincognito) и строки `"spanning"`, `"split"`, `"not_allowed"`. Без аргумента используется значение из `raw`; если его нет, поле не записывается.
+
+<DocHeading level={3} id="manifestbuilder-setminimumversion" toc={true}>`setMinimumVersion`</DocHeading>
+
+**Сигнатура:** `setMinimumVersion(minimumVersion?: string): this`.
+
+Задаёт `minimum_chrome_version` готовой строкой, без нормализации версии. При пустой строке или отсутствии аргумента используется значение из `raw`, иначе поле отсутствует. Ограничения версий Firefox и Safari задаются через [`setSpecific()`](#manifestbuilder-setspecific).
+
+<DocHeading level={3} id="manifestbuilder-setlocale" toc={true}>`setLocale`</DocHeading>
+
+**Сигнатура:** `setLocale(lang?: Language): this`.
+
+Задаёт `default_locale`. Аргумент — значение перечисления `Language`, например `Language.English`. Без аргумента используется `default_locale` из `raw`, а при его отсутствии поле не записывается. Метод не создаёт файлы `_locales`; они должны существовать в результате сборки.
+
+<DocHeading level={3} id="manifestbuilder-setspecific" toc={true}>`setSpecific`</DocHeading>
+
+**Сигнатура:** `setSpecific(settings?: BrowserSpecific): this`.
+
+Заменяет браузерные настройки билдера. Объект [`BrowserSpecific`](#browserspecific) содержит группы `gecko`, `geckoAndroid` и `safari`. Внутри этих групп используются поля в camelCase, например `strictMinVersion`.
+
+Без аргумента снимает настройки, заданные этим методом. Данные из `browser_specific_settings`, переданные через `raw`, остаются отдельным источником. При генерации Addon Bone выбирает настройки целевого браузера и преобразует имена полей в формат манифеста.
+
+<DocHeading level={3} id="manifestbuilder-mergespecific" toc={true}>`mergeSpecific`</DocHeading>
+
+**Сигнатура:** `mergeSpecific(settings: BrowserSpecific): this`.
+
+Дополняет текущие браузерные настройки: вложенные объекты объединяются, новые скалярные значения заменяют прежние, массивы объединяются без повторов. Пустой объект сохраняет текущие настройки. Принимает ту же форму, что [`setSpecific()`](#manifestbuilder-setspecific).
+
+<DocHeading level={3} id="manifestbuilder-seticons" toc={true}>`setIcons`</DocHeading>
+
+**Сигнатура:** `setIcons(icons?: ManifestIcons): this`.
+
+Заменяет реестр групп иконок. Принимает [`ManifestIcons`](#manifesticons) — карту групп из [`ManifestIcon`](#manifesticon). Внешний ключ — имя группы, внутренний — размер, значение — путь к готовой иконке. Например, `new Map([["default", new Map([[16, "icons/16.png"]])]])` описывает одну группу с иконкой 16 × 16.
+
+Пустая `Map` или отсутствие аргумента очищает реестр. Метод не копирует файлы; в обычной сборке реестр заполняет плагин иконок.
+
+<DocHeading level={3} id="manifestbuilder-seticon" toc={true}>`setIcon`</DocHeading>
+
+**Сигнатура:** `setIcon(icon?: string): this`.
+
+Выбирает группу из [`setIcons()`](#manifestbuilder-seticons) для `manifest.icons` и запасной иконки кнопки. Без аргумента или при пустой строке выбирается `default`. Если указанной группы нет, используется `default`, затем первая доступная группа. Билдер выбирает одну группу целиком; недостающие размеры из других групп не добавляются.
+
+В `manifest.icons` выбранная группа объединяется с полем `icons` из [`raw()`](#manifestbuilder-raw) по размерам. При совпадении размера путь из группы имеет приоритет, остальные размеры из `raw` сохраняются. При пустом реестре остаются только иконки из `raw`. Для иконки кнопки билдер использует реестр групп; поле `raw.icons` в этот выбор не входит.
+
+<DocHeading level={3} id="manifestbuilder-setaction" toc={true}>`setAction`</DocHeading>
+
+**Сигнатура:** `setAction(action?: ActionOptions): this`.
+
+Задаёт [`ActionOptions`](/api/adnbn/configuration#actionoptions): группу `icon` и подсказку `title` кнопки. Даже `{}` объявляет кнопку без popup. В MV3 Addon Bone записывает `action`, в MV2 — `browser_action`.
+
+Без аргумента снимает это объявление кнопки; popup или команда `_execute_action` всё ещё могут её добавить. Поля popup имеют приоритет над `ActionOptions`. Метод не создаёт обработчик нажатия.
+
+<DocHeading level={3} id="manifestbuilder-setbackground" toc={true}>`setBackground`</DocHeading>
+
+**Сигнатура:** `setBackground(background?: ManifestBackground): this`.
+
+Задаёт фоновую точку сборки. Принимает [`ManifestBackground`](#manifestbackground). Его [`entry`](#manifestentry-entry) — имя существующей точки сборки, по которому Addon Bone находит выходные файлы.
+
+Без аргумента снимает фоновую точку билдера. Для неё должна существовать непустая коллекция JS-зависимостей. В MV2 записываются `background.scripts` и заданное `persistent`, включая `false`. В MV3 для Firefox используются `scripts` без `persistent`; для остальных целей — `service_worker`, которому нужна ровно одна JS-зависимость. Нарушение этих условий вызывает ошибку при `get()`.
+
+Поля разрешений из `BackgroundConfig` сам этот метод не добавляет: передавайте их методам разрешений. При работе через `defineBackground` это делает плагин фоновых точек входа.
+
+<DocHeading level={3} id="manifestbuilder-setcommands" toc={true}>`setCommands`</DocHeading>
+
+**Сигнатура:** `setCommands(commands?: ManifestCommands): this`.
+
+Заменяет набор описаний команд. Принимает [`ManifestCommands`](#manifestcommands) — набор [`ManifestCommand`](#manifestcommand). У каждого описания обязателен `name`; `description`, `global` и клавиши `defaultKey`, `windowsKey`, `macKey`, `chromeosKey`, `linuxKey` можно опустить.
+
+Без аргумента или с пустым `Set` снимает этот набор, но сохраняет команды из `raw`. Команды объединяются по имени; поля билдера имеют приоритет. Без описания используется имя команды, кроме `_execute_action`. В MV2 `_execute_action` преобразуется в `_execute_browser_action`. Метод описывает команды в манифесте, но не регистрирует обработчики и не добавляет разрешения из их конфигурации.
+
+<DocHeading level={3} id="manifestbuilder-setcontentscripts" toc={true}>`setContentScripts`</DocHeading>
+
+**Сигнатура:** `setContentScripts(contentScripts?: ManifestContentScripts): this`.
+
+Заменяет набор content script. Принимает [`ManifestContentScripts`](#manifestcontentscripts) — набор [`ManifestContentScript`](#manifestcontentscript).
+
+Обязательный `entry` выбирает JS и CSS из карты зависимостей. Поля `matches`, `excludeMatches`, `allFrames`, `runAt`, `includeGlobs`, `excludeGlobs`, `matchAboutBlank`, `matchOriginAsFallback` и `world` преобразуются в поля `content_scripts`. В MV2 `world` и `match_origin_as_fallback` не записываются.
+
+Без аргумента или с пустым `Set` очищает только этот набор; описания из `raw` остаются. При неизвестном `entry` или отсутствии у него и JS, и CSS `get()` вызывает ошибку. Метод не создаёт исходные файлы и не применяет фильтры включения точек входа.
+
+<DocHeading level={3} id="manifestbuilder-setpopup" toc={true}>`setPopup`</DocHeading>
+
+**Сигнатура:** `setPopup(popup?: ManifestPopup): this`.
+
+Задаёт popup кнопки. Принимает [`ManifestPopup`](#manifestpopup): путь к готовому HTML, группу иконок и подсказку кнопки.
+
+`path` становится `default_popup`. [`title`](#manifestpopup-title) задаёт подсказку кнопки: в MV3 это `action.default_title`, в MV2 — `browser_action.default_title`. Для `icon` и `title` пропущенные значения берутся из [`setAction()`](#manifestbuilder-setaction), затем из общей группы [`setIcon()`](#manifestbuilder-seticon) и имени, заданного через [`setName()`](#manifestbuilder-setname). Пустой `title` сохраняется. `{}` объявляет кнопку без пути к popup; вызов без аргумента снимает popup билдера.
+
+<DocHeading level={3} id="manifestbuilder-setsidebar" toc={true}>`setSidebar`</DocHeading>
+
+**Сигнатура:** `setSidebar(sidebar?: ManifestSidebar): this`.
+
+Задаёт боковую панель через [`ManifestSidebar`](#manifestsidebar): путь к готовому HTML, группу иконок и заголовок панели.
+
+Для Firefox и Opera Addon Bone формирует `sidebar_action`, для остальных целей в MV3 — `side_panel`. В MV2 для остальных целей поле не добавляется. Без аргумента билдер использует подходящее поле из `raw`, если оно есть. Метод не создаёт страницу и не добавляет разрешение `sidePanel` автоматически.
+
+<DocHeading level={3} id="manifestbuilder-setoptions" toc={true}>`setOptions`</DocHeading>
+
+**Сигнатура:** `setOptions(options?: ManifestOptions): this`.
+
+Задаёт `options_ui`. Принимает [`ManifestOptions`](#manifestoptions): путь к готовому HTML и режим открытия. Если `openInTab` опущен, записывается `open_in_tab: true`; `false` сохраняется.
+
+Без аргумента снимает это описание страницы; `options_ui` и `options_page` из `raw` остаются доступными. Метод не создаёт HTML-файл.
+
+<DocHeading level={3} id="manifestbuilder-setoverride" toc={true}>`setOverride`</DocHeading>
+
+**Сигнатура:** `setOverride(override?: ManifestOverride): this`.
+
+Задаёт одну замену страницы браузера. Принимает [`ManifestOverride`](#manifestoverride) с обязательными полями `page` и `path`. Результат — `chrome_url_overrides` с одной парой `page: path`; путь относится к готовому HTML в расширении.
+
+Без аргумента снимает значение метода и использует `chrome_url_overrides` из `raw`, если оно есть. Этот метод не проверяет поддержку выбранной страницы целевым браузером и не создаёт HTML-файл.
+
+<DocHeading level={3} id="manifestbuilder-addsandbox" toc={true}>`addSandbox`</DocHeading>
+
+**Сигнатура:** `addSandbox(sandbox: ManifestSandbox): this`.
+
+Добавляет путь готовой sandbox-страницы. Принимает [`ManifestSandbox`](#manifestsandbox) — строку пути. Путь объединяется с `sandbox.pages` из `raw`; одинаковые строки не дублируются. Для Firefox Addon Bone не выводит секцию `sandbox`.
+
+<DocHeading level={3} id="manifestbuilder-appendsandboxes" toc={true}>`appendSandboxes`</DocHeading>
+
+**Сигнатура:** `appendSandboxes(sandboxes: Iterable<ManifestSandbox>): this`.
+
+Добавляет несколько путей по правилам [`addSandbox()`](#manifestbuilder-addsandbox). Подходит массив или `Set<string>`. Пустая коллекция ничего не меняет.
+
+<DocHeading level={3} id="manifestbuilder-addsandboxcsp" toc={true}>`addSandboxCsp`</DocHeading>
+
+**Сигнатура:** `addSandboxCsp(csp: SandboxCspConfig): this`.
+
+Добавляет настройки CSP sandbox: `eval`, `inline`, `allow` и `sources` из [`SandboxCspConfig`](/api/adnbn/sandbox#sandboxcspconfig). Настройки накапливаются вместе с другими объявлениями sandbox CSP; вызов не добавляет саму страницу в `sandbox.pages`.
+
+В MV2 политика записывается в `sandbox.content_security_policy`, в MV3 — в `content_security_policy.sandbox`. Для Firefox Addon Bone не выводит sandbox CSP. Если есть и собранная sandbox-политика, и её сырое значение, используется собранная политика.
+
+<DocHeading level={3} id="manifestbuilder-appendsandboxcsp" toc={true}>`appendSandboxCsp`</DocHeading>
+
+**Сигнатура:** `appendSandboxCsp(csps: Iterable<SandboxCspConfig>): this`.
+
+Последовательно добавляет настройки через [`addSandboxCsp()`](#manifestbuilder-addsandboxcsp). Принимает массив или другую итерируемую коллекцию; пустая коллекция ничего не меняет.
+
+<DocHeading level={3} id="manifestbuilder-addcsp" toc={true}>`addCsp`</DocHeading>
+
+**Сигнатура:** `addCsp(csp: CspConfig): this`.
+
+Добавляет настройки CSP страниц расширения. Принимает [`CspConfig`](/api/adnbn/csp#cspconfig): [`wasm`](/api/adnbn/csp#cspconfig-wasm) разрешает WebAssembly, а [`sources`](/api/adnbn/csp#cspsources) задаёт источники ресурсов. Правила объединения и значения источников описаны в этих контрактах.
+
+В MV2 политика выводится строкой `content_security_policy`, в MV3 — полем `content_security_policy.extension_pages`. Если одновременно задана собранная политика и сырая политика страниц расширения через `raw`, `get()` завершается ошибкой: выберите один способ задания этой политики.
+
+<DocHeading level={3} id="manifestbuilder-appendcsp" toc={true}>`appendCsp`</DocHeading>
+
+**Сигнатура:** `appendCsp(csps: Iterable<CspConfig>): this`.
+
+Принимает итерируемую коллекцию [`CspConfig`](/api/adnbn/csp#cspconfig) и последовательно добавляет настройки через [`addCsp()`](#manifestbuilder-addcsp). Пустая коллекция ничего не меняет; ранее добавленные настройки сохраняются.
+
+<DocHeading level={3} id="manifestbuilder-addpermission" toc={true}>`addPermission`</DocHeading>
+
+**Сигнатура:** `addPermission(permission: ManifestPermission): this`.
+
+Добавляет одно разрешение браузерного API, например `"storage"`. Тип [`ManifestPermission`](#manifestpermission) использует `chrome.runtime.ManifestPermission`. Повторное добавление той же строки не создаёт дубль. Для адресов сайтов используйте [`addHostPermission()`](#manifestbuilder-addhostpermission).
+
+При генерации билдер объединяет этот набор с `permissions` из `raw` и адаптирует его к версии манифеста:
+
+| Условие | Действие Addon Bone |
+| --- | --- |
+| Есть `tabs` | Удаляет `activeTab`. |
+| Manifest V2 | Заменяет `scripting` на `tabs` и удаляет `offscreen`. |
+| Manifest V3 | Удаляет `webAuthenticationProxy`, `webRequestAuthProvider` и `webRequestBlocking`. |
+
+Это правила текущего генератора Addon Bone; они не являются полным списком возможностей браузера.
+
+<DocHeading level={3} id="manifestbuilder-setpermissions" toc={true}>`setPermissions`</DocHeading>
+
+**Сигнатура:** `setPermissions(permissions: ManifestPermissions): this`.
+
+Заменяет накопленный набор API-разрешений. Принимает [`ManifestPermissions`](#manifestpermissions) — `Set` разрешений. `new Set()` очищает этот набор, но не удаляет разрешения из `raw`. К результату применяются правила [`addPermission()`](#manifestbuilder-addpermission).
+
+<DocHeading level={3} id="manifestbuilder-appendpermissions" toc={true}>`appendPermissions`</DocHeading>
+
+**Сигнатура:** `appendPermissions(permissions: ManifestPermissions): this`.
+
+Добавляет разрешения из [`ManifestPermissions`](#manifestpermissions), сохраняя прежние. Пустой `Set` ничего не меняет. Например, callback ниже добавляет два API-разрешения, отдельное необязательное разрешение и доступ к сайту:
+
+```ts file="../../../../code/manifest/permissions.config.ts" title="adnbn.config.ts"
+```
+
+<DocHeading level={3} id="manifestbuilder-addoptionalpermission" toc={true}>`addOptionalPermission`</DocHeading>
+
+**Сигнатура:** `addOptionalPermission(permission: ManifestOptionalPermission): this`.
+
+Добавляет разрешение в `optional_permissions`. Тип [`ManifestOptionalPermission`](#manifestoptionalpermission) основан на `chrome.runtime.ManifestOptionalPermission`. Одинаковые разрешения не дублируются; разрешение, уже вошедшее в обязательные, не записывается как необязательное. Применяются те же преобразования для версии манифеста, что у [`addPermission()`](#manifestbuilder-addpermission).
+
+Объявление не выдаёт доступ: расширение запрашивает необязательное разрешение отдельно через Permissions API.
+
+<DocHeading level={3} id="manifestbuilder-setoptionalpermissions" toc={true}>`setOptionalPermissions`</DocHeading>
+
+**Сигнатура:** `setOptionalPermissions(permissions: ManifestOptionalPermissions): this`.
+
+Заменяет набор необязательных API-разрешений. Принимает [`ManifestOptionalPermissions`](#manifestoptionalpermissions). Пустой `Set` очищает этот набор; данные `optional_permissions`, переданные через `raw`, сохраняются.
+
+<DocHeading level={3} id="manifestbuilder-appendoptionalpermissions" toc={true}>`appendOptionalPermissions`</DocHeading>
+
+**Сигнатура:** `appendOptionalPermissions(permissions: ManifestOptionalPermissions): this`.
+
+Добавляет разрешения из [`ManifestOptionalPermissions`](#manifestoptionalpermissions) к текущему набору. Пустой `Set` ничего не меняет. Итоговый список формируется по правилам [`addOptionalPermission()`](#manifestbuilder-addoptionalpermission).
+
+<DocHeading level={3} id="manifestbuilder-addhostpermission" toc={true}>`addHostPermission`</DocHeading>
+
+**Сигнатура:** `addHostPermission(permission: string): this`.
+
+Добавляет шаблон доступа к сайту, например `"https://example.com/*"`. В MV3 шаблоны записываются в `host_permissions`, в MV2 — в `permissions`. Билдер объединяет их с `host_permissions` из `raw`, удаляет повторы и более узкие шаблоны, покрытые широкими.
+
+<DocHeading level={3} id="manifestbuilder-sethostpermissions" toc={true}>`setHostPermissions`</DocHeading>
+
+**Сигнатура:** `setHostPermissions(permissions: ManifestHostPermissions): this`.
+
+Заменяет набор шаблонов сайтов. Принимает [`ManifestHostPermissions`](#manifesthostpermissions) — `Set<string>`. Пустой `Set` очищает этот набор, сохраняя шаблоны из `raw`. Формат результата зависит от версии манифеста, как у [`addHostPermission()`](#manifestbuilder-addhostpermission).
+
+<DocHeading level={3} id="manifestbuilder-appendhostpermissions" toc={true}>`appendHostPermissions`</DocHeading>
+
+**Сигнатура:** `appendHostPermissions(permissions: ManifestHostPermissions): this`.
+
+Добавляет шаблоны из [`ManifestHostPermissions`](#manifesthostpermissions), сохраняя текущие. Пустой `Set` ничего не меняет.
+
+<DocHeading level={3} id="manifestbuilder-addoptionalhostpermission" toc={true}>`addOptionalHostPermission`</DocHeading>
+
+**Сигнатура:** `addOptionalHostPermission(permission: string): this`.
+
+Добавляет необязательный доступ к сайту. В MV3 результат попадает в `optional_host_permissions`, в MV2 — в `optional_permissions`. Шаблоны объединяются с необязательными host-разрешениями из `raw`; доступ, покрытый обязательными host-разрешениями, исключается из необязательного списка.
+
+<DocHeading level={3} id="manifestbuilder-setoptionalhostpermissions" toc={true}>`setOptionalHostPermissions`</DocHeading>
+
+**Сигнатура:** `setOptionalHostPermissions(permissions: ManifestHostPermissions): this`.
+
+Заменяет набор необязательных шаблонов сайтов. Принимает [`ManifestHostPermissions`](#manifesthostpermissions). Пустой `Set` очищает этот набор, но не данные `optional_host_permissions`, переданные через `raw`.
+
+<DocHeading level={3} id="manifestbuilder-appendoptionalhostpermissions" toc={true}>`appendOptionalHostPermissions`</DocHeading>
+
+**Сигнатура:** `appendOptionalHostPermissions(permissions: ManifestHostPermissions): this`.
+
+Добавляет шаблоны из [`ManifestHostPermissions`](#manifesthostpermissions) по правилам [`addOptionalHostPermission()`](#manifestbuilder-addoptionalhostpermission). Пустой `Set` ничего не меняет.
+
+<DocHeading level={3} id="manifestbuilder-setaccessibleresource" toc={true}>`setAccessibleResource`</DocHeading>
+
+**Сигнатура:** `setAccessibleResource(accessibleResources: ManifestAccessibleResources): this`.
+
+Заменяет явно заданный набор web-accessible ресурсов. Несмотря на единственное число в имени метода, аргумент — коллекция [`ManifestAccessibleResources`](#manifestaccessibleresources).
+
+Пустой `Set` очищает этот набор, но ресурсы из `raw` и зависимостей content script остаются. Форма одного правила описана у [`addAccessibleResource()`](#manifestbuilder-addaccessibleresource).
+
+<DocHeading level={3} id="manifestbuilder-appendaccessibleresources" toc={true}>`appendAccessibleResources`</DocHeading>
+
+**Сигнатура:** `appendAccessibleResources(accessibleResources: ManifestAccessibleResources): this`.
+
+Добавляет правила из `Set` с элементами [`ManifestAccessibleResource`](#manifestaccessibleresource), сохраняя текущие. Пустой `Set` ничего не меняет. Итоговое объединение выполняет [`getWebAccessibleResources()`](#manifestbuilder-getwebaccessibleresources).
+
+<DocHeading level={3} id="manifestbuilder-addaccessibleresource" toc={true}>`addAccessibleResource`</DocHeading>
+
+**Сигнатура:** `addAccessibleResource(accessibleResource: ManifestAccessibleResource): this`.
+
+Добавляет одно правило [`ManifestAccessibleResource`](#manifestaccessibleresource). Тип описывает пути к ресурсам и аудиторию, которой разрешён доступ. Метод не копирует файлы.
+
+Например, положите изображение в `src/public/images/marker.png`. Сборка скопирует его в `images/marker.png`, а это правило откроет доступ страницам `https://example.com`:
+
+```ts file="../../../../code/manifest/resources.config.ts" title="adnbn.config.ts"
+```
+
+В MV2 Addon Bone выводит общий массив путей: ограничения `matches`, `extensionIds` и `useDynamicUrl` в этот формат не переносятся.
+
+<DocHeading level={3} id="manifestbuilder-getwebaccessibleresources" toc={true}>`getWebAccessibleResources`</DocHeading>
+
+**Сигнатура:** `getWebAccessibleResources(): ManifestAccessibleResource[]`.
+
+**Результат:** массив [`ManifestAccessibleResource`](#manifestaccessibleresource) с нормализованными правилами доступа, ещё до преобразования в формат MV2 или MV3. Метод объединяет явно добавленные правила, `assets` из зависимостей content script и `web_accessible_resources` из `raw`. Без правил возвращает `[]`.
+
+Пути и аудитории очищаются от повторов, совместимые правила объединяются. У URL-шаблонов учитывается origin, а путь приводится к `/*`. Сырая строка ресурса из формата MV2 превращается в правило с `matches: ["<all_urls>"]` и `extensionIds: ["*"]`. Ресурсы content script появляются только после заполнения карты зависимостей.
+
+Следующее чтение учитывает поля, добавленные последующими вызовами [`raw()`](#manifestbuilder-raw).
+
+<DocHeading level={3} id="manifestbuilder-get" toc={true}>`get`</DocHeading>
+
+**Сигнатура:** `get(): T`.
+
+**Результат:** объект манифеста из текущего состояния билдера. Метод синхронно собирает поля, адаптирует их к версии манифеста и браузеру, но сам не записывает файл.
+
+В callback конфигурации ещё нет окончательной карты выходных файлов. Если уже объявлен background или content script, чтение может завершиться ошибкой `Manifest: … not found in dependencies`. Итоговый манифест сборка получает после передачи зависимостей; внутри callback изменяйте билдер и возвращайте дополнительные поля без вызова `get()`.
+
+Ошибку также вызывают пустые зависимости фоновой точки, несколько фоновых JS-файлов для `service_worker`, отсутствие и JS, и CSS у content script, а также конфликт сырой и собранной CSP страниц расширения.
+
+<DocHeading level={3} id="manifestbuilder-raw" toc={true}>`raw`</DocHeading>
+
+**Сигнатура:** `raw(manifest: OptionalManifest): this`.
+
+Добавляет [`OptionalManifest`](#optionalmanifest) с полями в исходном формате: `version_name`, `host_permissions`, `browser_specific_settings` и другими. Версия манифеста в этот контракт не входит.
+
+Объекты объединяются рекурсивно в порядке добавления: позднее скалярное значение заменяет раннее, массивы соединяются. `{}` ничего не добавляет. Это дополнительный источник для генератора: именованные поля билдера могут иметь приоритет, а разрешения и ресурсы проходят свои правила объединения. Например, `setName("Reader")` имеет приоритет над `raw({name: "Other"})` независимо от порядка этих двух вызовов.
+
+Каждый вызов `raw()` обновляет данные для последующего чтения через [`get()`](#manifestbuilder-get) и [`getWebAccessibleResources()`](#manifestbuilder-getwebaccessibleresources). Предварительное чтение не мешает добавить новые поля.
+
+Дополнительное поле можно задать без отдельного метода:
+
+```ts file="../../../../code/manifest/raw.config.ts" title="adnbn.config.ts"
+```
+
+`raw()` возвращает билдер, поэтому не возвращайте результат этого вызова из callback конфигурации. Верните `undefined` либо дополнительный объект манифеста. Для выбора MV2 или MV3 используйте [`manifestVersion`](/api/adnbn/configuration#config-manifestversion).
+
+## `Manifest`
+
+<PropertyBadge text="type" type="info" outline />
+
+Объект WebExtension-манифеста для поддерживаемых браузеров.
+
+```ts file="../../../../code/manifest/api/manifest.ts" title="Manifest"
+```
+
+Объединяет внутренние варианты `ChromeManifest`, `FirefoxManifest` и `SafariManifest`. Они основаны на типах `chrome.runtime` и дополняют их браузерными полями, включая `browser_specific_settings`. Имена этих трёх вариантов напрямую из `adnbn` не экспортируются.
+
+`Manifest` используется как результат [`ManifestBuilder.get()`](#manifestbuilder-get) по умолчанию. Поля записываются в формате манифеста: `short_name`, `browser_specific_settings`, `web_accessible_resources`. Для передачи части полей в конфигурацию используйте [`OptionalManifest`](#optionalmanifest).
+
+Это объединённый TypeScript-контракт; наличие поля в нём не гарантирует поддержку каждым браузером. Формат отдельных полей описан в [справочнике WebExtension-манифеста MDN](https://developer.mozilla.org/en-US/docs/Mozilla/Add-ons/WebExtensions/manifest.json).
+
+## `CoreManifest`
+
+<PropertyBadge text="type" type="info" outline />
+
+Базовый контракт объекта манифеста.
+
+```ts file="../../../../code/manifest/api/core-manifest.ts" title="CoreManifest"
+```
+
+Основан на `chrome.runtime.ManifestBase`, но ограничивает `manifest_version` типом [`ManifestVersion`](#manifestversion). Вспомогательные `ChromeManifestBase` и `ManifestFixed` показаны для точного состава алиаса и напрямую из `adnbn` не экспортируются.
+
+Используется как ограничение параметра `T` в [`ManifestBuilder<T>`](#manifestbuilder). Этот тип не выбирает генератор MV2 или MV3 и не добавляет поля в результат сборки.
+
+## `OptionalManifest`
+
+<PropertyBadge text="type" type="info" outline />
+
+Частичный объект с дополнительными полями манифеста.
+
+```ts file="../../../../code/manifest/api/optional-manifest.ts" title="OptionalManifest"
+```
+
+Делает поля [`Manifest`](#manifest) необязательными и исключает `manifest_version`. Принимается методом [`raw()`](#manifestbuilder-raw), настройкой [`Config.manifest`](/api/adnbn/configuration#config-manifest) и её callback.
+
+Передавайте поля в формате манифеста, например `version_name`. Пустой объект допустим. Версию задавайте через [`Config.manifestVersion`](/api/adnbn/configuration#config-manifestversion).
+
+## `ManifestVersion`
+
+<PropertyBadge text="type" type="info" outline />
+
+Поддерживаемые версии манифеста.
+
+```ts file="../../../../code/manifest/api/manifest-version.ts" title="ManifestVersion"
+```
+
+`2` выбирает Manifest V2, `3` — Manifest V3. Тип используется в [`Config.manifestVersion`](/api/adnbn/configuration#config-manifestversion), поле `manifest_version` и результате [`getManifestVersion()`](/api/adnbn/environment#getmanifestversion).
+
+Сам алиас не задаёт значение по умолчанию; его выбирает соответствующая настройка или функция.
+
+## `ManifestIncognito`
+
+<PropertyBadge text="enum" type="info" outline />
+
+Значения для [`Config.incognito`](/api/adnbn/configuration#config-incognito) и [`ManifestBuilder.setIncognito()`](#manifestbuilder-setincognito).
+
+```ts file="../../../../code/manifest/api/manifest-incognito.ts" title="ManifestIncognito"
+```
+
+| Значение | Строка в манифесте | Поведение |
+| --- | --- | --- |
+| `ManifestIncognito.Spanning` | `"spanning"` | Общий контекст расширения для обычных и приватных окон. |
+| `ManifestIncognito.Split` | `"split"` | Раздельные контексты для обычных и приватных окон. |
+| `ManifestIncognito.NotAllowed` | `"not_allowed"` | Расширение не работает в приватных окнах. |
+
+При отсутствии `incognito` браузер использует `spanning`. Разрешение пользователя на работу расширения в приватных окнах остаётся отдельным условием. Firefox не поддерживает `split` и обрабатывает его как `not_allowed`. Эти правила относятся к браузеру — [подробнее в MDN](https://developer.mozilla.org/en-US/docs/Mozilla/Add-ons/WebExtensions/manifest.json/incognito).
+
+Например, для запрета работы в приватных окнах:
+
+```ts file="../../../../code/manifest/incognito.config.ts" title="adnbn.config.ts"
+```
+
+## `ManifestIncognitoValue`
+
+<PropertyBadge text="type" type="info" outline />
+
+Значение режима инкогнито в настройках и билдере.
+
+```ts file="../../../../code/manifest/api/manifest-incognito-value.ts" title="ManifestIncognitoValue"
+```
+
+Принимает члены [`ManifestIncognito`](#manifestincognito) или соответствующие строки: `"spanning"`, `"split"`, `"not_allowed"`.
+
+Используется в [`setIncognito()`](#manifestbuilder-setincognito) и [`Config.incognito`](/api/adnbn/configuration#config-incognito). Строка и соответствующий член enum дают одинаковое значение в манифесте.
+
+## `ManifestEntry`
+
+<PropertyBadge text="interface" type="info" outline />
+
+Ссылка на существующую точку сборки.
+
+```ts file="../../../../code/manifest/api/manifest-entry.ts" title="ManifestEntry"
+```
+
+Внутренний алиас `Entry` равен `string`; он показан вместе с интерфейсом и отдельно из `adnbn` не экспортируется.
+
+<DocHeading level={3} id="manifestentry-entry" toc={true}>`entry`</DocHeading>
+
+**Тип:** `string`. **Обязательное поле.**
+
+Имя точки сборки, по которому Addon Bone находит её выходные JS и CSS. Это не путь к исходному `.ts` и не путь к готовому `.html`. Значение должно соответствовать точке, зарегистрированной в сборке; объект с этим полем сам её не создаёт. Неизвестное имя приводит к ошибке при генерации манифеста.
+
+## `ManifestBackground`
+
+<PropertyBadge text="type" type="info" outline />
+
+Описание фоновой точки для билдера.
+
+```ts file="../../../../code/manifest/api/manifest-background.ts" title="ManifestBackground"
+```
+
+Объединяет [`ManifestEntry`](#manifestentry) и [`BackgroundConfig`](/api/adnbn/background#backgroundconfig). Собственных дополнительных полей у алиаса нет.
+
+`entry` обязателен и выбирает фоновые JS-файлы. `persistent` влияет на MV2, включая явное `false`. Поля разрешений доступны через `BackgroundConfig`, но [`setBackground()`](#manifestbuilder-setbackground) сам их не собирает: используйте методы разрешений. В обычных точках входа агрегацию выполняет Addon Bone.
+
+## `ManifestCommand`
+
+<PropertyBadge text="type" type="info" outline />
+
+Описание одной команды в манифесте.
+
+```ts file="../../../../code/manifest/api/manifest-command.ts" title="ManifestCommand"
+```
+
+Алиас существующего [`CommandConfig`](/api/adnbn/command#commandconfig). Обязательное поле `name` задаёт имя команды. `description` задаёт её описание; `global` — признак глобальной команды. `defaultKey`, `windowsKey`, `macKey`, `chromeosKey` и `linuxKey` содержат сочетания клавиш для соответствующих платформ. Эти поля можно опустить.
+
+[`CommandConfig`](/api/adnbn/command#commandconfig) наследует [`BackgroundConfig`](/api/adnbn/background#backgroundconfig), но [`setCommands()`](#manifestbuilder-setcommands) использует только имя, описание и параметры клавиш. Метод не создаёт обработчик, не меняет фоновую точку и не собирает разрешения из этого объекта.
+
+## `ManifestCommands`
+
+<PropertyBadge text="type" type="info" outline />
+
+Набор описаний команд.
+
+```ts file="../../../../code/manifest/api/manifest-commands.ts" title="ManifestCommands"
+```
+
+`Set` с элементами [`ManifestCommand`](#manifestcommand). Принимается методом [`setCommands()`](#manifestbuilder-setcommands). Пустой набор снимает команды, добавленные этим методом; команды из `raw` сохраняются.
+
+`Set` сравнивает объекты по ссылке. В итоговом манифесте команды объединяются по `name`, поэтому задавайте одно описание для каждого имени.
+
+## `ManifestContentScript`
+
+<PropertyBadge text="type" type="info" outline />
+
+Описание content script для манифеста.
+
+```ts file="../../../../code/manifest/api/manifest-content-script.ts" title="ManifestContentScript"
+```
+
+Объединяет [`ManifestEntry`](#manifestentry) и `ContentScriptConfig`. `entry` обязателен: по нему сборка выбирает готовые JS и CSS.
+
+`ContentScriptConfig` содержит `matches`, `excludeMatches`, `includeGlobs`, `excludeGlobs`, `allFrames`, `runAt`, `world`, `matchAboutBlank`, `matchOriginAsFallback` и `declarative`. Первые девять полей передают правила запуска; `declarative` относится к сбору разрешений точек входа и самим [`setContentScripts()`](#manifestbuilder-setcontentscripts) не обрабатывается.
+
+У этого алиаса нет фильтров `includeBrowser`, `excludeBrowser`, `mode` и `debug`: он описывает уже выбранную точку сборки. Формат результирующего объекта зависит от MV2 или MV3.
+
+## `ManifestContentScripts`
+
+<PropertyBadge text="type" type="info" outline />
+
+Набор описаний content script.
+
+```ts file="../../../../code/manifest/api/manifest-content-scripts.ts" title="ManifestContentScripts"
+```
+
+`Set` с элементами [`ManifestContentScript`](#manifestcontentscript). Принимается методом [`setContentScripts()`](#manifestbuilder-setcontentscripts). Пустой набор очищает описания этого метода, но сохраняет `content_scripts` из `raw`.
+
+Два разных объекта с одинаковыми полями остаются разными элементами `Set`.
+
+## `ManifestPopup`
+
+<PropertyBadge text="interface" type="info" outline />
+
+Путь и параметры popup кнопки расширения для [`setPopup()`](#manifestbuilder-setpopup). Для точки входа [`definePopup`](/api/adnbn/popup#definepopup) Addon Bone создаёт этот объект автоматически из начального варианта, выбранного с учётом [`PopupConfig.apply`](/api/adnbn/popup#popupconfig-apply): `path` получает путь собранного HTML, `icon` — значение [`PopupConfig.icon`](/api/adnbn/popup#popupconfig-icon), а `title` — значение [`PopupConfig.tooltip`](/api/adnbn/popup#popupconfig-tooltip) после преобразования маркера локализации.
+
+```ts file="../../../../code/manifest/api/manifest-popup.ts" title="ManifestPopup"
+```
+
+<DocHeading level={3} id="manifestpopup-icon" toc={true}>`icon`</DocHeading>
+
+**Тип:** `string`.
+
+Имя группы из [`ManifestIcons`](#manifesticons). При отсутствии используется [`ActionOptions.icon`](/api/adnbn/configuration#actionoptions-icon), затем общая группа из `setIcon()`. Пустая строка или неизвестное имя группы выбирает `default`, затем первую доступную группу. Метод не принимает путь к отдельной иконке.
+
+<DocHeading level={3} id="manifestpopup-title" toc={true}>`title`</DocHeading>
+
+**Тип:** `string`.
+
+Подсказка кнопки в `default_title`. В этом интерфейсе поле называется `title`, а у точки входа ему соответствует [`tooltip`](/api/adnbn/popup#popupconfig-tooltip). HTML-заголовок из [`ViewConfig.title`](/api/adnbn/view#viewconfig-title) в подсказке кнопки не участвует.
+
+При отсутствии используется [`ActionOptions.title`](/api/adnbn/configuration#actionoptions-title), затем имя, заданное через [`setName()`](#manifestbuilder-setname). Пустая строка сохраняется. При прямом вызове `setPopup()` передавайте готовый текст или ссылку вида `"__MSG_popup_account__"`: билдер не преобразует `"@popup.account"`. Преобразование такого маркера из `PopupConfig.tooltip` выполняет плагин Popup до вызова билдера.
+
+<DocHeading level={3} id="manifestpopup-path" toc={true}>`path`</DocHeading>
+
+**Тип:** `string`.
+
+Путь к готовому HTML относительно корня расширения, например `"popup.html"`. Становится `default_popup`. При отсутствии путь не записывается; сам объект всё ещё может объявить кнопку. Пустая строка передаётся без замены. Метод не создаёт HTML-файл.
+
+## `ManifestSidebar`
+
+<PropertyBadge text="interface" type="info" outline />
+
+Путь и параметры боковой панели для [`setSidebar()`](#manifestbuilder-setsidebar). При использовании [`defineSidebar`](/api/adnbn/sidebar#definesidebar) Addon Bone создаёт объект из начального варианта, выбранного с учётом [`SidebarConfig.apply`](/api/adnbn/sidebar#sidebarconfig-apply): `path` получает путь HTML, `icon` — значение [`SidebarConfig.icon`](/api/adnbn/sidebar#sidebarconfig-icon), а `title` — [`SidebarConfig.label`](/api/adnbn/sidebar#sidebarconfig-label) с преобразованным маркером локализации. [`ViewConfig.title`](/api/adnbn/view#viewconfig-title) задаёт только заголовок HTML-документа.
+
+Для runtime-таблицы [`SidebarMap`](/api/adnbn/sidebar#sidebarmap) используется отдельный публичный интерфейс [`SidebarMapEntry`](/api/adnbn/sidebar#sidebarmapentry). Его поле `label` сохраняет исходный текст или маркер локализации; перевод выполняется при [`changeSidebar()`](/api/adnbn/sidebar#changesidebar). Ниже описано применение полей билдером манифеста.
+
+```ts file="../../../../code/manifest/api/manifest-sidebar.ts" title="ManifestSidebar"
+```
+
+<DocHeading level={3} id="manifestsidebar-icon" toc={true}>`icon`</DocHeading>
+
+**Тип:** `string`.
+
+Имя группы иконок из [`ManifestIcons`](#manifesticons). В Firefox и Opera при отсутствии, пустой строке или неизвестном имени выбирается `default`, затем первая доступная группа. Билдер записывает её в `sidebar_action.default_icon`; при пустом реестре поле не добавляется. В ветке `side_panel` это поле не используется.
+
+<DocHeading level={3} id="manifestsidebar-title" toc={true}>`title`</DocHeading>
+
+**Тип:** `string`.
+
+Подпись панели в `sidebar_action.default_title` для Firefox и Opera. При отсутствии билдер использует имя, заданное через [`setName()`](#manifestbuilder-setname); пустая строка сохраняется. Это готовая строка или ссылка `__MSG_…__`; ключи `@…` на этом уровне не преобразуются. Для точки входа преобразование выполняется из [`SidebarConfig.label`](/api/adnbn/sidebar#sidebarconfig-label). В ветке `side_panel` поле не используется и на заголовок HTML не влияет.
+
+<DocHeading level={3} id="manifestsidebar-path" toc={true}>`path`</DocHeading>
+
+**Тип:** `string`.
+
+Путь к готовому HTML относительно корня расширения. Для Firefox и Opera записывается в `sidebar_action.default_panel`, для остальных целей в MV3 — в `side_panel.default_path`. При отсутствии путь не добавляется; пустая строка сохраняется. Передайте непустой путь для панели с содержимым.
+
+## `ManifestOptions`
+
+<PropertyBadge text="interface" type="info" outline />
+
+Описание страницы настроек для [`ManifestBuilder.setOptions()`](#manifestbuilder-setoptions). При использовании [`defineOptions`](/api/adnbn/options#defineoptions) Addon Bone формирует этот объект из выбранной точки входа автоматически: берёт путь созданного HTML и настройку [`OptionsConfig.openInTab`](/api/adnbn/options#optionsconfig-openintab).
+
+```ts file="../../../../code/manifest/api/manifest-options.ts" title="ManifestOptions"
+```
+
+<DocHeading level={3} id="manifestoptions-path" toc={true}>`path`</DocHeading>
+
+**Тип:** `string`. **Обязательное поле.**
+
+Путь к готовому HTML относительно корня расширения. Становится `options_ui.page`. Передайте непустой путь к существующему выходному файлу: билдер сам страницу не создаёт.
+
+<DocHeading level={3} id="manifestoptions-openintab" toc={true}>`openInTab`</DocHeading>
+
+**Тип:** `boolean`.
+
+При отсутствии записывается `options_ui.open_in_tab: true`. `true` запрашивает открытие в отдельной вкладке, `false` — встроенный режим там, где его поддерживает браузер. Явное `false` сохраняется.
+
+## `ManifestOverride`
+
+<PropertyBadge text="interface" type="info" outline />
+
+Замена одной встроенной страницы браузера.
+
+```ts file="../../../../code/manifest/api/manifest-override.ts" title="ManifestOverride"
+```
+
+<DocHeading level={3} id="manifestoverride-page" toc={true}>`page`</DocHeading>
+
+**Тип:** [`ManifestOverridePage`](#manifestoverridepage). **Обязательное поле.**
+
+Имя заменяемой страницы. Становится единственным ключом `chrome_url_overrides`, сформированным этим объектом. При заданном объекте значение из `raw` для `chrome_url_overrides` заменяется целиком.
+
+<DocHeading level={3} id="manifestoverride-path" toc={true}>`path`</DocHeading>
+
+**Тип:** `string`. **Обязательное поле.**
+
+Путь к готовому HTML относительно корня расширения. Записывается как `chrome_url_overrides[page]`; сам HTML-файл метод не создаёт.
+
+## `ManifestOverridePage`
+
+<PropertyBadge text="type" type="info" outline />
+
+Идентификаторы встроенных страниц для замены.
+
+```ts file="../../../../code/manifest/api/manifest-override-page.ts" title="ManifestOverridePage"
+```
+
+| Значение | Страница |
+| --- | --- |
+| `"newtab"` | Новая вкладка. |
+| `"bookmarks"` | Закладки. |
+| `"history"` | История посещений. |
+
+Это набор значений контракта Addon Bone. Поддержка зависит от браузера; [`setOverride()`](#manifestbuilder-setoverride) сам её не проверяет. Ограничения платформы описаны в [справочнике `chrome_url_overrides` MDN](https://developer.mozilla.org/en-US/docs/Mozilla/Add-ons/WebExtensions/manifest.json/chrome_url_overrides).
+
+## `ManifestSandbox`
+
+<PropertyBadge text="type" type="info" outline />
+
+Путь sandbox-страницы в результате сборки.
+
+```ts file="../../../../code/manifest/api/manifest-sandbox.ts" title="ManifestSandbox"
+```
+
+Строка пути относительно корня расширения, например `"sandbox.html"`. Используется в [`addSandbox()`](#manifestbuilder-addsandbox) и [`appendSandboxes()`](#manifestbuilder-appendsandboxes).
+
+Алиас не проверяет наличие файла. Добавление пути не создаёт страницу и не задаёт её CSP.
+
+## `ManifestIcon`
+
+<PropertyBadge text="type" type="info" outline />
+
+Карта размеров и путей одной группы иконок.
+
+```ts file="../../../../code/manifest/api/manifest-icon.ts" title="ManifestIcon"
+```
+
+Ключ `Map` — размер иконки в пикселях, значение — путь к готовому файлу относительно корня расширения. Например, `new Map([[16, "icons/16.png"], [32, "icons/32.png"]])`.
+
+При генерации числовые ключи становятся строками объекта манифеста. Билдер не копирует и не масштабирует изображения. Пустая карта не содержит ни одного размера.
+
+## `ManifestIcons`
+
+<PropertyBadge text="type" type="info" outline />
+
+Реестр именованных групп иконок.
+
+```ts file="../../../../code/manifest/api/manifest-icons.ts" title="ManifestIcons"
+```
+
+Ключ — имя группы, значение — [`ManifestIcon`](#manifesticon). Группа `default` служит запасной; если нет и её, билдер использует первую доступную группу.
+
+Реестр передаётся в [`setIcons()`](#manifestbuilder-seticons). `setIcon()` и поля `icon` выбирают группу из этого реестра.
+
+Для чтения групп во время работы расширения используйте [`getIcons()`](/api/adnbn/icons#geticons). Его результат [`IconsMap`](/api/adnbn/icons#iconsmap) содержит обычные объекты размеров, а `ManifestIcons` — вложенные `Map`. Изменение реестра билдера не добавляет группы в данные этого getter.
+
+## `ManifestPermission`
+
+<PropertyBadge text="type" type="info" outline />
+
+Имя разрешения браузерного API.
+
+```ts file="../../../../code/manifest/api/manifest-permission.ts" title="ManifestPermission"
+```
+
+Алиас `chrome.runtime.ManifestPermission` из типов Chrome. Используется в [`addPermission()`](#manifestbuilder-addpermission) и [`ManifestPermissions`](#manifestpermissions). Например, `"storage"` или `"tabs"`.
+
+Это имя API-разрешения; URL-шаблоны передаются через методы host-разрешений. Наличие имени в TypeScript-типе не гарантирует поддержку целевым браузером. Преобразования генератора описаны у `addPermission()`.
+
+## `ManifestPermissions`
+
+<PropertyBadge text="type" type="info" outline />
+
+Набор обязательных API-разрешений.
+
+```ts file="../../../../code/manifest/api/manifest-permissions.ts" title="ManifestPermissions"
+```
+
+`Set` с элементами [`ManifestPermission`](#manifestpermission). Используется в [`setPermissions()`](#manifestbuilder-setpermissions) и [`appendPermissions()`](#manifestbuilder-appendpermissions).
+
+`new Set(["storage", "tabs"])` задаёт два разрешения. Строки не дублируются; поведение пустого набора зависит от выбранного метода.
+
+## `ManifestOptionalPermission`
+
+<PropertyBadge text="type" type="info" outline />
+
+Имя необязательного API-разрешения.
+
+```ts file="../../../../code/manifest/api/manifest-optional-permission.ts" title="ManifestOptionalPermission"
+```
+
+Алиас `chrome.runtime.ManifestOptionalPermission`. Используется в [`addOptionalPermission()`](#manifestbuilder-addoptionalpermission) и [`ManifestOptionalPermissions`](#manifestoptionalpermissions).
+
+Допустимый набор имён может отличаться от [`ManifestPermission`](#manifestpermission). Объявление разрешения не выдаёт доступ: его запрашивают во время работы расширения.
+
+## `ManifestOptionalPermissions`
+
+<PropertyBadge text="type" type="info" outline />
+
+Набор необязательных API-разрешений.
+
+```ts file="../../../../code/manifest/api/manifest-optional-permissions.ts" title="ManifestOptionalPermissions"
+```
+
+`Set` с элементами [`ManifestOptionalPermission`](#manifestoptionalpermission). Передаётся в [`setOptionalPermissions()`](#manifestbuilder-setoptionalpermissions) и [`appendOptionalPermissions()`](#manifestbuilder-appendoptionalpermissions).
+
+Строки не дублируются. Итоговый набор исключает разрешения, уже вошедшие в обязательные.
+
+## `ManifestHostPermissions`
+
+<PropertyBadge text="type" type="info" outline />
+
+Набор шаблонов доступа к сайтам.
+
+```ts file="../../../../code/manifest/api/manifest-host-permissions.ts" title="ManifestHostPermissions"
+```
+
+`Set<string>` с шаблонами вида `"https://example.com/*"`. Тип используется и для обязательных, и для необязательных host-разрешений; назначение задаёт выбранный метод билдера.
+
+Тип `string` не проверяет синтаксис шаблона. При генерации билдер нормализует набор; форма поля зависит от версии манифеста.
+
+## `ManifestAccessibleResource`
+
+<PropertyBadge text="interface" type="info" outline />
+
+Правило доступа к ресурсам расширения.
+
+```ts file="../../../../code/manifest/api/manifest-accessible-resource.ts" title="ManifestAccessibleResource"
+```
+
+<DocHeading level={3} id="manifestaccessibleresource-resources" toc={true}>`resources`</DocHeading>
+
+**Тип:** `string[]`. **Обязательное поле.**
+
+Пути относительно корня расширения; допускаются маски `*`. Пустой массив исключает правило из результата. Файлы должны уже присутствовать в сборке: это объявление доступа, а не команда копирования.
+
+<DocHeading level={3} id="manifestaccessibleresource-matches" toc={true}>`matches`</DocHeading>
+
+**Тип:** `string[]`.
+
+Сайты, которым разрешён доступ. Билдер учитывает origin и нормализует путь шаблона к `/*`. При отсутствии или пустом массиве правило не предоставляет доступ сайтам. В MV3 задайте этот список либо `extensionIds`; в MV2 ограничения аудитории не сохраняются.
+
+<DocHeading level={3} id="manifestaccessibleresource-extensionids" toc={true}>`extensionIds`</DocHeading>
+
+**Тип:** `string[]`.
+
+Идентификаторы расширений, которым разрешён доступ. `"*"` обозначает все расширения. При отсутствии или пустом массиве доступ этой аудитории не предоставляется. В MV3 имя поля становится `extension_ids`.
+
+<DocHeading level={3} id="manifestaccessibleresource-usedynamicurl" toc={true}>`useDynamicUrl`</DocHeading>
+
+**Тип:** `boolean`.
+
+В MV3 передаётся как `use_dynamic_url`; явное `false` сохраняется, пропущенное поле не записывается. В MV2 поле не выводится. Поддержку и действие динамических URL определяет браузер — см. [контракт `web_accessible_resources` в MDN](https://developer.mozilla.org/en-US/docs/Mozilla/Add-ons/WebExtensions/manifest.json/web_accessible_resources).
+
+## `ManifestAccessibleResources`
+
+<PropertyBadge text="type" type="info" outline />
+
+Набор правил доступа к ресурсам.
+
+```ts file="../../../../code/manifest/api/manifest-accessible-resources.ts" title="ManifestAccessibleResources"
+```
+
+`Set` с элементами [`ManifestAccessibleResource`](#manifestaccessibleresource). Принимается методами [`setAccessibleResource()`](#manifestbuilder-setaccessibleresource) и [`appendAccessibleResources()`](#manifestbuilder-appendaccessibleresources).
+
+Сам `Set` сравнивает объекты по ссылке. Нормализацию путей и объединение совместимых правил выполняет билдер при чтении результата.
+
+## `BrowserSpecific`
+
+<PropertyBadge text="interface" type="info" outline />
+
+Браузерные настройки в формате Addon Bone.
+
+```ts file="../../../../code/manifest/api/browser-specific.ts" title="BrowserSpecific"
+```
+
+Используется в [`Config.specific`](/api/adnbn/configuration#config-specific), [`setSpecific()`](#manifestbuilder-setspecific) и [`mergeSpecific()`](#manifestbuilder-mergespecific). При генерации имена полей преобразуются из camelCase в формат `browser_specific_settings`.
+
+<DocHeading level={3} id="browserspecific-gecko" toc={true}>`gecko`</DocHeading>
+
+**Тип:** [`GeckoSpecific`](#geckospecific).
+
+Настройки Firefox. Пропущенные значения могут поступить из `browser_specific_settings.gecko`, переданного через `raw`. В Firefox билдер также формирует декларацию категорий данных; её значения по умолчанию описаны в [`DataCollectionPermissions`](#datacollectionpermissions). Для других браузеров эта группа не используется.
+
+<DocHeading level={3} id="browserspecific-geckoandroid" toc={true}>`geckoAndroid`</DocHeading>
+
+**Тип:** [`VersionSpecific`](#versionspecific).
+
+Границы версий Firefox для Android. В манифесте записываются как `gecko_android`. В текущем генераторе группа появляется только при непустом `strictMinVersion` или `strictMaxVersion`, в том числе из `raw`. Пустой объект `{}` сам по себе не выводится.
+
+<DocHeading level={3} id="browserspecific-safari" toc={true}>`safari`</DocHeading>
+
+**Тип:** [`VersionSpecific`](#versionspecific).
+
+Границы версий Safari. Используются только для сборки Safari. При отсутствии обеих непустых границ в настройке и `raw` секция `browser_specific_settings.safari` не создаётся.
+
+## `GeckoSpecific`
+
+<PropertyBadge text="interface" type="info" outline />
+
+Настройки манифеста для Firefox.
+
+```ts file="../../../../code/manifest/api/gecko-specific.ts" title="GeckoSpecific"
+```
+
+Наследует [`VersionSpecific`](#versionspecific): `strictMinVersion` и `strictMaxVersion`. Собственные поля описаны ниже.
+
+<DocHeading level={3} id="geckospecific-id" toc={true}>`id`</DocHeading>
+
+**Тип:** `string`.
+
+Идентификатор расширения. Непустое значение становится `gecko.id`; иначе используется значение из `raw`, а при его отсутствии поле не задаётся. Требования к идентификатору и подписанию определяет Firefox — [справочник MDN](https://developer.mozilla.org/en-US/docs/Mozilla/Add-ons/WebExtensions/manifest.json/browser_specific_settings#id).
+
+<DocHeading level={3} id="geckospecific-updateurl" toc={true}>`updateUrl`</DocHeading>
+
+**Тип:** `string`.
+
+Адрес манифеста обновлений для самостоятельного распространения расширения. Непустая строка становится `gecko.update_url`; при отсутствии или пустой строке используется значение из `raw`. Firefox требует HTTPS для этого URL — [подробнее в MDN](https://developer.mozilla.org/en-US/docs/Mozilla/Add-ons/WebExtensions/manifest.json/browser_specific_settings#update_url).
+
+<DocHeading level={3} id="geckospecific-datacollectionpermissions" toc={true}>`dataCollectionPermissions`</DocHeading>
+
+**Тип:** [`DataCollectionPermissions`](#datacollectionpermissions).
+
+Категории собираемых и передаваемых данных. Билдер объединяет списки с `gecko.data_collection_permissions` из `raw` и нормализует результат. При отсутствии обязательных категорий записывается `required: ["none"]`.
+
+## `VersionSpecific`
+
+<PropertyBadge text="interface" type="info" outline />
+
+Границы поддерживаемых версий браузера.
+
+```ts file="../../../../code/manifest/api/version-specific.ts" title="VersionSpecific"
+```
+
+<DocHeading level={3} id="versionspecific-strictminversion" toc={true}>`strictMinVersion`</DocHeading>
+
+**Тип:** `string`.
+
+Минимальная версия, например `"128.0"`. Становится `strict_min_version` соответствующей браузерной группы. При отсутствии или пустой строке билдер использует значение этой группы из `raw`; если его нет, поле не записывается.
+
+<DocHeading level={3} id="versionspecific-strictmaxversion" toc={true}>`strictMaxVersion`</DocHeading>
+
+**Тип:** `string`.
+
+Максимальная версия. Становится `strict_max_version`; отсутствие и пустая строка обрабатываются так же, как у `strictMinVersion`. Билдер передаёт готовую строку без нормализации версии. Смысл границ и правила их наследования Firefox для Android описаны в [MDN](https://developer.mozilla.org/en-US/docs/Mozilla/Add-ons/WebExtensions/manifest.json/browser_specific_settings).
+
+## `DataCollectionPermissions`
+
+<PropertyBadge text="interface" type="info" outline />
+
+Обязательные и необязательные категории данных Firefox.
+
+```ts file="../../../../code/manifest/api/data-collection-permissions.ts" title="DataCollectionPermissions"
+```
+
+Принимает члены [`DataCollectionPermission`](#datacollectionpermission) или соответствующие строки. Генератор удаляет повторы и неизвестные значения, сортирует списки и исключает из необязательных категорий те, которые уже объявлены обязательными.
+
+Это декларация категорий данных для Firefox, а не список разрешений браузерных API.
+
+<DocHeading level={3} id="datacollectionpermissions-required" toc={true}>`required`</DocHeading>
+
+**Тип:** ``DataCollectionPermission[] | `${DataCollectionPermission}`[]``.
+
+Категории, необходимые для работы расширения. При отсутствии или пустом списке, с учётом объединения с `raw`, генератор записывает `["none"]`. Строка `"none"` не входит во входной TypeScript-контракт: для отсутствия категорий передайте `[]` или опустите поле. `TechnicalAndInteraction` используйте только в `optional`, согласно контракту Firefox.
+
+<DocHeading level={3} id="datacollectionpermissions-optional" toc={true}>`optional`</DocHeading>
+
+**Тип:** ``DataCollectionPermission[] | `${DataCollectionPermission}`[]``.
+
+Категории, сбор которых пользователь может разрешить дополнительно. При отсутствии, пустом списке или полном пересечении с `required` поле не записывается. Значения перечислены в [`DataCollectionPermission`](#datacollectionpermission).
+
+## `DataCollectionPermission`
+
+<PropertyBadge text="enum" type="info" outline />
+
+Идентификаторы категорий данных для Firefox.
+
+```ts file="../../../../code/manifest/api/data-collection-permission.ts" title="DataCollectionPermission"
+```
+
+| Член enum | Строковое значение | Категория |
+| --- | --- | --- |
+| `PersonallyIdentifyingInfo` | `"personallyIdentifyingInfo"` | Контактные и идентифицирующие данные. |
+| `HealthInfo` | `"healthInfo"` | Медицинские данные. |
+| `FinancialAndPaymentInfo` | `"financialAndPaymentInfo"` | Финансовые и платёжные данные. |
+| `AuthenticationInfo` | `"authenticationInfo"` | Данные аутентификации. |
+| `PersonalCommunications` | `"personalCommunications"` | Личная переписка и сообщения. |
+| `LocationInfo` | `"locationInfo"` | Местоположение. |
+| `BrowsingActivity` | `"browsingActivity"` | Посещённые сайты и страницы. |
+| `WebsiteContent` | `"websiteContent"` | Содержимое страниц. |
+| `WebsiteActivity` | `"websiteActivity"` | Действия на сайтах. |
+| `SearchTerms` | `"searchTerms"` | Поисковые запросы. |
+| `BookmarksInfo` | `"bookmarksInfo"` | Данные закладок. |
+| `TechnicalAndInteraction` | `"technicalAndInteraction"` | Технические данные и взаимодействие с расширением. |
+
+Перечисление используется в [`DataCollectionPermissions`](#datacollectionpermissions). Категория описывает данные, а не выдаёт доступ к соответствующему API. Допустимость категорий в `required` и `optional` определяет [контракт Firefox](https://developer.mozilla.org/en-US/docs/Mozilla/Add-ons/WebExtensions/manifest.json/browser_specific_settings#data_collection_permissions).

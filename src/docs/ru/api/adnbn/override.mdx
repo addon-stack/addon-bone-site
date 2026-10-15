@@ -1,0 +1,188 @@
+---
+description: "API переопределения страниц браузера: defineNewtab, defineBookmarks, defineHistory, типы объявлений и props, общие опции и ограничения сборки."
+---
+
+# API переопределения страниц браузера
+
+import DocHeading from "@components/DocHeading";
+import PropertyBadge from "@components/PropertyBadge";
+
+<span id="browser-page-overrides-api" />
+
+Функции и типы для замены новой вкладки, диспетчера закладок или страницы истории собственным HTML-документом расширения. Все экспорты этой страницы доступны из `adnbn`. Руководства по созданию страниц, настройке содержимого и жизненному циклу: [New Tab](/guide/entrypoints/newtab), [Bookmarks](/guide/entrypoints/bookmarks) и [History](/guide/entrypoints/history).
+
+| Экспорт | Вид | Назначение |
+| --- | --- | --- |
+| [`defineNewtab`](#definenewtab) | function | Объявление новой вкладки. |
+| [`NewtabDefinition`](#newtabdefinition) | type | Опции и содержимое новой вкладки. |
+| [`NewtabProps`](#newtabprops) | type | Опции, передаваемые при отображении новой вкладки. |
+| [`defineBookmarks`](#definebookmarks) | function | Объявление диспетчера закладок. |
+| [`BookmarksDefinition`](#bookmarksdefinition) | type | Опции и содержимое диспетчера закладок. |
+| [`BookmarksProps`](#bookmarksprops) | type | Опции, передаваемые при отображении закладок. |
+| [`defineHistory`](#definehistory) | function | Объявление страницы истории. |
+| [`HistoryDefinition`](#historydefinition) | type | Опции и содержимое страницы истории. |
+| [`HistoryProps`](#historyprops) | type | Опции, передаваемые при отображении истории. |
+
+Внутренний контракт [`OverrideEntrypointOptions`](#overrideentrypointoptions) описан в конце страницы. Напрямую из `adnbn` он не экспортируется.
+
+## `defineNewtab`
+
+<PropertyBadge text="function" type="info" outline />
+
+Принимает объявление для `export default` точки входа New Tab. При сборке Addon Bone создаёт HTML-документ и записывает его путь в `chrome_url_overrides.newtab`.
+
+```ts file="../../../../code/entrypoints/override/api/define-newtab.ts" title="defineNewtab"
+```
+
+**Параметр:** `options` — [`NewtabDefinition`](#newtabdefinition). **Обязательный параметр.** Все поля объекта можно опустить, поэтому `defineNewtab({})` допустим.
+
+**Результат:** [`NewtabDefinition`](#newtabdefinition) — тот же объект без копирования и подстановки значений по умолчанию. Функция не открывает вкладку и не вызывает `render`.
+
+**Назначение:** меняет страницу новой пустой вкладки. Домашняя страница и страницы запуска браузера настраиваются отдельно. Поддерживаемые цели и ограничения приведены в [правилах сборки](#override-build).
+
+## `NewtabDefinition`
+
+<PropertyBadge text="type" type="info" outline />
+
+Объявление, которое принимает и возвращает [`defineNewtab`](#definenewtab).
+
+```ts file="../../../../code/entrypoints/override/api/newtab-definition.ts" title="NewtabDefinition"
+```
+
+`NewtabEntrypointOptions` — внутренний алиас [`OverrideEntrypointOptions`](#overrideentrypointoptions). Он не экспортируется из `adnbn`. Собственных полей у `NewtabDefinition` нет: настройки задаёт общий контракт, а `render` и `container` добавляет [`ViewDefinition<NewtabProps>`](/api/adnbn/view#viewdefinition).
+
+При отсутствии `render` страница сохраняет содержимое HTML-шаблона; отдельный контейнер для результата отрисовки не создаётся. Пустое объявление всё равно участвует в выборе переопределения при сборке.
+
+## `NewtabProps`
+
+<PropertyBadge text="type" type="info" outline />
+
+Опции текущей New Tab, которые Addon Bone передаёт в функцию `render`, React-компонент и функцию `container`.
+
+```ts file="../../../../code/entrypoints/override/api/newtab-props.ts" title="NewtabProps"
+```
+
+Состав совпадает с [`OverrideEntrypointOptions`](#overrideentrypointoptions). Объект не содержит `render` и `container`; остальные поля берутся из объявления текущей страницы. Вычисленные при сборке настройки, например итоговый путь HTML, в него автоматически не подставляются. Это опции страницы, а не данные новой вкладки или браузера.
+
+## `defineBookmarks`
+
+<PropertyBadge text="function" type="info" outline />
+
+Принимает объявление для `export default` точки входа Bookmarks. При сборке Addon Bone создаёт HTML-документ и записывает его путь в `chrome_url_overrides.bookmarks`.
+
+```ts file="../../../../code/entrypoints/override/api/define-bookmarks.ts" title="defineBookmarks"
+```
+
+**Параметр:** `options` — [`BookmarksDefinition`](#bookmarksdefinition). **Обязательный параметр.** Все поля можно опустить; `defineBookmarks({})` допустим.
+
+**Результат:** [`BookmarksDefinition`](#bookmarksdefinition) — тот же объект без копирования и подстановки значений по умолчанию. Функция не открывает диспетчер закладок и не вызывает `render`.
+
+**Назначение:** заменяет интерфейс диспетчера закладок. Данные закладок не передаются в объявление автоматически. Для их чтения и изменения через extension API задайте `permissions: ["bookmarks"]` в [`PermissionsOptions`](/api/adnbn/permissions#permissionsoptions). Само переопределение не добавляет это разрешение.
+
+## `BookmarksDefinition`
+
+<PropertyBadge text="type" type="info" outline />
+
+Объявление, которое принимает и возвращает [`defineBookmarks`](#definebookmarks).
+
+```ts file="../../../../code/entrypoints/override/api/bookmarks-definition.ts" title="BookmarksDefinition"
+```
+
+`BookmarksEntrypointOptions` — внутренний алиас [`OverrideEntrypointOptions`](#overrideentrypointoptions). Он не экспортируется из `adnbn`. Собственных полей у `BookmarksDefinition` нет: настройки задаёт общий контракт, а `render` и `container` добавляет [`ViewDefinition<BookmarksProps>`](/api/adnbn/view#viewdefinition).
+
+При отсутствии `render` Addon Bone не создаёт контейнер для результата отрисовки. HTML-документ при этом остаётся страницей переопределения и может содержать собственный шаблон.
+
+## `BookmarksProps`
+
+<PropertyBadge text="type" type="info" outline />
+
+Опции текущей страницы Bookmarks, передаваемые в функцию `render`, React-компонент и функцию `container`.
+
+```ts file="../../../../code/entrypoints/override/api/bookmarks-props.ts" title="BookmarksProps"
+```
+
+Состав совпадает с [`OverrideEntrypointOptions`](#overrideentrypointoptions). Объект содержит опции объявления без `render` и `container`; список закладок в него не входит. Вычисленные при сборке значения не подставляются вместо отсутствующих полей.
+
+## `defineHistory`
+
+<PropertyBadge text="function" type="info" outline />
+
+Принимает объявление для `export default` точки входа History. При сборке Addon Bone создаёт HTML-документ и записывает его путь в `chrome_url_overrides.history`.
+
+```ts file="../../../../code/entrypoints/override/api/define-history.ts" title="defineHistory"
+```
+
+**Параметр:** `options` — [`HistoryDefinition`](#historydefinition). **Обязательный параметр.** Все поля можно опустить; `defineHistory({})` допустим.
+
+**Результат:** [`HistoryDefinition`](#historydefinition) — тот же объект без копирования и подстановки значений по умолчанию. Функция не открывает историю и не вызывает `render`.
+
+**Назначение:** заменяет интерфейс страницы истории. Для чтения и изменения истории через extension API задайте `permissions: ["history"]` в [`PermissionsOptions`](/api/adnbn/permissions#permissionsoptions). Само переопределение не предоставляет доступ к истории посещений.
+
+## `HistoryDefinition`
+
+<PropertyBadge text="type" type="info" outline />
+
+Объявление, которое принимает и возвращает [`defineHistory`](#definehistory).
+
+```ts file="../../../../code/entrypoints/override/api/history-definition.ts" title="HistoryDefinition"
+```
+
+`HistoryEntrypointOptions` — внутренний алиас [`OverrideEntrypointOptions`](#overrideentrypointoptions). Он не экспортируется из `adnbn`. Собственных полей у `HistoryDefinition` нет: настройки задаёт общий контракт, а `render` и `container` добавляет [`ViewDefinition<HistoryProps>`](/api/adnbn/view#viewdefinition).
+
+При отсутствии `render` Addon Bone не создаёт контейнер для результата отрисовки. HTML-документ при этом остаётся страницей переопределения и может содержать собственный шаблон.
+
+## `HistoryProps`
+
+<PropertyBadge text="type" type="info" outline />
+
+Опции текущей страницы History, передаваемые в функцию `render`, React-компонент и функцию `container`.
+
+```ts file="../../../../code/entrypoints/override/api/history-props.ts" title="HistoryProps"
+```
+
+Состав совпадает с [`OverrideEntrypointOptions`](#overrideentrypointoptions). Объект содержит опции объявления без `render` и `container`; записи истории в него не входят. Вычисленные при сборке значения не подставляются вместо отсутствующих полей.
+
+## `OverrideEntrypointOptions`
+
+<PropertyBadge text="type" type="info" outline />
+
+Общие опции всех трёх переопределений. Внутренний тип: напрямую из `adnbn` не экспортируется. Для аннотации пользовательского кода доступны [`NewtabProps`](#newtabprops), [`BookmarksProps`](#bookmarksprops) и [`HistoryProps`](#historyprops).
+
+```ts file="../../../../code/entrypoints/override/api/override-entrypoint-options.ts" title="OverrideEntrypointOptions"
+```
+
+| Контракт | Что добавляет |
+| --- | --- |
+| [`PermissionsOptions`](/api/adnbn/permissions#permissionsoptions) | `permissions`, `optionalPermissions`, `hostPermissions` и `optionalHostPermissions`. Разрешения расширения. |
+| [`CspOptions`](/api/adnbn/csp#cspoptions) | `csp`: разрешение WebAssembly и источники ресурсов для Content Security Policy. |
+| [`ViewOptions`](/api/adnbn/view#viewoptions) | `as`, `title`, `template`, статические настройки HTML и [`EntrypointOptions`](/api/adnbn/entrypoint-options#entrypointoptions) для фильтрации по браузеру, приложению и параметрам сборки. |
+
+Эти поля необязательны. `as` задаёт имя выходного HTML-файла, `title` — заголовок документа, `template` — путь к HTML-шаблону. Опция `as` не меняет вид переопределения: `defineHistory` продолжает регистрировать страницу истории независимо от её имени файла.
+
+Разрешения и CSP выбранной страницы входят в общий манифест расширения. Их не добавляют кандидаты, исключённые фильтрами, не поддерживаемые текущей целью сборки или не выбранные среди файлов одного вида.
+
+Настройка HTML и CSP с примерами разобрана в руководстве New Tab: [HTML-шаблон](/guide/entrypoints/newtab#html-template), [дополнительные ресурсы](/guide/entrypoints/newtab#html-tags) и [Content Security Policy](/guide/entrypoints/newtab#newtab-csp).
+
+<DocHeading level={3} id="override-view" toc={false}>Контракт отображения</DocHeading>
+
+[`ViewDefinition<T>`](/api/adnbn/view#viewdefinition) объединяет [`ViewOptions`](/api/adnbn/view#viewoptions) и [`ViewRenderDefinition<T>`](/api/adnbn/view#viewrenderdefinition). В объявлениях переопределений `T` — соответствующий тип props: [`NewtabProps`](#newtabprops), [`BookmarksProps`](#bookmarksprops) или [`HistoryProps`](#historyprops).
+
+[`render`](/api/adnbn/view#viewrenderdefinition-render) задаёт содержимое, а [`container`](/api/adnbn/view#viewrenderdefinition-container) — элемент для его монтирования. Типы значений, порядок вызовов и поведение при отсутствии опций описаны в этих контрактах. Примеры использования — в [описании `render` и props](/guide/entrypoints/newtab#newtab-render-types) и [контейнера](/guide/entrypoints/newtab#container-examples).
+
+<DocHeading level={3} id="override-build" toc={false}>Правила сборки</DocHeading>
+
+Текущая реализация Addon Bone включает переопределения для следующих значений [`Browser`](/api/adnbn/environment#browser):
+
+| Точка входа | Цели сборки |
+| --- | --- |
+| New Tab | `Chrome`, `Chromium`, `Edge`, `Firefox`, `Safari`. |
+| Bookmarks | `Chrome`, `Chromium`, `Edge`. |
+| History | `Chrome`, `Chromium`, `Edge`. |
+
+Для остальных целей Addon Bone пропускает точку входа целиком: HTML, скрипты, разрешения и CSP не попадают в сборку. При `debug: true` фреймворк выводит предупреждение `The "…" override is not supported by … and was skipped`. Поддержка конкретных версий и платформ браузера приведена в [справочнике `chrome_url_overrides` MDN](https://developer.mozilla.org/en-US/docs/Mozilla/Add-ons/WebExtensions/manifest.json/chrome_url_overrides#browser_compatibility).
+
+В одну сборку может попасть только один вид переопределения. Если после фильтров и проверки поддержки остаются, например, New Tab и History, сборка завершается ошибкой `An extension can override only one browser page…`. Разделяйте такие реализации через [`includeApp`, `excludeApp`, `includeBrowser` или `excludeBrowser`](/api/adnbn/entrypoint-options#entrypointoptions). Ограничение одной страницы соответствует [правилам Chrome](https://developer.chrome.com/docs/extensions/develop/ui/override-chrome-pages).
+
+Несколько файлов одного вида не создают несколько страниц: Addon Bone выбирает один файл по приоритету. Локальные файлы имеют преимущество перед файлами плагинов; среди локальных файлов одного уровня выбирается последний по порядку путей. В multi-app проекте подходящая реализация приложения заменяет shared-реализацию; при её отсутствии используется shared. Опции нескольких кандидатов не объединяются.
+
+Выбранная страница формирует запись [`ManifestOverride`](/api/adnbn/manifest#manifestoverride): `page` задаёт вид переопределения, `path` — путь созданного HTML-документа. Для обычной точки входа вручную вызывать [`ManifestBuilder.setOverride()`](/api/adnbn/manifest#manifestbuilder-setoverride) не нужно.

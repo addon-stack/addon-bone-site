@@ -1,0 +1,1 @@
+export type PopupMap = Map<PopupAlias, PopupMapEntry>;

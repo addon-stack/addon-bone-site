@@ -1,1 +1,78 @@
-[{"type": "section-header", "label": "getStarted"}, "index"]
+[
+  {
+    "type": "section-header",
+    "label": "apiCliReference"
+  },
+  {
+    "type": "file",
+    "name": "cli/index",
+    "label": "apiCliOptions"
+  },
+  "cli/watch",
+  "cli/build",
+  {
+    "type": "section-header",
+    "label": "apiReference"
+  },
+  {
+    "type": "file",
+    "name": "index",
+    "label": "apiOverview"
+  },
+  {
+    "type": "dir",
+    "name": "adnbn",
+    "label": "adnbn",
+    "collapsed": true
+  },
+  {
+    "type": "file",
+    "name": "content/index",
+    "label": "adnbn/content"
+  },
+  {
+    "type": "file",
+    "name": "service/index",
+    "label": "adnbn/service"
+  },
+  {
+    "type": "file",
+    "name": "offscreen/index",
+    "label": "adnbn/offscreen"
+  },
+  {
+    "type": "file",
+    "name": "relay/index",
+    "label": "adnbn/relay"
+  },
+  {
+    "type": "file",
+    "name": "sandbox/index",
+    "label": "adnbn/sandbox"
+  },
+  {
+    "type": "file",
+    "name": "message/index",
+    "label": "adnbn/message"
+  },
+  {
+    "type": "file",
+    "name": "message/react/index",
+    "label": "adnbn/message/react"
+  },
+  {
+    "type": "file",
+    "name": "locale/index",
+    "label": "adnbn/locale"
+  },
+  {
+    "type": "file",
+    "name": "locale/react/index",
+    "label": "adnbn/locale/react"
+  },
+  {
+    "type": "file",
+    "name": "transport/index",
+    "label": "adnbn/transport"
+  }
+]

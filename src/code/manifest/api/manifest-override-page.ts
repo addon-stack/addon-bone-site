@@ -1,0 +1,1 @@
+export type ManifestOverridePage = "newtab" | "bookmarks" | "history";

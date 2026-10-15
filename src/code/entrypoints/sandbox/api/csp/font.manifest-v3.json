@@ -1,0 +1,8 @@
+{
+  "sandbox": {
+    "pages": ["sandbox.html"]
+  },
+  "content_security_policy": {
+    "sandbox": "sandbox allow-scripts; script-src 'self' 'unsafe-eval'; font-src 'self' data:; child-src 'self';"
+  }
+}

@@ -25,6 +25,8 @@ Popup создаёт небольшое окно, которое пользов�
 Разместите код в `popup.ts` или `popup.tsx`.
 Вы можете работать с DOM напрямую или использовать React; Addon Bone создаст HTML, подключит код страницы и назначит Popup кнопке расширения.
 
+Сигнатуры функций, типы и собственные опции собраны в [API всплывающего окна](/api/adnbn/popup).
+
 ## Быстрый старт
 
 Создадим Popup с простым текстом, доступным по нажатию кнопки расширения:
@@ -48,7 +50,7 @@ Addon Bone создаст `popup.html` и запишет его путь в `act
 Сохраняйте нужные данные в хранилище расширения; длительную работу передавайте в [Background](./background.mdx) или [Service](./service.mdx).
 
 Нажатие за пределами Popup закрывает окно.
-В Chrome удержать его открытым после потери фокуса нельзя; для продолжительной работы с интерфейсом используйте отдельную [страницу расширения](./page.mdx) или <a href="/guide/entrypoints/sidebar.html">Sidebar</a>.
+В Chrome удержать его открытым после потери фокуса нельзя; для продолжительной работы с интерфейсом используйте отдельную [страницу расширения](./page.mdx) или [Sidebar](./sidebar.mdx).
 Подробнее — [жизненный цикл Popup в Chrome](https://developer.chrome.com/docs/extensions/develop/ui/add-popup).
 
 Когда кнопке назначен Popup, событие `action.onClicked` не вызывается.
@@ -109,7 +111,7 @@ Addon Bone находит Popup по имени файла или каталог
 
 ## Объявление Popup
 
-Используйте `definePopup`, чтобы получить подсказки опций и проверку типов.
+Используйте [`definePopup`](/api/adnbn/popup#definepopup), чтобы получить подсказки опций и проверку типов.
 Вместо него можно объявить опции именованными экспортами, а содержимое или функцию отображения — через `export default`.
 
 В этом примере React-компонент показывает заголовок текущей вкладки по нажатию кнопки в Popup.
@@ -206,9 +208,9 @@ Addon Bone создаёт контейнер и React root; вручную вы�
 
 <DocHeading level={3} id="popup-render-types" toc={false}>Типы `render` и `props`</DocHeading>
 
-Для переиспользуемой функции используйте `ViewRenderHandler<PopupProps>`, а для React-компонента — `ViewRenderReactComponent<PopupProps>`.
-`PopupProps` описывает опции текущего Popup, включая заголовок документа `title` и подсказку кнопки `tooltip`.
-В текущем фреймворке этот тип не экспортируется из `adnbn` напрямую. В примерах ниже локальный алиас выводится из параметра `definePopup` с исключением `render` и `container`.
+Для переиспользуемой функции используйте [`ViewRenderHandler<PopupProps>`](/api/adnbn/view#viewrenderhandler), а для React-компонента — [`ViewRenderReactComponent<PopupProps>`](/api/adnbn/view#viewrenderreactcomponent).
+[`PopupProps`](/api/adnbn/popup#popupprops) описывает опции текущего Popup, включая заголовок документа `title` и подсказку кнопки `tooltip`.
+В текущем фреймворке этот тип не экспортируется из `adnbn` напрямую. В примерах ниже локальный алиас выводится из параметра [`definePopup`](/api/adnbn/popup#definepopup) с исключением `render` и `container`.
 Оба контракта требуют синхронного результата:
 
 <FrameworkTabs>
@@ -388,7 +390,7 @@ Addon Bone создаст HTML для каждого подходящего фа
 
 В этом примере пользователь выбирает интерфейс кнопки на странице [Options](./options.mdx).
 Два Popup выводят разный текст, чтобы результат переключения был сразу виден.
-Форма в Options получает доступные варианты через `getPopups()` и назначает выбранный Popup через `changePopup`.
+Форма в Options получает доступные варианты через [`getPopups()`](/api/adnbn/popup#getpopups) и назначает выбранный Popup через [`changePopup`](/api/adnbn/popup#changepopup).
 Подписями кнопок служат алиасы собранных Popup:
 
 <Tabs>
@@ -443,20 +445,20 @@ Addon Bone создаст HTML для каждого подходящего фа
 
 <DocHeading level={3} id="popup-runtime" toc={true}>Переключение во время работы</DocHeading>
 
-`getPopups()` из `adnbn` возвращает `PopupMap` — `Map<PopupAlias, PopupMapEntry>` с алиасами собранных Popup и данными для переключения.
-Типы `PopupMap`, `PopupAlias` и `PopupMapEntry` также доступны из `adnbn`.
+[`getPopups()`](/api/adnbn/popup#getpopups) из `adnbn` возвращает [`PopupMap`](/api/adnbn/popup#popupmap) — `Map<PopupAlias, PopupMapEntry>` с алиасами собранных Popup и данными для переключения.
+Типы `PopupMap`, [`PopupAlias`](/api/adnbn/popup#popupalias) и [`PopupMapEntry`](/api/adnbn/popup#popupmapentry) также доступны из `adnbn`.
 У `PopupMapEntry` три необязательных поля:
 
 - `path?: string` — путь к HTML внутри расширения;
 - `tooltip?: string` — исходный текст подсказки или ключ локализации, например `@popup.account`;
 - `icon?: string` — имя группы иконок.
 
-Заголовок документа `title` в этот список не входит: он остаётся опцией страницы и доступен в `PopupProps`.
+Заголовок документа `title` в этот список не входит: он остаётся опцией страницы и доступен в [`PopupProps`](/api/adnbn/popup#popupprops).
 `getPopups()` не переводит `tooltip`; если меню нужны подписи вариантов, задавайте их отдельно от подсказки кнопки.
 Алиасы зависят от имени файла или `as`; таблица приведена в [результате сборки](#результат-сборки).
-В `.adnbn/popup.d.ts` Addon Bone дополняет `PopupAliasRegistry` именами вариантов для подсказок TypeScript.
+В `.adnbn/popup.d.ts` Addon Bone дополняет [`PopupAliasRegistry`](/api/adnbn/popup#popupaliasregistry) именами вариантов для подсказок TypeScript.
 
-`changePopup(alias, tab?)` возвращает `Promise<void>`.
+[`changePopup(alias, tab?)`](/api/adnbn/popup#changepopup) возвращает `Promise<void>`.
 Вызывайте его из background или страницы расширения.
 Без второго аргумента он меняет Popup для кнопки в целом; передайте ID вкладки или объект вкладки, чтобы задать переопределение для неё.
 Переопределение вкладки имеет преимущество перед общим значением и сбрасывается при её закрытии.
@@ -519,7 +521,7 @@ Addon Bone создаст `_locales/en/messages.json` с сообщением `p
 
 ## Опции
 
-Опции `PopupDefinition` относятся к конкретному Popup: задают его содержимое, настройки HTML, начальное назначение кнопке и условия включения в сборку. Собственные поля кнопки объединяет `PopupConfig`.
+Опции [`PopupDefinition`](/api/adnbn/popup#popupdefinition) относятся к конкретному Popup: задают его содержимое, настройки HTML, начальное назначение кнопке и условия включения в сборку. Собственные поля кнопки объединяет [`PopupConfig`](/api/adnbn/popup#popupconfig).
 `multiplePopup` и `mergePopup` задаются в конфигурации проекта, а не внутри `definePopup`.
 
 <DocHeading level={3} id="popup-action-options" toc={false}>Кнопка расширения</DocHeading>
@@ -532,12 +534,12 @@ Addon Bone создаст `_locales/en/messages.json` с сообщением `p
 </EntrypointSpec>
 
 <EntrypointSpec name="icon" type="IconName" manifest>
-    Принимает <code>IconName</code> — имя группы иконок кнопки расширения, например <code>icon: "toolbar"</code>.
+    Принимает <a href="/ru/api/adnbn/icons.html#iconname"><code>IconName</code></a> — имя группы иконок кнопки расширения, например <code>icon: "toolbar"</code>.
     Это имя группы из <code>src/icons</code>, а не путь к отдельному изображению.
     Например, файлы <code>toolbar-16.png</code> и <code>toolbar-32.png</code> образуют группу <code>toolbar</code> с двумя размерами.
     Для начального Popup при отсутствии опции используется <code>action.icon</code> из конфигурации, затем общая <code>icon</code>.
     При переключении через <code>changePopup</code> заданная группа заменяет иконку кнопки; отсутствие опции сохраняет текущую иконку.
-    Чтобы сменить только иконку, используйте <code>changeActionIcon()</code>.
+    Чтобы сменить только иконку, используйте <a href="/ru/api/adnbn/icons.html#changeactionicon"><code>changeActionIcon()</code></a>.
 </EntrypointSpec>
 
 <EntrypointSpec name="tooltip" type="string" manifest>

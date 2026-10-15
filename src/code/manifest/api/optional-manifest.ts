@@ -1,0 +1,1 @@
+export type OptionalManifest = Partial<Omit<Manifest, "manifest_version">>;

@@ -1,0 +1,264 @@
+---
+description: "Offscreen API Addon Bone: defineOffscreen, getOffscreen, параметры скрытых документов, OffscreenReason и опции объявления."
+---
+
+# Offscreen API
+
+import DocHeading from "@components/DocHeading";
+import PropertyBadge from "@components/PropertyBadge";
+
+Функции и типы для объявления API в скрытом документе и его вызова из background или страницы расширения. Все экспорты этой страницы доступны из `adnbn`. Примеры использования, настройка содержимого и жизненный цикл — в [руководстве Offscreen](/guide/entrypoints/offscreen).
+
+| Экспорт | Вид | Назначение |
+| --- | --- | --- |
+| [`defineOffscreen`](#defineoffscreen) | function | Объявление скрытого документа и его API. |
+| [`getOffscreen`](#getoffscreen) | function | Получение асинхронного proxy. |
+| [`getOffscreens`](#getoffscreens) | function | Параметры документов, включённых в сборку. |
+| [`OffscreenDefinition`](#offscreendefinition) | interface | Объявление с фабрикой, обработчиком запуска и опциями. |
+| [`OffscreenUnresolvedDefinition`](#offscreenunresolveddefinition) | type | Частичное объявление до проверки. |
+| [`OffscreenReason`](#offscreenreason) | enum | Причина создания нативного Offscreen-документа. |
+| [`OffscreenAlias`](#offscreenalias) | type | Строковый ключ в карте документов. |
+| [`OffscreenMap`](#offscreenmap) | type | Карта имён и параметров создания. |
+
+Внутренние контракты [`OffscreenConfig`](#offscreenconfig), [`OffscreenMainHandler`](#offscreenmainhandler) и [`OffscreenParameters`](#offscreenparameters) описаны ниже отдельно. Напрямую из `adnbn` они не экспортируются. Реестр и типы доступа находятся в [`adnbn/offscreen`](/api/offscreen/index), общие контракты — в [`adnbn/transport`](/api/transport/index).
+
+## `defineOffscreen`
+
+<PropertyBadge text="function" type="info" outline />
+
+Принимает объявление для `export default` точки входа Offscreen.
+
+```ts file="../../../../code/entrypoints/offscreen/api/define-offscreen.ts" title="defineOffscreen"
+```
+
+**Параметр:** `options` — [`OffscreenDefinition<T>`](#offscreendefinition). **Обязательный параметр.** В объекте обязателен `init`; остальные поля можно опустить.
+
+**Параметр типа:** `T extends TransportType` — API, возвращаемый фабрикой. Ограничение [`TransportType`](/api/transport/index#transporttype) допускает объект, экземпляр класса или функцию. Обычно TypeScript выводит `T` по результату `init`.
+
+**Результат:** [`OffscreenDefinition<T>`](#offscreendefinition) — тот же объект без копирования и подстановки значений по умолчанию. Функция не создаёт документ, не вызывает обработчики и не регистрирует API.
+
+## `getOffscreen`
+
+<PropertyBadge text="function" type="info" outline />
+
+Возвращает proxy для вызова API скрытого документа из background, Service, Command или страницы расширения, например popup.
+
+```ts file="../../../../code/entrypoints/offscreen/api/get-offscreen.ts" title="getOffscreen"
+```
+
+**Параметр:** `name` — [`OffscreenName`](/api/offscreen/index#offscreenname). **Обязательный параметр.** Имя включённой в сборку точки входа. Параметр типа `N` выбирает её контракт из реестра.
+
+**Результат:** [`OffscreenProxyTarget<N>`](/api/offscreen/index#offscreenproxytarget). Получение proxy синхронное и само по себе не создаёт документ. Перед отправкой первого запроса Addon Bone создаёт документ либо использует уже существующий.
+
+Методы и простые свойства вызываются через `await`: например, `await parser.title(html)` и `await parser.version()`. Преобразование типов и ограничения данных описаны в [`RpcAsyncProxy`](/api/transport/index#rpcasyncproxy).
+
+**Ошибки получения proxy:** если в таблице сборки нет параметров для `name`, функция синхронно выбрасывает `Unable to get offscreen: …`. Внутри самого Offscreen выбрасывается `You are trying to get proxy offscreen service "…" from offscreen. You can get original offscreen service instead`. Для доступа внутри документа используйте экземпляр из `main` или [`getOffscreen` из `adnbn/offscreen`](/api/offscreen/index#getoffscreen).
+
+**Ошибки вызова:** ошибка создания документа, доставки сообщения или выполнения метода отклоняет promise вызова. Обрабатывайте её через `try` / `catch`. Несуществующий путь метода или свойства приводит к ошибке `Property not found at path "…" in "…"`.
+
+<DocHeading level={3} id="getoffscreen-contexts" toc={false}>Контексты и время жизни</DocHeading>
+
+В Chrome content script не располагает API управления Offscreen-документами. Для такого вызова используйте [Service](/api/adnbn/service#getservice) в background, который обратится к `getOffscreen`. Это ограничение [доступных content script API](https://developer.chrome.com/docs/extensions/develop/concepts/content-scripts#understand_content_script_capabilities), а не свойство сгенерированного типа.
+
+В нативном режиме Chrome Manifest V3 вызовы одного документа могут выполняться параллельно. При обращении к другому документу Addon Bone ждёт завершения текущих proxy-вызовов, закрывает прежний документ и создаёт новый. Операции, запущенные методом без ожидания их результата, не удерживают документ от переключения.
+
+В Manifest V2 и Firefox Addon Bone использует скрытые документы в фоновой странице. Разные документы могут существовать одновременно; перед отправкой запроса фреймворк ждёт сигнала готовности нужного документа. При создании нового документа `init` и `main` выполняются заново, поэтому состояние экземпляра не является постоянным хранилищем.
+
+## `getOffscreens`
+
+<PropertyBadge text="function" type="info" outline />
+
+Возвращает параметры Offscreen-документов из текущей сборки.
+
+```ts file="../../../../code/entrypoints/offscreen/api/get-offscreens.ts" title="getOffscreens"
+```
+
+**Параметры:** отсутствуют.
+
+**Результат:** [`OffscreenMap`](#offscreenmap). Ключ — итоговое имя точки входа, значение — её `url`, `reasons` и `justification`. Карта содержит все включённые документы, независимо от того, созданы ли они сейчас. Исключённые фильтрами точки входа в неё не попадают.
+
+Каждый вызов создаёт новый `Map`, но объекты параметров внутри не копируются. Изменение состава возвращённой карты не меняет таблицу сборки; изменение самого объекта параметров затронет его общее значение. Задавайте настройки через объявление точки входа.
+
+Функция не создаёт документы и не проверяет их готовность. При ошибке чтения таблицы она выводит `Failed getting offscreens:` в консоль и возвращает карту с уже добавленными записями, возможно пустую.
+
+## `OffscreenDefinition`
+
+<PropertyBadge text="interface" type="info" outline />
+
+Объединяет объявление транспорта, опции Offscreen и контракт содержимого документа.
+
+```ts file="../../../../code/entrypoints/offscreen/api/offscreen-definition.ts" title="OffscreenDefinition"
+```
+
+[`TransportDefinition`](/api/transport/index#transportdefinition) задаёт `init` и общий обработчик запуска. [`OffscreenEntrypointOptions`](#offscreen-options-composition) добавляет опции документа. [`ViewRenderDefinition`](/api/adnbn/view#viewrenderdefinition) добавляет `render` и `container`; это общий контракт отрисовки. Собственное поле интерфейса — уточнённый `main`.
+
+<DocHeading level={3} id="offscreendefinition-init" toc={true}>`init`</DocHeading>
+
+**Тип:** [`TransportInitGetter<OffscreenOptions, T>`](/api/transport/index#transportinitgetter). **Обязательное поле.** Унаследовано от `TransportDefinition`.
+
+Синхронно создаёт API внутри скрытого документа. Получает опции текущей точки входа и возвращает `T` — объект, экземпляр класса или функцию. Addon Bone регистрирует результат перед вызовом `main`.
+
+В аргументе уже есть итоговое `name`. Поля `init`, `main`, `render` и `container` в этот объект не входят. Остальные опции сохраняют заданные значения; значения по умолчанию для создания документа не подставляются в аргумент фабрики. Например, при отсутствии `reasons` браузер получает `DOM_PARSER`, но `options.reasons` остаётся `undefined`.
+
+Не объявляйте фабрику как `async`: её promise не ожидается и будет зарегистрирован вместо готового API. Асинхронную работу выполняйте в методах или `main`.
+
+Если фабрика выбрасывает исключение, регистрация не выполняется, `main` и отрисовка не запускаются. Ошибка выводится в консоль документа с сообщением `Failed to build offscreen:`.
+
+<DocHeading level={3} id="offscreendefinition-main" toc={true}>`main`</DocHeading>
+
+**Тип:** [`OffscreenMainHandler<T>`](#offscreenmainhandler). При отсутствии отдельный обработчик запуска не вызывается.
+
+Получает зарегистрированный экземпляр и тот же объект опций, который передан в `init`. Вызовы экземпляра здесь прямые: синхронные методы не становятся асинхронными.
+
+Addon Bone ожидает завершения `main` перед отрисовкой документа. При этом обработчик транспортных сообщений уже зарегистрирован. Не используйте сам факт регистрации как гарантию готовности данных: методы API должны дождаться нужной им подготовки.
+
+Если `main` выбрасывает исключение или возвращает отклонённый promise, отрисовка не запускается, а в консоли появляется `Failed to build offscreen:`. Зарегистрированный экземпляр автоматически не удаляется. В режиме совместимости документ также не отправляет сигнал готовности, поэтому ожидающий его запрос может завершиться по тайм-ауту.
+
+<DocHeading level={3} id="offscreen-options-composition" toc={false}>Унаследованные опции</DocHeading>
+
+```ts file="../../../../code/entrypoints/offscreen/api/offscreen-options.ts" title="OffscreenOptions и OffscreenEntrypointOptions"
+```
+
+Оба алиаса внутренние: напрямую из `adnbn` и `adnbn/offscreen` они не экспортируются. `Partial` делает опции объявления необязательными, включая `name`; обязательным остаётся `init`.
+
+| Контракт | Что добавляет |
+| --- | --- |
+| [`OffscreenConfig`](#offscreenconfig) | Имя, причины создания и пояснение для браузера. |
+| [`PermissionsOptions`](/api/adnbn/permissions#permissionsoptions) | Разрешения расширения. |
+| [`CspOptions`](/api/adnbn/csp#cspoptions) | Настройки Content Security Policy; использование описано в [руководстве Offscreen](/guide/entrypoints/offscreen#view-options). |
+| [`ViewOptions`](/api/adnbn/view#viewoptions) | HTML, имя выходного файла, заголовок, шаблон и [общие фильтры](/api/adnbn/entrypoint-options#entrypointoptions). |
+
+Разрешения и CSP включённой точки входа добавляются в общий манифест, даже если её документ ещё не создавался. Для нативного режима Addon Bone автоматически добавляет разрешение `offscreen` в Manifest V3, кроме Firefox. Разрешения не расширяют набор extension API внутри нативного документа Chrome: там доступен только `runtime`. Подробнее — [ограничения Chrome Offscreen](https://developer.chrome.com/docs/extensions/reference/api/offscreen#concepts_and_usage).
+
+`render` и `container` относятся к [`ViewRenderDefinition`](/api/adnbn/view#viewrenderdefinition), а не к `OffscreenOptions`. В Offscreen они получают опции представления без `init`, `main` и имени API `name`. Созданное при отрисовке содержимое ещё недоступно в `init` и `main`. Контракты полей — в [`render`](/api/adnbn/view#viewrenderdefinition-render) и [`container`](/api/adnbn/view#viewrenderdefinition-container); примеры применения — в [опциях страницы Offscreen](/guide/entrypoints/offscreen#offscreen-render).
+
+## `OffscreenUnresolvedDefinition`
+
+<PropertyBadge text="type" type="info" outline />
+
+Частичное объявление до нормализации и проверки.
+
+```ts file="../../../../code/entrypoints/offscreen/api/offscreen-unresolved-definition.ts" title="OffscreenUnresolvedDefinition"
+```
+
+Делает необязательными все поля верхнего уровня [`OffscreenDefinition`](#offscreendefinition), в том числе `init`. Тип полезен для промежуточного представления объявления; он не разрешает запуск Offscreen без фабрики. `defineOffscreen` принимает полный `OffscreenDefinition<T>`.
+
+## `OffscreenReason`
+
+<PropertyBadge text="enum" type="info" outline />
+
+Причины создания нативного документа. Используются в [`OffscreenConfig.reasons`](#offscreenconfig-reasons).
+
+```ts file="../../../../code/entrypoints/offscreen/api/offscreen-reason.ts" title="OffscreenReason"
+```
+
+| Член | Назначение |
+| --- | --- |
+| `Testing` | Тестирование. |
+| `AudioPlayback` | Воспроизведение аудио. |
+| `IframeScripting` | Изменение содержимого iframe. |
+| `DOMScraping` | Извлечение данных из DOM iframe. |
+| `Blobs` | Работа с `Blob` и `URL.createObjectURL()`. |
+| `DOMParser` | Разбор HTML и XML через `DOMParser`. |
+| `UserMedia` | Потоки `getUserMedia()`. |
+| `DisplayMedia` | Потоки `getDisplayMedia()`. |
+| `WebRTC` | Работа с WebRTC. |
+| `Clipboard` | Работа с буфером обмена. |
+| `LocalStorage` | Доступ к `localStorage`. |
+| `Workers` | Создание Web Workers. |
+| `BatteryStatus` | Использование `navigator.getBattery()`. |
+| `MatchMedia` | Использование `window.matchMedia()`. |
+| `Geolocation` | Использование `navigator.geolocation`. |
+
+Значения соответствуют [причинам Chrome Offscreen](https://developer.chrome.com/docs/extensions/reference/api/offscreen#type-Reason). `AudioPlayback` позволяет Chrome закрыть документ после 30 секунд без воспроизведения аудио; остальные причины не задают такого таймера. Выбор причины не предоставляет разрешения и не обеспечивает поддержку соответствующего Web API браузером.
+
+## `OffscreenAlias`
+
+<PropertyBadge text="type" type="info" outline />
+
+Строковое имя документа в [`OffscreenMap`](#offscreenmap).
+
+```ts file="../../../../code/entrypoints/offscreen/api/offscreen-alias.ts" title="OffscreenAlias"
+```
+
+Допускает любую строку. В отличие от [`OffscreenName`](/api/offscreen/index#offscreenname), не ограничен ключами сгенерированного реестра. Тип ключа не гарантирует наличие записи: `map.get(name)` может вернуть `undefined`.
+
+## `OffscreenMap`
+
+<PropertyBadge text="type" type="info" outline />
+
+Карта параметров документов, возвращаемая [`getOffscreens`](#getoffscreens).
+
+```ts file="../../../../code/entrypoints/offscreen/api/offscreen-map.ts" title="OffscreenMap"
+```
+
+Ключ — [`OffscreenAlias`](#offscreenalias), значение — [`OffscreenParameters`](#offscreenparameters). Значения описывают создание документов; это не экземпляры их API и не proxy.
+
+## `OffscreenConfig`
+
+<PropertyBadge text="interface" type="info" outline />
+
+Внутренний контракт опций создания документа. Напрямую из `adnbn` и `adnbn/offscreen` не экспортируется.
+
+```ts file="../../../../code/entrypoints/offscreen/api/offscreen-config.ts" title="OffscreenConfig"
+```
+
+Наследует `name` от [`TransportConfig`](/api/transport/index#transportconfig). Собственные поля — `reasons` и `justification`.
+
+<DocHeading level={3} id="offscreenconfig-name" toc={true}>`name`</DocHeading>
+
+**Тип:** `string`. **Обязательное поле в `OffscreenConfig`.** В [`OffscreenDefinition`](#offscreendefinition) его можно опустить.
+
+Задаёт имя для [`getOffscreen`](#getoffscreen). Без явного имени `parser.offscreen.ts` и `parser.offscreen/index.ts` дают `parser`, а `offscreen.ts` — `offscreen`. Опция `as` меняет имя HTML-файла и не заменяет имя API.
+
+Явное имя очищается от пробелов по краям. Допустимы от 1 до 100 символов: первый — буква Unicode, `_` или `$`, остальные — также цифры. Пустая строка и дефис в явном имени завершают сборку ошибкой; это ограничение не применяется к имени, полученному из файла.
+
+При совпадении локальных имён сборка добавляет числовые суффиксы: `parser`, `parser1`, `parser2`. Итоговое имя попадает в реестр, [`getOffscreens`](#getoffscreens) и аргументы обработчиков. Для стабильного имени задайте уникальное значение; для альтернативных реализаций используйте [фильтры сборки](/api/adnbn/entrypoint-options#entrypointoptions).
+
+<DocHeading level={3} id="offscreenconfig-reasons" toc={true}>`reasons`</DocHeading>
+
+**Тип:** строковое значение [`OffscreenReason`](#offscreenreason), член enum или массив таких значений, как показано в интерфейсе. **При отсутствии:** в параметры создания попадёт `["DOM_PARSER"]`.
+
+Принимает, например, `OffscreenReason.DOMParser`, строку `"DOM_PARSER"` или массив `[OffscreenReason.DOMParser, OffscreenReason.Blobs]`. Имена членов вроде `"DOMParser"` вместо значений enum не принимаются. Одиночное значение Addon Bone преобразует в массив.
+
+Пустой массив сохраняется и не включает значение по умолчанию. Указывайте хотя бы одну причину, соответствующую операции документа. В Manifest V2 и Firefox это поле сохраняется в параметрах, но не управляет созданием документа через механизм совместимости.
+
+<DocHeading level={3} id="offscreenconfig-justification" toc={true}>`justification`</DocHeading>
+
+**Тип:** `string`. **При отсутствии:** `"Just for testing"` в параметрах создания.
+
+Пояснение для браузера, зачем нужен скрытый документ. Например: `"Parse imported HTML with DOMParser"`. Для рабочего расширения задайте пояснение своей операции.
+
+Сборка удаляет пробелы по краям. Явная пустая строка остаётся пустой и не заменяется значением по умолчанию. В Manifest V2 и Firefox механизм создания документа не использует это поле.
+
+## `OffscreenMainHandler`
+
+<PropertyBadge text="type" type="info" outline />
+
+Внутренний тип обработчика [`OffscreenDefinition.main`](#offscreendefinition-main). Не экспортируется напрямую из `adnbn` и `adnbn/offscreen`.
+
+```ts file="../../../../code/entrypoints/offscreen/api/offscreen-main-handler.ts" title="OffscreenMainHandler"
+```
+
+**Параметры:** `offscreen` — зарегистрированный API типа `T extends TransportType`; `options` — [`OffscreenEntrypointOptions`](#offscreen-options-composition). Сигнатура использует частичные опции, хотя при запуске сборка уже определила `name`.
+
+**Результат:** `Awaiter<void>`, то есть `void | Promise<void>`. `Awaiter<T>` — внутренний алиас `T | Promise<T>`. Порядок вызова и обработка ошибок описаны у [`main`](#offscreendefinition-main).
+
+## `OffscreenParameters`
+
+<PropertyBadge text="type" type="info" outline />
+
+Внутренний тип значения [`OffscreenMap`](#offscreenmap). Не экспортируется напрямую из `adnbn` и `adnbn/offscreen`.
+
+```ts file="../../../../code/entrypoints/offscreen/api/offscreen-parameters.ts" title="OffscreenParameters"
+```
+
+Использует платформенный [`chrome.offscreen.CreateParameters`](https://developer.chrome.com/docs/extensions/reference/api/offscreen#type-CreateParameters). Сборка формирует все три обязательных поля:
+
+| Поле | Тип | Значение в Addon Bone |
+| --- | --- | --- |
+| `url` | `string` | Путь к сгенерированному HTML внутри расширения. |
+| `reasons` | `chrome.offscreen.Reason[]` | Причины, нормализованные в массив. |
+| `justification` | `string` | Пояснение для создания документа. |
+
+Это параметры готовой сборки: они отличаются от исходного объявления тем, что `url` уже вычислен, а для отсутствующих `reasons` и `justification` применены значения по умолчанию.

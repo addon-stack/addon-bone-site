@@ -1,0 +1,209 @@
+---
+description: "API adnbn/offscreen: прямой доступ внутри документа, реестр и типы Offscreen, ProxyOffscreen, RegisterOffscreen и OffscreenBackground."
+---
+
+# adnbn/offscreen
+
+import DocHeading from "@components/DocHeading";
+import PropertyBadge from "@components/PropertyBadge";
+
+Прямой доступ к API внутри скрытого документа, типы реестра и классы транспорта. Все экспорты этой страницы доступны из `adnbn/offscreen`. Примеры использования и жизненный цикл — в [руководстве Offscreen](/guide/entrypoints/offscreen).
+
+Для объявления точки входа и получения proxy из background или страницы расширения используйте [Offscreen API корневого `adnbn`](/api/adnbn/offscreen).
+
+| Экспорт | Вид | Назначение |
+| --- | --- | --- |
+| [`getOffscreen`](#getoffscreen) | function | Получение исходного экземпляра внутри документа. |
+| [`OffscreenRegistry`](#offscreenregistry) | interface | Реестр имён и контрактов. |
+| [`OffscreenName`](#offscreenname) | type | Строковые имена из реестра. |
+| [`OffscreenTarget`](#offscreentarget) | type | Исходный контракт выбранного API. |
+| [`OffscreenProxyTarget`](#offscreenproxytarget) | type | Контракт для вызова через сообщения. |
+| [`ProxyOffscreen`](#proxyoffscreen) | class | Proxy с параметрами создания документа. |
+| [`RegisterOffscreen`](#registeroffscreen) | class | Ручная регистрация API внутри документа. |
+| [`OffscreenBackground`](#offscreenbackground) | class | Фоновый обработчик для механизма совместимости. |
+
+<span id="функции" />
+
+## `getOffscreen`
+
+<PropertyBadge text="function" type="info" outline />
+
+Возвращает зарегистрированный экземпляр API внутри текущего Offscreen-документа.
+
+```ts file="../../../../code/offscreen/api/get-offscreen.ts" title="getOffscreen"
+```
+
+**Параметр:** `name` — [`OffscreenName`](#offscreenname). **Обязательный параметр.** Параметр типа `N` сохраняет конкретное имя, чтобы выбрать его контракт.
+
+**Результат:** [`OffscreenTarget<N>`](#offscreentarget) — исходный экземпляр без копирования и обмена сообщениями. Синхронные методы и свойства остаются синхронными. Функция не создаёт документ и не предоставляет доступ к экземплярам в других Offscreen-документах.
+
+**Условие вызова:** API уже должен быть зарегистрирован в текущем документе. В [`main`](/api/adnbn/offscreen#offscreendefinition-main) этот экземпляр передан первым аргументом. Получение экземпляра не ожидает окончания асинхронной подготовки в `main`.
+
+**Ошибка контекста:** вне Offscreen функция выбрасывает `Offscreen service "…" can be getting only from offscreen context.`. Для удалённого вызова используйте [`getOffscreen` из `adnbn`](/api/adnbn/offscreen#getoffscreen).
+
+**Ошибка регистрации:** если в текущем документе нет экземпляра с указанным именем, функция синхронно выбрасывает `Transport instance "…" is not registered in the current context.`. Это происходит до регистрации или после её удаления через `destroy()`. Проверка контекста выполняется первой.
+
+Наличие имени в [`OffscreenRegistry`](#offscreenregistry) не означает, что его экземпляр зарегистрирован именно в этом документе. При ручной регистрации сначала вызовите [`register()`](#registeroffscreen-register); при отсутствии экземпляра функция не ожидает его появления.
+
+<span id="типы-и-интерфейсы" />
+
+## `OffscreenRegistry`
+
+<PropertyBadge text="interface" type="info" outline />
+
+Связывает имена Offscreen с исходными типами их API.
+
+```ts file="../../../../code/offscreen/api/offscreen-registry.ts" title="OffscreenRegistry"
+```
+
+В библиотеке интерфейс пустой. Сборка создаёт `.adnbn/offscreen.d.ts` с дополнением `declare module "adnbn/offscreen"`. Подключите сгенерированный файл к TypeScript-проекту потребителя, чтобы имена и контракты стали доступны.
+
+Контракт выводится из результата `init`. В него входят публичные методы и свойства, вложенные объекты и унаследованные публичные члены. `private`, `protected`, статические члены класса и имена с начальным `_` не входят в сгенерированные типы; это не удаляет их из самого экземпляра.
+
+Реестр существует только на уровне типов. Его дополнение не создаёт документ и не регистрирует API. Ручной [`RegisterOffscreen.register`](#registeroffscreen-register) также не дополняет реестр или таблицу документов для [`getOffscreens`](/api/adnbn/offscreen#getoffscreens).
+
+## `OffscreenName`
+
+<PropertyBadge text="type" type="info" outline />
+
+Строковые ключи [`OffscreenRegistry`](#offscreenregistry).
+
+```ts file="../../../../code/offscreen/api/offscreen-name.ts" title="OffscreenName"
+```
+
+Используется обеими функциями `getOffscreen`: из `adnbn` и из `adnbn/offscreen`. Пока реестр не дополнен сгенерированными или пользовательскими декларациями, тип равен `never`, и TypeScript не разрешает передать строковое имя.
+
+Правила определения имени описаны в [`OffscreenConfig.name`](/api/adnbn/offscreen#offscreenconfig-name). [`OffscreenAlias`](/api/adnbn/offscreen#offscreenalias) имеет более широкий тип `string` и используется для карты параметров сборки.
+
+## `OffscreenTarget`
+
+<PropertyBadge text="type" type="info" outline />
+
+Исходный контракт API, выбранного из реестра.
+
+```ts file="../../../../code/offscreen/api/offscreen-target.ts" title="OffscreenTarget"
+```
+
+`N` — ключ [`OffscreenRegistry`](#offscreenregistry). Общий [`TransportTarget`](/api/transport/index#transporttarget) возвращает тип по этому ключу без преобразования членов. Это результат прямого [`getOffscreen`](#getoffscreen).
+
+## `OffscreenProxyTarget`
+
+<PropertyBadge text="type" type="info" outline />
+
+Контракт выбранного API для удалённых вызовов.
+
+```ts file="../../../../code/offscreen/api/offscreen-proxy-target.ts" title="OffscreenProxyTarget"
+```
+
+Выбирает тип из [`OffscreenRegistry`](#offscreenregistry) и применяет [`TransportProxyTarget`](/api/transport/index#transportproxytarget). Методы возвращают promise, простые свойства становятся функциями чтения, вложенные объекты сохраняют вложенный доступ.
+
+Это результат [`getOffscreen` из `adnbn`](/api/adnbn/offscreen#getoffscreen). Правила преобразования и ограничения описаны в [`RpcAsyncProxy`](/api/transport/index#rpcasyncproxy), включая [расхождение типа при чтении объекта целиком](/api/transport/index#rpcasyncproxyobject).
+
+<span id="классы" />
+
+## `ProxyOffscreen`
+
+<PropertyBadge text="class" type="info" outline />
+
+Создаёт proxy с явно заданными параметрами документа. Для обычных вызовов используйте [`getOffscreen` из `adnbn`](/api/adnbn/offscreen#getoffscreen): он выбирает параметры из таблицы сборки.
+
+```ts file="../../../../code/offscreen/api/proxy-offscreen.ts" title="ProxyOffscreen"
+```
+
+Показана публичная часть объявления. `ProxyTransport` — внутренний базовый класс. Алиас `CreateParameters` обозначает платформенные параметры; напрямую из `adnbn/offscreen` он не экспортируется.
+
+**Параметры типов:** `N extends TransportName` — строковое имя; `T` — возвращаемый proxy. Внутренние [`TransportName`](/api/transport/index#transportname) и [`TransportDictionary`](/api/transport/index#transportdictionary) не ограничены реестром приложения, поэтому класс сам не выбирает его контракт. Для имени из реестра можно задать `T` как [`OffscreenProxyTarget<N>`](#offscreenproxytarget).
+
+<DocHeading level={3} id="proxyoffscreen-constructor" toc={true}>`constructor`</DocHeading>
+
+**Сигнатура:** `new ProxyOffscreen(name: N, parameters: CreateParameters)`.
+
+Оба параметра **обязательны**. `name` выбирает API в документе; `parameters` содержит `url`, `reasons` и `justification`, как описано у [`OffscreenParameters`](/api/adnbn/offscreen#offscreenparameters). Конструктор сохраняет их без копирования, но ещё не создаёт документ и не отправляет запрос.
+
+<DocHeading level={3} id="proxyoffscreen-get" toc={true}>`get`</DocHeading>
+
+**Сигнатура:** `get(): T`.
+
+Синхронно возвращает новый proxy. Создание или переключение документа выполняется при вызове через него, по [правилам `getOffscreen`](/api/adnbn/offscreen#getoffscreen-contexts). Внутри Offscreen `get()` выбрасывает ошибку получения proxy из этого контекста.
+
+<DocHeading level={3} id="proxyoffscreen-destroy" toc={true}>`destroy`</DocHeading>
+
+**Сигнатура:** `destroy(): void`. Унаследован от внутреннего `BaseTransport`.
+
+Удаляет запись с этим именем из локального реестра текущего контекста. Не закрывает скрытый документ, не снимает его удалённую регистрацию и не отключает уже выданные proxy.
+
+## `RegisterOffscreen`
+
+<PropertyBadge text="class" type="info" outline />
+
+Регистрирует API и обработчик сообщений внутри Offscreen-документа вручную. Для обычной точки входа эту регистрацию выполняет Addon Bone после [`init`](/api/adnbn/offscreen#offscreendefinition-init).
+
+```ts file="../../../../code/offscreen/api/register-offscreen.ts" title="RegisterOffscreen"
+```
+
+Показана публичная часть объявления. Внутренний `RegisterTransport` предоставляет методы `register` и `destroy`.
+
+**Параметры типов:** `N extends TransportName` — имя; `T extends object` — создаваемый экземпляр; `A extends any[]` — кортеж аргументов фабрики, по умолчанию `[]`. [`TransportName`](/api/transport/index#transportname) допускает любую строку. Значение `T` по умолчанию берётся из [`TransportDictionary`](/api/transport/index#transportdictionary); для собственного контракта задайте тип фабрики.
+
+<DocHeading level={3} id="registeroffscreen-constructor" toc={true}>`constructor`</DocHeading>
+
+**Сигнатура:** `new RegisterOffscreen(name: N, init: (...args: A) => T)`.
+
+Оба параметра **обязательны**. Конструктор сохраняет имя и синхронную фабрику. Саму фабрику не вызывает и документ не создаёт.
+
+<DocHeading level={3} id="registeroffscreen-register" toc={true}>`register`</DocHeading>
+
+**Сигнатура:** `register(...args: A): T`. Унаследован от `RegisterTransport`.
+
+Передаёт `args` фабрике, сохраняет её результат, подключает обработчик сообщений и возвращает тот же экземпляр. Promise фабрики не ожидается. Метод не выполняет `main` или `render`, не генерирует декларации и не меняет манифест.
+
+Если имя уже зарегистрировано, выбрасывает `A instance with name "…" already exists. The name must be unique.` до вызова фабрики. Суффиксы не добавляются. Если фабрика выбрасывает исключение, экземпляр и обработчик не регистрируются.
+
+<DocHeading level={3} id="registeroffscreen-get" toc={true}>`get`</DocHeading>
+
+**Сигнатура:** `get(): T`.
+
+Возвращает экземпляр по имени из текущего документа. Вне Offscreen выбрасывает `Offscreen service "…" can be getting only from offscreen context.`. Если контекст подходит, но экземпляр ещё не зарегистрирован или уже удалён, синхронно выбрасывает `Transport instance "…" is not registered in the current context.`, как и [`getOffscreen`](#getoffscreen).
+
+<DocHeading level={3} id="registeroffscreen-destroy" toc={true}>`destroy`</DocHeading>
+
+**Сигнатура:** `destroy(): void`. Унаследован от `RegisterTransport`.
+
+Снимает обработчик сообщений этой регистрации и удаляет запись из реестра. Документ остаётся открытым. Собственные подписки, таймеры и ресурсы экземпляра нужно освобождать отдельно. После удаления можно снова вызвать `register()`; фабрика создаст новый экземпляр.
+
+## `OffscreenBackground`
+
+<PropertyBadge text="class" type="info" outline />
+
+Фоновый обработчик запросов на создание скрытых документов в Manifest V2 и Firefox. Addon Bone подключает и запускает его автоматически, если в такой сборке есть Offscreen-точки входа.
+
+```ts file="../../../../code/offscreen/api/offscreen-background.ts" title="OffscreenBackground"
+```
+
+`OffscreenBridge` — внутренний базовый класс; он не экспортируется напрямую из `adnbn/offscreen`. Показан собственный публичный метод `build`. Конструктор вызывается без аргументов.
+
+<DocHeading level={3} id="offscreenbackground-build" toc={true}>`build`</DocHeading>
+
+**Сигнатура:** `build(): void`.
+
+Подключает обработчик запросов в background. Сам по себе не создаёт документ. При обычной сборке дополнительно вызывать его не требуется: это делает сгенерированный фоновый модуль.
+
+<DocHeading level={3} id="offscreenbackground-create" toc={true}>`create`</DocHeading>
+
+**Сигнатура:** `create(parameters: chrome.offscreen.CreateParameters): Promise<any>`. Унаследован от `OffscreenBridge`.
+
+**Параметр:** `parameters` — **обязательный** объект параметров создания. В background метод создаёт или повторно использует скрытый iframe по `url`; из другого контекста отправляет запрос фоновому обработчику. `reasons` и `justification` в этом механизме не используются. Это путь совместимости, а не вызов нативного `chrome.offscreen.createDocument()`.
+
+Promise разрешается после сигнала готовности документа; полезного значения результата нет. Поиск готового iframe позволяет использовать его повторно. Ошибка загрузки или ожидание сигнала дольше 10 секунд отклоняет promise и удаляет неготовый iframe. Следующий вызов может создать его заново.
+
+<DocHeading level={3} id="offscreenbackground-createoffscreen" toc={true}>`createOffscreen`</DocHeading>
+
+**Сигнатура:** `static createOffscreen(parameters: chrome.offscreen.CreateParameters): Promise<void>`. Унаследован от `OffscreenBridge`.
+
+Передаёт обязательные параметры в `create` общего экземпляра моста и ожидает его завершения. Не заменяет [`getOffscreen` из `adnbn`](/api/adnbn/offscreen#getoffscreen), который выбирает нативный или совместимый механизм по текущей сборке.
+
+<DocHeading level={3} id="offscreenbackground-getinstance" toc={true}>`getInstance`</DocHeading>
+
+**Сигнатура:** `static getInstance(): OffscreenBridge`. Унаследован от `OffscreenBridge`.
+
+Возвращает общий экземпляр базового моста, создавая его при первом обращении. Сам вызов не подключает фоновый обработчик и не создаёт документ. Результат имеет тип `OffscreenBridge`, а не `OffscreenBackground`; собственного метода `build` у него нет.

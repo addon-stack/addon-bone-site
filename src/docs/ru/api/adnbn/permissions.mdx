@@ -1,0 +1,63 @@
+---
+description: "Справочник API разрешений: поля PermissionsOptions, объединение разрешений, необязательный доступ и соответствие полям Manifest V2 и V3."
+---
+
+# API разрешений
+
+<span id="permissions-api" />
+
+import DocHeading from "@components/DocHeading";
+import PropertyBadge from "@components/PropertyBadge";
+
+Контракт разрешений браузерных API и доступа к сайтам для конфигурации расширения и точек входа. Тип `PermissionsOptions` доступен через `import type` из `adnbn`.
+
+| Экспорт | Вид | Назначение |
+| --- | --- | --- |
+| [`PermissionsOptions`](#permissionsoptions) | interface | Разрешения API и сайтов, объявляемые при сборке. |
+
+## `PermissionsOptions`
+
+<PropertyBadge text="interface" type="info" outline />
+
+Общие поля разрешений, входящие, например, в [`BackgroundConfig`](/api/adnbn/background#backgroundconfig). Они определяют, какие разрешения Addon Bone записывает в манифест расширения.
+
+```ts file="../../../../code/entrypoints/common/api/permissions-options.ts" title="PermissionsOptions"
+```
+
+<span id="permissionsoptions-fields" />
+
+Все поля можно опустить. Addon Bone объединяет разрешения включённых в сборку точек входа с разрешениями конфигурации расширения и удаляет повторы. Разрешения действуют на всё расширение; объявление в отдельной точке входа не ограничивает доступ только её кодом.
+
+Пустой список и отсутствие поля ничего не добавляют от текущего объявления. Они не удаляют разрешения, заданные в других включённых точках входа или конфигурации.
+
+<DocHeading level={3} id="permissionsoptions-permissions" toc={true}>`permissions`</DocHeading>
+
+**Тип:** `ManifestPermission[]` — массив значений [`ManifestPermission`](/api/adnbn/manifest#manifestpermission).
+
+Объявляет разрешения браузерных API, например `"storage"` или `"tabs"`. Addon Bone добавляет их в `manifest.permissions` в Manifest V2 и V3. Для адресов сайтов используйте отдельное поле [`hostPermissions`](#permissionsoptions-hostpermissions).
+
+Допустимые имена и возможности разрешений зависят от браузера и версии манифеста — см. [описание `permissions` в MDN](https://developer.mozilla.org/en-US/docs/Mozilla/Add-ons/WebExtensions/manifest.json/permissions). Перед записью Addon Bone применяет [преобразования API-разрешений](/api/adnbn/manifest#manifestbuilder-addpermission); это правила генератора, а не полная проверка поддержки браузером.
+
+<DocHeading level={3} id="permissionsoptions-optionalpermissions" toc={true}>`optionalPermissions`</DocHeading>
+
+**Тип:** `ManifestOptionalPermission[]` — массив значений [`ManifestOptionalPermission`](/api/adnbn/manifest#manifestoptionalpermission).
+
+Объявляет API-разрешения, которые расширение сможет запросить во время работы, например `["bookmarks"]`. Addon Bone записывает их в `manifest.optional_permissions` в Manifest V2 и V3. Если одно разрешение также входит в [`permissions`](#permissionsoptions-permissions), оно остаётся только в обязательном списке. Применяются те же преобразования для версии манифеста, что и у `permissions`.
+
+Само объявление не выдаёт доступ. Запрашивайте его через `requestPermissions` из `adnbn/browser` в обработчике действия пользователя и учитывайте отказ. Функция принимает объект с массивом `permissions` и возвращает `Promise<boolean>`: `true`, если доступ выдан, и `false`, если нет. Условия запроса описаны в [контракте `permissions.request()`](https://developer.mozilla.org/en-US/docs/Mozilla/Add-ons/WebExtensions/API/permissions/request); допустимые необязательные разрешения — в [описании `optional_permissions`](https://developer.mozilla.org/en-US/docs/Mozilla/Add-ons/WebExtensions/manifest.json/optional_permissions).
+
+<DocHeading level={3} id="permissionsoptions-hostpermissions" toc={true}>`hostPermissions`</DocHeading>
+
+**Тип:** `string[]`.
+
+Объявляет доступ к сайтам через [шаблоны адресов](https://developer.mozilla.org/en-US/docs/Mozilla/Add-ons/WebExtensions/Match_patterns), например `["https://api.example.com/*"]`. В Manifest V3 Addon Bone записывает их в `manifest.host_permissions`, а в Manifest V2 — в `manifest.permissions`. Повторы и более узкие шаблоны, покрытые широкими, не дублируются в результате.
+
+Разрешение сайта даёт доступ к его данным тем API, которым он нужен; само по себе оно не загружает content script и не заменяет разрешение API, например `"cookies"`. Пользователь может ограничить или отозвать доступ к сайтам. Проверяйте выданный доступ через `containsPermissions` из `adnbn/browser`, передавая шаблоны в массиве `origins`. Подробности — в [описании `host_permissions`](https://developer.mozilla.org/en-US/docs/Mozilla/Add-ons/WebExtensions/manifest.json/host_permissions).
+
+<DocHeading level={3} id="permissionsoptions-optionalhostpermissions" toc={true}>`optionalHostPermissions`</DocHeading>
+
+**Тип:** `string[]`.
+
+Объявляет шаблоны сайтов для доступа, запрашиваемого во время работы. Принимает тот же формат, что и [`hostPermissions`](#permissionsoptions-hostpermissions). В Manifest V3 Addon Bone записывает результат в `manifest.optional_host_permissions`, а в Manifest V2 — в `manifest.optional_permissions`. Повторы, более узкие шаблоны и доступ, уже покрытый обязательными host-разрешениями, исключаются из необязательного списка.
+
+Объявление не выдаёт доступ автоматически. Запрашивайте его через `requestPermissions` из `adnbn/browser`, передавая шаблоны в массиве `origins`, в обработчике действия пользователя. Перед использованием доступа проверьте результат запроса. Поддержка поля браузерами приведена в [описании `optional_host_permissions`](https://developer.mozilla.org/en-US/docs/Mozilla/Add-ons/WebExtensions/manifest.json/optional_host_permissions).

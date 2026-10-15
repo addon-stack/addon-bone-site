@@ -1,0 +1,221 @@
+---
+description: "API страниц расширения: definePage, getPageUrl, getPages, опции Page, реестр имён и доступ со страниц сайтов через matches."
+---
+
+<span id="page-api" />
+
+# API страниц расширения
+
+import DocHeading from "@components/DocHeading";
+import PropertyBadge from "@components/PropertyBadge";
+import {Tab, Tabs} from "@rspress/core/theme";
+
+Функции и типы для объявления отдельных HTML-страниц расширения и получения их адресов по имени. Все экспорты доступны из `adnbn`. Создание интерфейса, открытие страницы, её жизненный цикл и структура файлов разобраны в [руководстве Page](/guide/entrypoints/page).
+
+| Экспорт | Вид | Назначение |
+| --- | --- | --- |
+| [`definePage`](#definepage) | function | Объявление страницы расширения. |
+| [`getPageUrl`](#getpageurl) | function | Полный URL страницы по имени. |
+| [`getPages`](#getpages) | function | Имена и пути страниц текущей сборки. |
+| [`PageDefinition`](#pagedefinition) | type | Опции и содержимое страницы. |
+| [`PageProps`](#pageprops) | type | Опции, передаваемые при отображении страницы. |
+| [`PageConfig`](#pageconfig) | interface | Имя страницы и доступ к ней со страниц сайтов. |
+| [`PageAliasRegistry`](#pagealiasregistry) | interface | Расширяемый реестр имён Page. |
+| [`PageAlias`](#pagealias) | type | Допустимое имя страницы. |
+| [`PageMap`](#pagemap) | type | Соответствие имён относительным путям HTML. |
+
+Внутренний контракт [`PageEntrypointOptions`](#pageentrypointoptions) описан в конце страницы. Напрямую из `adnbn` он не экспортируется.
+
+## `definePage`
+
+<PropertyBadge text="function" type="info" outline />
+
+Принимает объявление для `export default` точки входа Page. При сборке Addon Bone создаёт HTML-документ и добавляет его имя и путь в таблицу страниц.
+
+```ts file="../../../../code/entrypoints/page/api/define-page.ts" title="definePage"
+```
+
+**Параметр:** `options` — [`PageDefinition`](#pagedefinition). **Обязательный параметр.** Все поля объекта можно опустить, поэтому `definePage({})` допустим.
+
+**Результат:** [`PageDefinition`](#pagedefinition) — тот же объект, синхронно, без копирования и подстановки значений по умолчанию. Функция не открывает страницу и не вызывает `render`.
+
+У Page нет отдельного поля регистрации в манифесте. Опции [`matches`](#pageconfig-matches), разрешений и CSP при необходимости дополняют соответствующие разделы общего манифеста. Чтобы открыть созданную страницу, получите её URL через [`getPageUrl`](#getpageurl).
+
+## `getPageUrl`
+
+<PropertyBadge text="function" type="info" outline />
+
+Преобразует имя Page в полный URL внутри расширения. Учитывает фактический путь HTML, включая [`as`](/api/adnbn/view#viewconfig-as) и [`htmlDir`](/api/adnbn/configuration#config-htmldir).
+
+```ts file="../../../../code/entrypoints/page/api/get-page-url.ts" title="getPageUrl"
+```
+
+**Параметр:** `alias` — [`PageAlias`](#pagealias), имя включённой страницы. **Обязательный параметр.** Для собственной страницы это явный [`name`](#pageconfig-name) или имя, полученное из файла.
+
+**Результат:** `string` — абсолютный URL, синхронно. Например, для страницы с `name: "help"` и `as: "guide"` вызов `getPageUrl("help")` возвращает адрес `guide.html`. В Chromium при стандартном `htmlDir` он имеет вид `chrome-extension://<extension-id>/guide.html`.
+
+Функция использует `runtime.getURL` через `getUrl` из `adnbn/browser`, поэтому вызывайте её в контексте с доступом к runtime API расширения. Она не открывает вкладку, не загружает документ и не проверяет наличие файла. Примеры использования URL в ссылке и с `createTab` — в [разделе об открытии Page](/guide/entrypoints/page#открытие-страницы).
+
+Если имя не найдено, Addon Bone выводит предупреждение `Cannot find page: <имя>` и передаёт исходную строку в `getUrl` как путь. Отсутствующий псевдоним сам по себе не приводит к исключению: возвращённый URL может указывать на несуществующий файл. Для явной проверки регистрации используйте [`getPages().has(alias)`](#getpages).
+
+## `getPages`
+
+<PropertyBadge text="function" type="info" outline />
+
+Возвращает таблицу Page, включённых в текущую сборку. Подходит для списка страниц или проверки имени перед получением URL.
+
+```ts file="../../../../code/entrypoints/page/api/get-pages.ts" title="getPages"
+```
+
+**Параметры:** отсутствуют. **Результат:** [`PageMap`](#pagemap), синхронно. Ключ — имя страницы, значение — путь к HTML относительно корня собранного расширения, например `guide.html` или `pages/guide.html` при `htmlDir: "pages"`.
+
+Таблица содержит только точки входа Page, прошедшие выбор файлов и фильтры сборки. Popup, Options, Sidebar и другие HTML-точки входа в неё не входят. Если Page нет, результат — пустой `Map`.
+
+Каждый вызов создаёт новый `Map`. Добавление, изменение или удаление записей в нём не меняет таблицу сборки и результат следующих вызовов `getPages()` или [`getPageUrl()`](#getpageurl). При ошибке чтения сгенерированной таблицы функция выводит `Failed getting pages:` и возвращает уже заполненную часть `Map`, которая может быть пустой.
+
+## `PageDefinition`
+
+<PropertyBadge text="type" type="info" outline />
+
+Объявление, которое принимает и возвращает [`definePage`](#definepage).
+
+```ts file="../../../../code/entrypoints/page/api/page-definition.ts" title="PageDefinition"
+```
+
+[`PageEntrypointOptions`](#pageentrypointoptions) объединяет имя страницы, внешний доступ, разрешения, CSP и опции HTML. [`ViewDefinition<PageProps>`](/api/adnbn/view#viewdefinition) добавляет контракт отображения: [`render`](/api/adnbn/view#viewrenderdefinition-render) и [`container`](/api/adnbn/view#viewrenderdefinition-container).
+
+`render` задаёт содержимое страницы: значение Vanilla, синхронную функцию или React-компонент в соответствии с типом исходного файла. `container` выбирает элемент для его монтирования. Параметры обработчиков имеют тип [`PageProps`](#pageprops); поддерживаемые значения и поведение описаны в [`ViewRenderDefinition`](/api/adnbn/view#viewrenderdefinition).
+
+При отсутствии `render` Addon Bone сохраняет содержимое HTML-шаблона и не создаёт отдельный контейнер для результата отображения. Пустое объявление всё равно создаёт страницу и добавляет её в таблицу Page.
+
+## `PageProps`
+
+<PropertyBadge text="type" type="info" outline />
+
+Опции текущей Page, которые Addon Bone передаёт в функцию `render`, React-компонент и функцию `container`.
+
+```ts file="../../../../code/entrypoints/page/api/page-props.ts" title="PageProps"
+```
+
+Состав совпадает с [`PageEntrypointOptions`](#pageentrypointoptions). Объект содержит поля объявления без `render` и `container`. Вычисленные при сборке значения в него автоматически не подставляются: например, если `name` не указан, `props.name` равен `undefined`, хотя у страницы есть имя в [`getPages()`](#getpages).
+
+Это опции объявления страницы. Параметры URL и данные приложения в них автоматически не попадают. Примеры аннотаций [`ViewRenderHandler<PageProps>`](/api/adnbn/view#viewrenderhandler) и [`ViewRenderReactComponent<PageProps>`](/api/adnbn/view#viewrenderreactcomponent) приведены в [руководстве Page](/guide/entrypoints/page#page-render-types).
+
+## `PageConfig`
+
+<PropertyBadge text="interface" type="info" outline />
+
+Собственные опции Page. Входят в [`PageDefinition`](#pagedefinition) и [`PageProps`](#pageprops) через [`PageEntrypointOptions`](#pageentrypointoptions).
+
+```ts file="../../../../code/entrypoints/page/api/page-config.ts" title="PageConfig"
+```
+
+<DocHeading level={3} id="pageconfig-name" toc={true}>`name`</DocHeading>
+
+**Тип:** `string`. **При отсутствии:** имя определяется по исходному файлу.
+
+Задаёт имя для [`getPageUrl`](#getpageurl), [`getPages`](#getpages) и [`PageAliasRegistry`](#pagealiasregistry). Принимает непустую строку; `name: ""` останавливает сборку с ошибкой валидации.
+
+Без `name` файл `help.page.ts` или `help.page/index.ts` получает имя `help`, а `page.ts` — `page`. Правила поиска перечислены в [структуре файлов Page](/guide/entrypoints/page#структура-файлов).
+
+`name` не меняет имя выходного HTML: для этого служит [`as`](/api/adnbn/view#viewconfig-as). В примере страница получает имя `help`, но сохраняется в `guide.html` при стандартном [`htmlDir`](/api/adnbn/configuration#config-htmldir):
+
+```ts file="../../../../code/entrypoints/page/naming.page.ts" title="src/help.page.ts"
+```
+
+При совпадении имён Addon Bone добавляет числовые суффиксы: `help`, `help1`, `help2`. Имена страниц и HTML-файлов распределяются отдельно; одна Page не заменяет другую. Чтобы ссылки не зависели от разрешения совпадений, задавайте уникальные `name` и `as`. Итоговые имена доступны в `.adnbn/page.d.ts`, а пути — в [`getPages()`](#getpages).
+
+Для внешней Page из плагина ключом таблицы служит путь импорта её модуля; `name` не переопределяет такой ключ.
+
+<DocHeading level={3} id="pageconfig-matches" toc={true}>`matches`</DocHeading>
+
+**Тип:** `string[]`. **При отсутствии:** Page не добавляет свой HTML в `web_accessible_resources`.
+
+Разрешает страницам сайтов обращаться к HTML этой Page. Для открытия страницы из самого расширения опция не требуется. Она не выдаёт расширению доступ к указанным сайтам: для этого существуют [`hostPermissions`](/api/adnbn/permissions#permissionsoptions-hostpermissions).
+
+В Manifest V3 Addon Bone добавляет путь HTML в `resources`, а шаблоны сайтов — в `matches` правила [`ManifestAccessibleResource`](/api/adnbn/manifest#manifestaccessibleresource). Доступ определяется источником сайта; Addon Bone нормализует часть пути шаблона до `/*`. Например, `https://example.com/help/*` превращается в `https://example.com/*` и не ограничивает доступ каталогом `/help/`. Это соответствует [правилам `web_accessible_resources` в Chrome](https://developer.chrome.com/docs/extensions/reference/manifest/web-accessible-resources).
+
+В Manifest V2 Addon Bone записывает только путь HTML в массив `web_accessible_resources`. Ограничения по сайтам в этом формате отсутствуют; значения `matches` не сохраняются. Различия форматов описаны в [справочнике WebExtensions](https://developer.mozilla.org/en-US/docs/Mozilla/Add-ons/WebExtensions/manifest.json/web_accessible_resources).
+
+Следующий пример рассматривается отдельно от примера с `as`. При стандартном `htmlDir` он создаёт `help.html`. Во вкладках с результатом показаны фрагменты манифеста; остальные поля опущены.
+
+<Tabs>
+    <Tab label="Код Page">
+```ts file="../../../../code/entrypoints/page/public.page.ts" title="src/help.page.ts"
+```
+    </Tab>
+    <Tab label="Сгенерированный Manifest V3">
+```json file="../../../../code/entrypoints/page/public-manifest-v3.json" title="manifest.json"
+```
+    </Tab>
+    <Tab label="Сгенерированный Manifest V2">
+```json file="../../../../code/entrypoints/page/public-manifest-v2.json" title="manifest.json"
+```
+    </Tab>
+</Tabs>
+
+Пустой массив `matches: []` не равнозначен отсутствующему полю: текущая сборка всё равно добавляет HTML в `web_accessible_resources`. В Manifest V3 отдельное правило получает `matches: []` и не разрешает доступ сайтам; в Manifest V2 остаётся публичный путь без ограничений по сайтам. Чтобы Page не добавляла правило внешнего доступа, опустите `matches`.
+
+Опция добавляет только HTML этой страницы. Правила из других источников манифеста объединяются с ним; отсутствие `matches` здесь не отменяет доступ, заданный отдельно через [`ManifestBuilder.addAccessibleResource()`](/api/adnbn/manifest#manifestbuilder-addaccessibleresource) или [`manifest`](/api/adnbn/configuration#config-manifest).
+
+## `PageAliasRegistry`
+
+<PropertyBadge text="interface" type="info" outline />
+
+Расширяемый интерфейс, ключи которого задают доступные имена для [`PageAlias`](#pagealias).
+
+```ts file="../../../../code/entrypoints/page/api/page-alias-registry.ts" title="PageAliasRegistry"
+```
+
+Исходный интерфейс пуст. Addon Bone создаёт `.adnbn/page.d.ts` и дополняет модуль `adnbn` именами включённых Page. Например, для единственной страницы с `name: "help"` декларация содержит:
+
+```ts file="../../../../code/entrypoints/page/api/generated-registry.d.ts" title=".adnbn/page.d.ts"
+```
+
+Сгенерированные типы подключаются через `.adnbn/tsconfig.json`, как описано в [настройке TypeScript](/guide/configuration/typescript). Не редактируйте `.adnbn/page.d.ts` вручную: сборка обновляет его по найденным страницам.
+
+Значение `true` отмечает наличие имени в типах; путь HTML хранится в отдельной таблице сборки. Ручное расширение интерфейса не создаёт страницу и не регистрирует её путь при выполнении.
+
+## `PageAlias`
+
+<PropertyBadge text="type" type="info" outline />
+
+Имя Page для [`getPageUrl`](#getpageurl) и ключей [`PageMap`](#pagemap).
+
+```ts file="../../../../code/entrypoints/page/api/page-alias.ts" title="PageAlias"
+```
+
+Если [`PageAliasRegistry`](#pagealiasregistry) пуст, тип допускает любую строку. После подключения сгенерированных деклараций он становится объединением строковых ключей реестра, например `"help" | "dashboard"`.
+
+Проверка TypeScript не заменяет проверку текущей сборки при выполнении: актуальную регистрацию имени можно проверить через [`getPages().has(alias)`](#getpages).
+
+## `PageMap`
+
+<PropertyBadge text="type" type="info" outline />
+
+Таблица соответствия имён Page относительным путям их HTML-файлов.
+
+```ts file="../../../../code/entrypoints/page/api/page-map.ts" title="PageMap"
+```
+
+[`getPages()`](#getpages) возвращает такой `Map`. Ключ имеет тип [`PageAlias`](#pagealias), значение — `string` с путём внутри расширения. `map.get(alias)` может вернуть `undefined`, если записи нет. Для полного URL используйте [`getPageUrl(alias)`](#getpageurl).
+
+## `PageEntrypointOptions`
+
+<PropertyBadge text="type" type="info" outline />
+
+Общие опции сборки Page. Внутренний тип: напрямую из `adnbn` не экспортируется. Для аннотации опций используйте публичный [`PageProps`](#pageprops), а для объявления с `render` или `container` — [`PageDefinition`](#pagedefinition).
+
+```ts file="../../../../code/entrypoints/page/api/page-entrypoint-options.ts" title="PageEntrypointOptions"
+```
+
+| Контракт | Что добавляет |
+| --- | --- |
+| [`PageConfig`](#pageconfig) | `name` и `matches`: имя страницы и внешний доступ к HTML. |
+| [`PermissionsOptions`](/api/adnbn/permissions#permissionsoptions) | `permissions`, `optionalPermissions`, `hostPermissions` и `optionalHostPermissions`. |
+| [`CspOptions`](/api/adnbn/csp#cspoptions) | `csp`: разрешение WebAssembly и источники ресурсов для Content Security Policy. |
+| [`ViewOptions`](/api/adnbn/view#viewoptions) | `as`, `title`, `template`, статические настройки [`HtmlEntrypointOptions`](/api/adnbn/html#htmlentrypointoptions) и фильтры [`EntrypointOptions`](/api/adnbn/entrypoint-options#entrypointoptions). |
+
+Все поля можно опустить. Каждая Page, включённая в сборку, добавляет свои разрешения и CSP в общий манифест, даже если её никогда не открывают. Эти настройки действуют на расширение; Page, исключённая из сборки, их не добавляет.
+
+В multi-app проекте [`mergePages`](/api/adnbn/configuration#config-mergepages) управляет включением Page из shared-слоя вместе со страницами приложения. Результат выбора определяет состав [`getPages()`](#getpages) и сгенерированного [`PageAliasRegistry`](#pagealiasregistry).

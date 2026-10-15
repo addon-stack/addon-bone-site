@@ -1,0 +1,649 @@
+---
+description: "API конфигурации Addon Bone: defineConfig, UserConfig, Config, параметры сборки, пути, объединение файлов и настройки кнопки расширения."
+---
+
+# API конфигурации
+
+import DocHeading from "@components/DocHeading";
+import PropertyBadge from "@components/PropertyBadge";
+import {Tab, Tabs} from "@rspress/core/theme";
+
+Функция и типы для настройки сборки в `adnbn.config.ts`. Все экспорты доступны из `adnbn`.
+
+| Экспорт | Вид | Назначение |
+| --- | --- | --- |
+| [`defineConfig`](#defineconfig) | function | Объявление конфигурации. |
+| [`ConfigDefinition`](#configdefinition) | type | Объект конфигурации или функция, которая его возвращает. |
+| [`UserConfig`](#userconfig) | type | Настройки, которые можно задать в файле конфигурации. |
+| [`ReadonlyConfig`](#readonlyconfig) | type | Представление конфигурации сборки для чтения. |
+| [`Config`](#config) | interface | Полный набор параметров сборки. |
+| [`ActionOptions`](#actionoptions) | interface | Иконка и подсказка кнопки расширения. |
+
+## `defineConfig`
+
+<PropertyBadge text="function" type="info" outline />
+
+Принимает конфигурацию для `export default` и проверяет её форму средствами TypeScript.
+
+```ts file="../../../../code/configuration/api/define-config.ts" title="defineConfig"
+```
+
+**Параметр:** `config` — [`ConfigDefinition`](#configdefinition). **Обязательный параметр.** Для настроек по умолчанию можно передать пустой объект: `defineConfig({})`.
+
+**Результат:** [`ConfigDefinition`](#configdefinition) — исходный объект или функция. Сам вызов не загружает `.env`, не выполняет callback и не подставляет значения по умолчанию. Это делает сборка при загрузке файла.
+
+Минимальное объявление с явными именем и версией расширения:
+
+```ts file="../../../../code/configuration/basic.config.ts" title="adnbn.config.ts"
+```
+
+## `ConfigDefinition`
+
+<PropertyBadge text="type" type="info" outline />
+
+Значение, которое принимает [`defineConfig`](#defineconfig): объект [`UserConfig`](#userconfig) либо функция, возвращающая такой объект.
+
+```ts file="../../../../code/configuration/api/config-definition.ts" title="ConfigDefinition"
+```
+
+`UserConfigCallback` — внутренний алиас; напрямую из `adnbn` он не экспортируется. Callback принимает [`ReadonlyConfig`](#readonlyconfig) и синхронно возвращает [`UserConfig`](#userconfig). `Promise<UserConfig>` в этот тип не входит.
+
+Аргумент содержит начальную конфигурацию из параметров запуска и значений по умолчанию. Например, при `adnbn build --browser firefox` поле `config.browser` равно [`Browser.Firefox`](/api/adnbn/environment#browser). Возвращённые настройки применяются после вызова callback по [правилам объединения](#userconfig-resolution); в его аргумент они ещё не входят. Верните только те поля, которые хотите изменить.
+
+Если вернуть `{...config, app: "reader"}`, скопированные `name`, `manifestVersion` и шаблоны имён файлов станут явно заданными значениями и сохранятся. Чтобы Addon Bone пересчитал их по новому `app`, `browser`, `mode` или `debug`, верните только переопределения, без копирования всего `config`.
+
+В этом примере имя расширения зависит от браузера сборки:
+
+```ts file="../../../../code/configuration/callback.config.ts" title="adnbn.config.ts"
+```
+
+Для Firefox в манифест попадёт имя `Reading List for Firefox`, для остальных браузеров — `Reading List`.
+
+## `UserConfig`
+
+<PropertyBadge text="type" type="info" outline />
+
+Настройки, которые разработчик записывает в файл конфигурации. Все поля можно опустить. `command` и `configFile` исключены: их задаёт запуск CLI.
+
+```ts file="../../../../code/configuration/api/user-config.ts" title="UserConfig"
+```
+
+`OptionalConfig` — внутренний тип, который не экспортируется из `adnbn`. Он делает поля [`Config`](#config) необязательными и дополнительно разрешает строковые значения для `lang` и [`workspace`](#config-workspace).
+
+<DocHeading level={3} id="userconfig-resolution" toc={false}>Как применяются настройки</DocHeading>
+
+Сначала Addon Bone формирует параметры из аргументов CLI и значений по умолчанию, затем загружает файл конфигурации. Поля из файла переопределяют начальные значения, включая `app`, `browser`, `mode` и `debug`.
+
+Это объединение на верхнем уровне: вложенные объекты не дополняются автоматически. Пользовательские [`plugins`](#config-plugins) добавляются перед встроенными плагинами. Затем сборка отдельно применяет [`bundler`](#config-bundler) к настройкам Rspack и [`manifest`](#config-manifest) к генерируемому манифесту.
+
+После объединения Addon Bone рассчитывает автоматические значения по итоговым параметрам:
+
+- [`name`](#config-name) — из `app`;
+- [`manifestVersion`](#config-manifestversion) — из `browser`;
+- [`assetsFilename`](#config-assetsfilename), [`jsFilename`](#config-jsfilename), [`cssFilename`](#config-cssfilename) и [`cssIdentName`](#config-cssidentname) — из `command`, `mode` и `debug`.
+
+Явно заданные значения этих полей сохраняются, даже если совпадают с начальными значениями по умолчанию. Например, `manifestVersion: 3` сохраняет V3 при `browser: Browser.Safari`, а собственный `jsFilename` не меняется при включении `debug`.
+
+Чтобы использовать автоматическое значение, опустите поле. При загрузке файла поля со значением `undefined` пропускаются; пустая строка и `false` сохраняются и обрабатываются по правилам соответствующей опции.
+
+## `ReadonlyConfig`
+
+<PropertyBadge text="type" type="info" outline />
+
+Представление [`Config`](#config), которое запрещает переназначать его поля средствами TypeScript. Используется в контрактах обработчиков сборки.
+
+Состав значений зависит от момента вызова обработчика: callback в [`ConfigDefinition`](#configdefinition) получает начальные параметры, до применения настроек из файла.
+
+```ts file="../../../../code/configuration/api/readonly-config.ts" title="ReadonlyConfig"
+```
+
+`Readonly` действует только на верхний уровень. Он не делает вложенные объекты глубоко неизменяемыми и не замораживает объект во время выполнения.
+
+## `Config`
+
+<PropertyBadge text="interface" type="info" outline />
+
+Полная конфигурация, с которой работает сборка после загрузки пользовательских настроек. Обязательные поля этого интерфейса не означают, что их нужно перечислять в `adnbn.config.ts`: для файла используется [`UserConfig`](#userconfig).
+
+```ts file="../../../../code/configuration/api/config.ts" title="Config"
+```
+
+Ниже указаны значения при обычном запуске CLI без явного переопределения соответствующего поля. Автоматические значения учитывают параметры из файла конфигурации.
+
+<DocHeading level={3} id="config-debug" toc={true}>`debug`</DocHeading>
+
+**Тип:** `boolean`. **По умолчанию:** `false`.
+
+Включает диагностические сообщения о загрузке конфигурации и поиске файлов, а также подробности ошибок Rspack. При `true` сборка выбирает читаемые шаблоны имён файлов для полей без явного переопределения. Это действует и для `debug` в файле конфигурации, и для флага CLI `--debug`. Сам по себе `debug` не переключает `mode` в `development`.
+
+<DocHeading level={3} id="config-command" toc={true}>`command`</DocHeading>
+
+**Тип:** [`Command`](/api/adnbn/environment#command). **Источник:** команда CLI.
+
+`Command.Build` запускает однократную сборку, `Command.Watch` — наблюдение за изменениями. Поле отсутствует в [`UserConfig`](#userconfig). Для запуска используются [`adnbn build`](/api/cli/build) и [`adnbn watch`](/api/cli/watch).
+
+<DocHeading level={3} id="config-mode" toc={true}>`mode`</DocHeading>
+
+**Тип:** [`Mode`](/api/adnbn/environment#mode). **По умолчанию:** `Mode.Production` для `build`, `Mode.Development` для `watch`.
+
+Передаёт режим в Rspack, участвует в выборе `.env` и фильтрации точек входа. Допустимы `Mode.Production`, `Mode.Development` и `Mode.None`. Изменение режима не меняет команду: `build` с режимом разработки остаётся однократной сборкой.
+
+<DocHeading level={3} id="config-browser" toc={true}>`browser`</DocHeading>
+
+**Тип:** [`Browser`](/api/adnbn/environment#browser). **По умолчанию:** `Browser.Chrome`.
+
+Выбирает целевой браузер, формат браузерных настроек и подходящие файлы точек входа. `Chrome`, `Chromium`, `Edge`, `Firefox`, `Opera` и `Safari` — отдельные значения. Настройка не определяет браузер во время выполнения расширения; версию манифеста задаёт [`manifestVersion`](#config-manifestversion).
+
+<DocHeading level={3} id="config-app" toc={true}>`app`</DocHeading>
+
+**Тип:** `string`. **По умолчанию:** `"addon"`.
+
+Идентификатор приложения. Участвует в пути `srcDir/appsDir/app/appSrcDir`, служебной переменной `APP` и шаблонах выходных файлов. Для путей к исходникам используется исходная строка; в шаблонах `[app]` имя приводится к kebab-case. Отображаемое имя расширения задаётся полем [`name`](#config-name).
+
+<DocHeading level={3} id="config-name" toc={true}>`name`</DocHeading>
+
+**Тип:** `undefined | string`. **По умолчанию:** итоговое значение [`app`](#config-app).
+
+Имя расширения в `manifest.name`. Принимает обычный текст или ключ локализации, например `"@app.name"`. Ключ должен существовать в переводах; отсутствие переводов или ключа вызывает ошибку сборки. Если задан только `app: "reader"`, имя тоже будет `"reader"`. Явное `name` сохраняется при смене `app`. Пустая строка приводит к имени, полученному из текущего `app` через `startCase`.
+
+<DocHeading level={3} id="config-shortname" toc={true}>`shortName`</DocHeading>
+
+**Тип:** `undefined | string`. **По умолчанию:** `undefined`.
+
+Короткое имя для `manifest.short_name`: текст или ключ локализации, например `"@app.shortName"`. Для сборок Edge и Opera Addon Bone подставляет текст из языка [`lang`](#config-lang); для остальных целей сохраняет ссылку на сообщение. Отсутствующий ключ вызывает ошибку. Если значение пустое или отсутствует, эта настройка не добавляет поле в манифест.
+
+<DocHeading level={3} id="config-description" toc={true}>`description`</DocHeading>
+
+**Тип:** `undefined | string`. **По умолчанию:** `undefined`.
+
+Описание в `manifest.description`. Принимает текст или существующий ключ локализации, например `"@app.description"`. Пустое или отсутствующее значение не добавляет описание через эту настройку.
+
+<DocHeading level={3} id="config-author" toc={true}>`author`</DocHeading>
+
+**Тип:** `undefined | string | (() => string | undefined)`. **По умолчанию:** `undefined`.
+
+Автор для `manifest.author`. Можно передать текст, имя переменной окружения или синхронную функцию без аргументов. Если для полученной строки существует одноимённая переменная окружения, используется её значение; иначе — сама строка. Пустой результат не добавляет автора через эту настройку.
+
+<DocHeading level={3} id="config-version" toc={true}>`version`</DocHeading>
+
+**Тип:** `string | (() => string | undefined)`. **По умолчанию:** `"VERSION"`.
+
+Версия расширения. Addon Bone сначала проверяет полученную строку как semver, затем пробует прочитать версию из переменной окружения с таким именем. Если ни один вариант не подходит, читает `version` из `package.json` в [`rootDir`](#config-rootdir).
+
+Например, `version: "1.2.0"` задаёт значение напрямую, а `version: "RELEASE_VERSION"` выбирает переменную окружения. При пустой строке обработчик прекращает поиск; если версия не пришла и из дополнительного манифеста, генератор использует `"0.0.0"`. Проверка semver во фреймворке не заменяет требования целевого браузера к версии расширения.
+
+<DocHeading level={3} id="config-minimumversion" toc={true}>`minimumVersion`</DocHeading>
+
+**Тип:** `string | number | (() => string | number | undefined)`. **По умолчанию:** `"MINIMUM_VERSION"`.
+
+Минимальная версия для поля `minimum_chrome_version`. Принимает число, строку, имя переменной окружения или синхронную функцию без аргументов. Addon Bone выделяет версию через `semver.coerce` и убирает завершающие нулевые компоненты: `"120.0.0"` превращается в `"120"`.
+
+Если версию определить не удалось, настройка не добавляет поле. Ограничения версий Firefox и Safari задаются отдельно через [`specific`](#config-specific).
+
+<DocHeading level={3} id="config-homepage" toc={true}>`homepage`</DocHeading>
+
+**Тип:** `string | (() => string | undefined)`. **По умолчанию:** `"HOMEPAGE"`.
+
+URL для `manifest.homepage_url`. Принимает URL, имя переменной окружения или синхронную функцию без аргументов. Если результат не является URL, Addon Bone пробует прочитать URL из переменной окружения с таким именем. Некорректное или отсутствующее значение не добавляет поле.
+
+<DocHeading level={3} id="config-icon" toc={true}>`icon`</DocHeading>
+
+**Тип:** `string`. **По умолчанию:** `"default"`.
+
+Имя группы иконок для `manifest.icons`. Addon Bone находит размеры и пути файлов этой группы в каталогах [`iconSrcDir`](#config-iconsrcdir). Это имя группы, а не путь к PNG или SVG. Если группа не найдена, выбирается `default`, затем первая доступная группа. Значение также служит запасной группой для [`ActionOptions.icon`](#actionoptions-icon).
+
+<DocHeading level={3} id="config-action" toc={true}>`action`</DocHeading>
+
+**Тип:** [`ActionOptions`](#actionoptions). **По умолчанию:** `undefined`.
+
+Задаёт внешний вид кнопки расширения. Объект, в том числе `action: {}`, добавляет кнопку без popup. Он не создаёт обработчик нажатия или HTML-страницу. Если поле отсутствует, кнопку всё равно может добавить popup с `apply: true` либо команда для кнопки расширения.
+
+Поля [`icon`](#actionoptions-icon) и [`title`](#actionoptions-title) задают группу иконок и подсказку кнопки. Начальный Popup может переопределить каждое из этих значений своими настройками [`PopupConfig`](/api/adnbn/popup#popupconfig).
+
+Например, для группы `active` положите иконку размером 16 × 16 в `src/icons/active16.png`. Эта конфигурация выбирает её для кнопки и задаёт подсказку `Reading List`:
+
+```ts file="../../../../code/configuration/action.config.ts" title="adnbn.config.ts"
+```
+
+<DocHeading level={3} id="config-specific" toc={true}>`specific`</DocHeading>
+
+**Тип:** `BrowserSpecific | (() => BrowserSpecific | undefined)`. **По умолчанию:** `undefined`.
+
+Браузерные настройки для `manifest.browser_specific_settings`. Принимает объект или синхронную функцию без аргументов. Контракт [`BrowserSpecific`](/api/adnbn/manifest#browserspecific) можно импортировать из `adnbn`.
+
+| Поле объекта | Содержимое |
+| --- | --- |
+| [`gecko`](/api/adnbn/manifest#browserspecific-gecko) | `id`, `updateUrl`, `strictMinVersion`, `strictMaxVersion`, `dataCollectionPermissions`. Используется для Firefox. |
+| [`geckoAndroid`](/api/adnbn/manifest#browserspecific-geckoandroid) | `strictMinVersion`, `strictMaxVersion` для Firefox на Android. |
+| [`safari`](/api/adnbn/manifest#browserspecific-safari) | `strictMinVersion`, `strictMaxVersion` для Safari. |
+
+Строковые поля можно опустить. `updateUrl` должен быть URL. [`DataCollectionPermissions`](/api/adnbn/manifest#datacollectionpermissions) принимает массивы `required` и `optional` со значениями [`DataCollectionPermission`](/api/adnbn/manifest#datacollectionpermission). Addon Bone преобразует имена полей в формат манифеста и выбирает настройки для текущего браузера. Некорректный объект не применяется; функция, вернувшая `undefined`, тоже не добавляет настройки.
+
+Например, для сборки Firefox укажите идентификатор расширения и минимальную версию браузера:
+
+```ts file="../../../../code/configuration/specific.config.ts" title="adnbn.config.ts"
+```
+
+В манифесте эти значения попадут в `browser_specific_settings.gecko.id` и `browser_specific_settings.gecko.strict_min_version`.
+
+<DocHeading level={3} id="config-incognito" toc={true}>`incognito`</DocHeading>
+
+**Тип:** `ManifestIncognitoValue | (() => ManifestIncognitoValue | undefined)`. **По умолчанию:** `undefined`.
+
+Значение `manifest.incognito`. Принимает [`ManifestIncognitoValue`](/api/adnbn/manifest#manifestincognitovalue) либо синхронную функцию без аргументов, возвращающую такое значение. Это строки `"spanning"`, `"split"`, `"not_allowed"` или члены [`ManifestIncognito`](/api/adnbn/manifest#manifestincognito). При отсутствии значения Addon Bone не добавляет поле через эту настройку.
+
+`"spanning"` использует общий контекст для обычных и приватных окон, `"split"` разделяет их, `"not_allowed"` запрещает работу в приватных окнах. Разрешение пользователя на доступ к приватным окнам остаётся отдельным условием; Firefox не поддерживает `"split"`. Подробнее — [контракт `incognito` в MDN](https://developer.mozilla.org/en-US/docs/Mozilla/Add-ons/WebExtensions/manifest.json/incognito).
+
+<DocHeading level={3} id="config-manifest" toc={true}>`manifest`</DocHeading>
+
+**Тип:** `OptionalManifest | ((builder: ManifestBuilder) => OptionalManifest | undefined)`. **По умолчанию:** `undefined`.
+
+Дополняет создаваемый манифест. Можно передать [`OptionalManifest`](/api/adnbn/manifest#optionalmanifest) с полями WebExtension-манифеста или синхронную функцию. Функция получает текущий [`ManifestBuilder`](/api/adnbn/manifest#manifestbuilder), может вызывать его методы и возвращает дополнительный объект либо `undefined`.
+
+В объекте можно задать `version_name` напрямую. В варианте с callback билдер дополнительно добавляет разрешение `storage`, а возвращаемый объект задаёт ту же строку версии:
+
+<Tabs>
+    <Tab label="Объект манифеста">
+```ts file="../../../../code/configuration/manifest.config.ts" title="adnbn.config.ts"
+```
+    </Tab>
+    <Tab label="Callback с ManifestBuilder">
+```ts file="../../../../code/configuration/manifest-builder.config.ts" title="adnbn.config.ts"
+```
+    </Tab>
+</Tabs>
+
+Возвращайте дополнительный объект манифеста, как в примере, или `undefined`, если достаточно вызовов методов билдера. Сам `builder` возвращать не нужно.
+
+Перед этой настройкой Addon Bone читает объект `manifest` из корневого `package.json`. Дополнительные объекты объединяются рекурсивно, их массивы соединяются. Именованные настройки и точки входа участвуют в генерации отдельно: `manifest` не заменяет целиком результат сборки. Например, непустое `config.name` имеет приоритет над `manifest.name`, а разрешения собираются совместно с разрешениями точек входа. Для выбора версии используйте [`manifestVersion`](#config-manifestversion).
+
+<DocHeading level={3} id="config-manifestversion" toc={true}>`manifestVersion`</DocHeading>
+
+**Тип:** [`ManifestVersion`](/api/adnbn/manifest#manifestversion), то есть `2 | 3`. **По умолчанию:** `2` для [`Browser.Safari`](/api/adnbn/environment#browser), `3` для остальных браузеров.
+
+Выбирает генератор Manifest V2 или Manifest V3 и участвует в фильтрации точек входа. Автоматическое значение определяется по итоговому `browser`, в том числе заданному в файле конфигурации. Флаг CLI `--mv2` явно задаёт `2`. Поле `manifestVersion` в файле имеет приоритет над этим флагом; явно выбранная версия не меняется при смене браузера.
+
+<DocHeading level={3} id="config-lang" toc={true}>`lang`</DocHeading>
+
+**Тип в `Config`:** `Language`. **В `UserConfig`:** также соответствующая строка. **По умолчанию:** `Language.English` (`"en"`).
+
+Основной язык переводов. Допустимы коды из `Language`, например `"ru"`, `"de"` или `"pt_BR"`; неизвестный код вызывает ошибку загрузки конфигурации. Если найдены файлы переводов, среди них должен быть основной язык, а его структура служит основой проверки переводов.
+
+При наличии переводов записывается `manifest.default_locale`. Если переводов нет, один только `lang` не создаёт каталог локализации и не добавляет `default_locale`.
+
+<DocHeading level={3} id="config-workspace" toc={true}>`workspace`</DocHeading>
+
+**Тип в `Config`:** [`Workspace`](/api/adnbn/environment#workspace). **В `UserConfig`:** также `"single" | "multi"`. **По умолчанию:** `Workspace.Single`.
+
+В режиме `single` общим слоем исходников служит сам [`srcDir`](#config-srcdir). В режиме `multi` общий слой находится в [`sharedDir`](#config-shareddir), а приложение — в `srcDir/appsDir/app/appSrcDir`. Неизвестное значение вызывает ошибку загрузки конфигурации.
+
+В этом примере исходники выбранного приложения находятся в `src/apps/<app>/src`, общий код — в `src/shared`:
+
+```ts file="../../../../code/configuration/workspace.config.ts" title="adnbn.config.ts"
+```
+
+<DocHeading level={3} id="config-path-rules" toc={false}>Основа путей</DocHeading>
+
+Пути к исходникам отсчитываются от [`rootDir`](#config-rootdir). Пути выходных JS, CSS, HTML и ресурсов — от каталога `rootDir/outDir/artifactName`.
+
+В строках каталогов, кроме `rootDir`, запрещена последовательность `..`. `srcDir` не может быть `"."` или совпадать с `outDir`; `appsDir` не может совпадать с `sharedDir`. `publicDir` не может быть `"."` или совпадать с `srcDir`, `outDir`, `appSrcDir`. Нарушение этих условий останавливает загрузку конфигурации.
+
+<DocHeading level={3} id="config-rootdir" toc={true}>`rootDir`</DocHeading>
+
+**Тип:** `string`. **По умолчанию:** `"."`, относительно текущего рабочего каталога.
+
+Корень проекта: основа путей к исходникам, результатам сборки, `package.json` и конфигурации. Аргумент `[root]` у CLI задаёт его до чтения файла. Если изменить `rootDir` внутри уже загруженного файла, последующие пути будут вычисляться от нового корня; другой файл конфигурации автоматически не загружается.
+
+<DocHeading level={3} id="config-outdir" toc={true}>`outDir`</DocHeading>
+
+**Тип:** `string`. **По умолчанию:** `"dist"`.
+
+Каталог результатов относительно `rootDir`. Конкретная сборка находится внутри него в каталоге [`artifactName`](#config-artifactname), например `dist/addon-chrome-mv3`. Команда `build` включает очистку каталога конкретной сборки перед записью результата.
+
+<DocHeading level={3} id="config-srcdir" toc={true}>`srcDir`</DocHeading>
+
+**Тип:** `string`. **По умолчанию:** `"src"`.
+
+Каталог исходников относительно `rootDir`. В режиме `single` здесь находится общий слой точек входа; в `multi` здесь размещаются каталоги приложений и общего кода.
+
+<DocHeading level={3} id="config-shareddir" toc={true}>`sharedDir`</DocHeading>
+
+**Тип:** `string`. **По умолчанию:** `"shared"` в режиме `multi`, `"."` в режиме `single`.
+
+Каталог общего кода относительно `srcDir`. В режиме `single` Addon Bone принудительно устанавливает `"."`, даже если в файле задано другое значение. Для отдельного общего каталога выберите [`Workspace.Multi`](/api/adnbn/environment#workspace).
+
+<DocHeading level={3} id="config-appsdir" toc={true}>`appsDir`</DocHeading>
+
+**Тип:** `string`. **По умолчанию:** `"apps"`.
+
+Каталог приложений относительно `srcDir`. Путь выбранного приложения складывается как `rootDir/srcDir/appsDir/app`. Сам каталог `appsDir` не выбирает приложение — для этого используется [`app`](#config-app).
+
+<DocHeading level={3} id="config-appsrcdir" toc={true}>`appSrcDir`</DocHeading>
+
+**Тип:** `string`. **По умолчанию:** `"."`.
+
+Каталог исходников внутри выбранного приложения. Значение `"."` использует сам каталог приложения; `"src"` даёт путь `rootDir/srcDir/appsDir/app/src`.
+
+<DocHeading level={3} id="config-iconsrcdir" toc={true}>`iconSrcDir`</DocHeading>
+
+**Тип:** `string`. **По умолчанию:** `"icons"`.
+
+Имя каталога исходных иконок. Поиск идёт в исходниках приложения, каталоге приложения, общем слое и `srcDir`, в этом порядке. Например, `iconSrcDir: "icons"` допускает `src/apps/reader/icons` и `src/shared/icons`. Выбор одного слоя или объединение определяет [`mergeIcons`](#config-mergeicons).
+
+<DocHeading level={3} id="config-iconoutdir" toc={true}>`iconOutDir`</DocHeading>
+
+**Тип:** `string`. **По умолчанию:** `"icons"`.
+
+Каталог сгенерированных иконок относительно каталога конкретной сборки. Пути к ним Addon Bone подставляет в манифест.
+
+<DocHeading level={3} id="config-jsdir" toc={true}>`jsDir`</DocHeading>
+
+**Тип:** `string`. **По умолчанию:** `"js"`.
+
+Каталог JavaScript относительно каталога конкретной сборки. Добавляется перед результатом [`jsFilename`](#config-jsfilename).
+
+<DocHeading level={3} id="config-cssdir" toc={true}>`cssDir`</DocHeading>
+
+**Тип:** `string`. **По умолчанию:** `"css"`.
+
+Каталог выходных CSS относительно каталога конкретной сборки. Добавляется перед результатом [`cssFilename`](#config-cssfilename).
+
+<DocHeading level={3} id="config-assetsdir" toc={true}>`assetsDir`</DocHeading>
+
+**Тип:** `string`. **По умолчанию:** `"assets"`.
+
+Каталог импортируемых ресурсов, которые сборщик выводит отдельными файлами: изображений, шрифтов и других поддерживаемых форматов. Добавляется перед [`assetsFilename`](#config-assetsfilename). Файлы из [`publicDir`](#config-publicdir) копируются отдельно, без этого префикса.
+
+<DocHeading level={3} id="config-htmldir" toc={true}>`htmlDir`</DocHeading>
+
+**Тип:** `string`. **По умолчанию:** `"."`.
+
+Каталог сгенерированных HTML-страниц относительно каталога конкретной сборки. Например, `"pages"` размещает страницы в подкаталоге `pages`; `"."` оставляет их в корне сборки.
+
+<DocHeading level={3} id="config-localedir" toc={true}>`localeDir`</DocHeading>
+
+**Тип:** `string`. **По умолчанию:** `"locales"`.
+
+Имя каталога исходных переводов. Каталог ищется в исходниках приложения, каталоге приложения, общем слое и `srcDir`. Значение `""` тоже приводит к поиску в `locales`. Объединение регулирует [`mergeLocales`](#config-mergelocales). Эта опция не переименовывает выходной каталог `_locales`.
+
+<DocHeading level={3} id="config-html" toc={true}>`html`</DocHeading>
+
+**Тип:** [`HtmlOptions | HtmlOptions[] | (() => HtmlOptions | HtmlOptions[])`](/api/adnbn/html#htmloptions). **По умолчанию:** `[]`.
+
+Добавляет теги в HTML, уже создаваемый сборкой: `metas`, `links`, `scripts` и другие настройки [`HtmlOptions`](/api/adnbn/html#htmloptions). Принимает один объект, массив объектов или синхронную функцию без аргументов. Пустой массив не добавляет глобальных настроек. Если сборка не создаёт HTML, опция не применяется.
+
+Например, настройка добавляет метатег `color-scheme` в создаваемые страницы:
+
+```ts file="../../../../code/configuration/html.config.ts" title="adnbn.config.ts"
+```
+
+У [`metas`](/api/adnbn/html#htmloptions-metas) используется [`HtmlMetaTagOptions`](/api/adnbn/html#htmlmetatagoptions) с `attributes`; строка вместо объекта метатега не поддерживается контрактом Addon Bone. Настройка `html` не объявляет новые точки входа. Для ограничения набора HTML-файлов есть поле [`files`](/api/adnbn/html#htmltagspluginoptions-files).
+
+<DocHeading level={3} id="config-bundler" toc={true}>`bundler`</DocHeading>
+
+**Тип:** `RspackConfig | ((rspack: RspackConfig) => Awaiter<RspackConfig>)`. **По умолчанию:** `{}`.
+
+Расширяет конфигурацию Rspack. `RspackConfig` — имя импорта `Configuration` из `@rspack/core`, а `Awaiter<T>` допускает `T` или `Promise<T>`.
+
+Объект либо результат callback объединяется с текущими настройками через `webpack-merge`: вложенные объекты дополняются, массивы обычно соединяются. Callback получает конфигурацию, сформированную к моменту его вызова; верните только изменяемые поля. Возврат всего `rspack` повторно добавит его массивы, например плагины и правила обработки файлов. Для асинхронной подготовки можно использовать `async` и `await`.
+
+В примере предупреждения о размере результата включаются только для production:
+
+```ts file="../../../../code/configuration/bundler.config.ts" title="adnbn.config.ts"
+```
+
+Настройка выполняется во время сборки, не в браузере. Addon Bone добавляет некоторые параметры после неё: например, `watch` устанавливает `devtool: "inline-source-map"`.
+
+<DocHeading level={3} id="config-env" toc={true}>`env`</DocHeading>
+
+**Тип:** `EnvFilterVariant | Partial<EnvFilterOptions>`. **По умолчанию:** `{}`.
+
+Выбирает переменные из загруженных `.env`, которые Addon Bone подставит в код расширения. Принимает префикс строки, предикат `(name: string) => boolean` либо объект `{filter: префиксИлиПредикат}`. `EnvFilterVariant` и `EnvFilterOptions` — внутренние типы, не экспортируемые из `adnbn`.
+
+| Значение | Результат |
+| --- | --- |
+| `"PUBLIC_"` или `{filter: "PUBLIC_"}` | Переменные с префиксом `PUBLIC_`. |
+| Функция | Переменные, для имён которых функция вернула `true`. |
+| `{}`, `""` или строка из пробелов | Все загруженные переменные. |
+| `() => false` | Только служебные переменные. |
+
+Пробелы по краям префикса удаляются. `APP`, `BROWSER`, `MODE` и `MANIFEST_VERSION` включаются всегда. Значения доступны через [`getEnv`](/api/adnbn/environment#getenv). Включённые данные становятся частью собранного расширения; фильтр определяет, какие переменные туда попадут.
+
+В примере разрешены переменные с префиксом `PUBLIC_`, отдельная переменная `FEATURE_READER` и служебные переменные:
+
+```ts file="../../../../code/configuration/env.config.ts" title="adnbn.config.ts"
+```
+
+Файлы `.env` ищутся в исходниках приложения, каталоге приложения и `rootDir`. В каждом каталоге приоритет идёт от `.env.<mode>.<browser>.local` к `.env.<mode>.<browser>`, `.env.<browser>.local`, `.env.<browser>`, `.env.<mode>.local`, `.env.<mode>`, `.env.local`, `.env`. Первое найденное значение ключа имеет приоритет. Фильтр управляет включением в сборку; он не меняет правила загрузки `.env` в Node.js.
+
+<DocHeading level={3} id="config-plugins" toc={true}>`plugins`</DocHeading>
+
+**Тип:** `Plugin[]`. **Пользовательское значение по умолчанию:** `[]`.
+
+Плагины Addon Bone для участия в сборке. Пользовательский список сохраняет порядок и добавляется перед встроенными плагинами; пустой список не отключает встроенные. Это плагины фреймворка: плагины самого Rspack передаются через [`bundler.plugins`](#config-bundler).
+
+<DocHeading level={3} id="config-analyze" toc={true}>`analyze`</DocHeading>
+
+**Тип:** `boolean`. **По умолчанию:** `false`.
+
+Подключает Rsdoctor для анализа сборки при команде `build`. То же начальное значение можно задать флагом `--analyze`. При `watch` эта опция не подключает анализатор.
+
+<DocHeading level={3} id="config-configfile" toc={true}>`configFile`</DocHeading>
+
+**Тип:** `string`. **По умолчанию:** `"adnbn.config.ts"`.
+
+Имя или путь к файлу конфигурации относительно первоначального [`rootDir`](#config-rootdir). Задаётся флагом CLI `--config`; поле исключено из [`UserConfig`](#userconfig). Если файл отсутствует, сборка использует начальные настройки; при включённом `debug` выводит предупреждение.
+
+<DocHeading level={3} id="config-entrypoint-merging" toc={false}>Объединение точек входа</DocHeading>
+
+Параметры `mergeBackground`, `mergeCommands`, `mergeContentScripts`, `mergePages`, `mergePopup`, `mergeSidebar`, `mergeRelay`, `mergeService`, `mergeOffscreen` и `mergeSandbox` управляют поиском соответствующих точек входа в исходниках приложения и общем слое:
+
+- При `false` найденные файлы приложения заменяют общий набор этого вида. Если файлов приложения нет, используется общий набор.
+- При `true` в сборку включаются оба набора, после чего применяются фильтры и правила конкретного вида точек входа.
+
+Выбор набора происходит до фильтрации отдельных файлов. Если файл приложения найден, но затем исключён по `browser`, `mode` или другому фильтру, `false` не включает общий набор повторно. Файлы, добавленные плагинами, участвуют отдельно. Эти настройки не объединяют содержимое TypeScript-файлов или интерфейсов.
+
+<DocHeading level={3} id="config-mergebackground" toc={true}>`mergeBackground`</DocHeading>
+
+**Тип:** `boolean`. **По умолчанию:** `false`.
+
+Включает background-файлы из приложения и общего слоя по [правилам объединения](#config-entrypoint-merging). Выбранные фоновые точки входа участвуют в общем background расширения.
+
+<DocHeading level={3} id="config-mergecommands" toc={true}>`mergeCommands`</DocHeading>
+
+**Тип:** `boolean`. **По умолчанию:** `false`.
+
+Включает команды из обоих слоёв по [правилам объединения](#config-entrypoint-merging). Имена команд должны оставаться уникальными: совпадение вызывает ошибку сборки, а не переопределение общей команды.
+
+<DocHeading level={3} id="config-mergecontentscripts" toc={true}>`mergeContentScripts`</DocHeading>
+
+**Тип:** `boolean`. **По умолчанию:** `false`.
+
+Включает content script из обоих слоёв по [правилам объединения](#config-entrypoint-merging). Объединение выбранных скриптов в выходные части сборки отдельно регулирует [`concatContentScripts`](#config-concatcontentscripts).
+
+<DocHeading level={3} id="config-concatcontentscripts" toc={true}>`concatContentScripts`</DocHeading>
+
+**Тип:** `boolean`. **По умолчанию:** `true`.
+
+Группирует выбранные content script с одинаковыми настройками запуска в одну точку сборки. При `false` каждому назначается отдельное имя точки сборки. Скрипты с явно заданной изоляцией, отличной от `ContentScriptIsolation.None`, не объединяются этим механизмом.
+
+Настройка не выбирает исходные файлы и не отключает выделение общих зависимостей в чанки.
+
+<DocHeading level={3} id="config-mergestyles" toc={true}>`mergeStyles`</DocHeading>
+
+**Тип:** `boolean`. **По умолчанию:** `true`.
+
+При импорте CSS или SCSS из общего слоя добавляет файл приложения с тем же относительным путём, если он существует. Общие правила идут первыми, правила приложения — следом; результат обрабатывается как один CSS-модуль. При `false` такой файл приложения автоматически не добавляется. Относительные Sass-импорты и URL ресурсов сохраняют привязку к исходным файлам.
+
+<DocHeading level={3} id="config-mergeicons" toc={true}>`mergeIcons`</DocHeading>
+
+**Тип:** `boolean`. **По умолчанию:** `false`.
+
+При `false` выбирает первый непустой слой исходных иконок: исходники приложения → каталог приложения → общий слой → `srcDir`. При `true` собирает иконки из всех этих слоёв. При совпадении группы и размера более специфичный слой переопределяет общий. Это объединение набора файлов, а не изображений в один файл.
+
+<DocHeading level={3} id="config-mergelocales" toc={true}>`mergeLocales`</DocHeading>
+
+**Тип:** `boolean`. **По умолчанию:** `true`.
+
+Объединяет переводы плагинов, `srcDir`, общего слоя, каталога приложения и исходников приложения, от меньшего приоритета к большему. Внутри слоя браузерный файл имеет приоритет над общим; более позднее значение заменяет прежнее по тому же ключу.
+
+При `false` из проекта выбирается только первый непустой слой, начиная с исходников приложения; переводы плагинов сохраняются как основа. Два общих или два браузерных файла одного языка в одном слое вызывают ошибку неоднозначности.
+
+<DocHeading level={3} id="config-mergepages" toc={true}>`mergePages`</DocHeading>
+
+**Тип:** `boolean`. **По умолчанию:** `false`.
+
+Включает точки входа Page из обоих слоёв по [правилам объединения](#config-entrypoint-merging). Каждая выбранная страница получает собственный HTML-файл.
+
+<DocHeading level={3} id="config-mergepopup" toc={true}>`mergePopup`</DocHeading>
+
+**Тип:** `boolean`. **По умолчанию:** `false`.
+
+Включает popup из обоих слоёв по [правилам объединения](#config-entrypoint-merging). Чтобы собрать все выбранные popup как отдельные страницы, дополнительно включите [`multiplePopup`](#config-multiplepopup).
+
+<DocHeading level={3} id="config-multiplepopup" toc={true}>`multiplePopup`</DocHeading>
+
+**Тип:** `boolean`. **По умолчанию:** `false`.
+
+При `false` собирается один popup — последний кандидат после упорядочивания по приоритету источников и имени файла. При `true` собираются все выбранные popup. Настройка не меняет поиск слоёв и не назначает все страницы кнопке браузера: исходный popup для манифеста выбирается через `apply`.
+
+<DocHeading level={3} id="config-mergesidebar" toc={true}>`mergeSidebar`</DocHeading>
+
+**Тип:** `boolean`. **По умолчанию:** `false`.
+
+Включает Sidebar из обоих слоёв по [правилам объединения](#config-entrypoint-merging). Для нескольких выходных страниц дополнительно включите [`multipleSidebar`](#config-multiplesidebar).
+
+<DocHeading level={3} id="config-multiplesidebar" toc={true}>`multipleSidebar`</DocHeading>
+
+**Тип:** `boolean`. **По умолчанию:** `false`.
+
+При `false` собирается одна боковая панель — последний кандидат после упорядочивания. При `true` собираются все выбранные панели. Панель для манифеста определяется через [`SidebarConfig.apply`](/api/adnbn/sidebar#sidebarconfig-apply); наличие нескольких HTML-файлов не открывает их автоматически. Таблица вариантов доступна через [`getSidebars()`](/api/adnbn/sidebar#getsidebars), переключение — через [`changeSidebar()`](/api/adnbn/sidebar#changesidebar).
+
+<DocHeading level={3} id="config-mergerelay" toc={true}>`mergeRelay`</DocHeading>
+
+**Тип:** `boolean`. **По умолчанию:** `false`.
+
+Включает Relay из приложения и общего слоя по [правилам объединения](#config-entrypoint-merging). Не меняет область выполнения или контракт методов Relay.
+
+<DocHeading level={3} id="config-mergeservice" toc={true}>`mergeService`</DocHeading>
+
+**Тип:** `boolean`. **По умолчанию:** `false`.
+
+Включает Service из приложения и общего слоя по [правилам объединения](#config-entrypoint-merging). Каждый выбранный сервис сохраняет собственные имя и контракт; настройка не объединяет классы сервисов.
+
+<DocHeading level={3} id="config-mergeoffscreen" toc={true}>`mergeOffscreen`</DocHeading>
+
+**Тип:** `boolean`. **По умолчанию:** `false`.
+
+Включает Offscreen из приложения и общего слоя по [правилам объединения](#config-entrypoint-merging). Само объединение исходников не меняет ограничения браузера на offscreen-документы.
+
+<DocHeading level={3} id="config-mergesandbox" toc={true}>`mergeSandbox`</DocHeading>
+
+**Тип:** `boolean`. **По умолчанию:** `false`.
+
+Включает Sandbox из приложения и общего слоя по [правилам объединения](#config-entrypoint-merging). Выбранные объявления участвуют в сборке sandbox и его контракта.
+
+<DocHeading level={3} id="config-publicdir" toc={true}>`publicDir`</DocHeading>
+
+**Тип:** `string`. **По умолчанию:** `"public"`.
+
+Имя каталога файлов для прямого копирования в корень конкретной сборки с сохранением вложенных путей. Каталог ищется в исходниках приложения, каталоге приложения, общем слое и `srcDir`. Это не `rootDir/public`, если `srcDir` имеет стандартное значение `"src"`. Объединение регулирует [`mergePublic`](#config-mergepublic).
+
+<DocHeading level={3} id="config-mergepublic" toc={true}>`mergePublic`</DocHeading>
+
+**Тип:** `boolean`. **По умолчанию:** `false`.
+
+При `false` копирует первый существующий каталог [`publicDir`](#config-publicdir), начиная с исходников приложения. Даже пустой существующий каталог прекращает поиск. При `true` копирует все найденные каталоги. При совпадении выходного пути больший приоритет имеет слой ближе к приложению.
+
+<DocHeading level={3} id="config-commonchunks" toc={true}>`commonChunks`</DocHeading>
+
+**Тип:** `boolean | ((names: Set<string>) => string | undefined)`. **По умолчанию:** `true`.
+
+Включает общее правило выделения повторно используемого кода в отдельные чанки: не менее двух потребителей и минимальный размер `20000` байт. Также разрешает отдельные общие чанки каталога локализации.
+
+Callback получает набор имён чанков-потребителей и задаёт имя общего чанка. Пустая строка или `undefined` выбирает автоматическое имя; это не отменяет создание чанка. В примере имена сортируются, чтобы результат не зависел от порядка обхода:
+
+```ts file="../../../../code/configuration/common-chunks.config.ts" title="adnbn.config.ts"
+```
+
+`false` отключает эти правила Addon Bone. Это не общий запрет разделения кода: специальные правила для content script и динамические импорты обрабатываются отдельно.
+
+<DocHeading level={3} id="config-artifactname" toc={true}>`artifactName`</DocHeading>
+
+**Тип:** `string`. **По умолчанию:** `"[name]-[browser]-[mv]"`.
+
+Имя каталога конкретной сборки внутри [`outDir`](#config-outdir).
+
+| Подстановка | Значение |
+| --- | --- |
+| `[app]`, `[name]` | Идентификатор `app`, а не отображаемое `config.name`. |
+| `[mode]` | Текущий режим сборки. |
+| `[browser]` | Целевой браузер. |
+| `[mv]` | `mv2` или `mv3`. |
+
+После подстановки имя приводится к kebab-case. Например, при `app: "ReadingList"` шаблон `"[app]-[browser]-[mv]"` даёт `reading-list-chrome-mv3` для Chrome и MV3. Указывайте имя каталога; вложенность результата задаёт `outDir`.
+
+<DocHeading level={3} id="config-filename-defaults" toc={false}>Шаблоны имён по умолчанию</DocHeading>
+
+Итоговые `command: Command.Build`, `mode: Mode.Production` и `debug: false` вместе выбирают production-шаблоны. Любая другая комбинация выбирает вторую колонку. Addon Bone учитывает изменения `mode` и `debug` из файла конфигурации. Явно заданный шаблон сохраняется и не заменяется автоматическим значением.
+
+| Поле | Production build без debug | Остальные запуски |
+| --- | --- | --- |
+| `assetsFilename` | `[contenthash:4][ext]` | `[name]-[contenthash:4][ext]` |
+| `jsFilename` | `[contenthash:5].js` | `[name].js` |
+| `cssFilename` | `[contenthash:5].css` | `[name].css` |
+| `cssIdentName` | `[app]-[hash:base64:5]` | `[local]-[hash:base64:5]` |
+
+Итоговые пути JS и CSS можно прочитать через [`getEntrypointAssets()`](/api/adnbn/entrypoint-assets#getentrypointassets) в результате типа [`EntrypointAssets`](/api/adnbn/entrypoint-assets#entrypointassets). В фоне [`getEntrypointAssetsMap()`](/api/adnbn/entrypoint-assets#getentrypointassetsmap) возвращает карту всей сборки с дополнительными ресурсами.
+
+<DocHeading level={3} id="config-assetsfilename" toc={true}>`assetsFilename`</DocHeading>
+
+**Тип:** `Filename` из `@rspack/core`: строка либо `(pathData, assetInfo?) => string`. **По умолчанию:** по [таблице шаблонов](#config-filename-defaults).
+
+Имя ресурса, выведенного как отдельный файл. Addon Bone подставляет `[app]` и добавляет [`assetsDir`](#config-assetsdir); Rspack обрабатывает `[name]`, `[ext]`, `[contenthash]` и другие поддерживаемые подстановки. У функции обрабатывается возвращённая строка. Копирование из `publicDir` не использует этот шаблон. Подробности — [`output.assetModuleFilename`](https://v1.rspack.rs/config/output#outputassetmodulefilename).
+
+<DocHeading level={3} id="config-jsfilename" toc={true}>`jsFilename`</DocHeading>
+
+**Тип:** `Filename` из `@rspack/core`. **По умолчанию:** по [таблице шаблонов](#config-filename-defaults).
+
+Строка или функция `(pathData, assetInfo?) => string`, задающая имя JavaScript-файла. Используется для точек входа и дополнительных чанков. Addon Bone подставляет `[app]` и добавляет [`jsDir`](#config-jsdir); остальные подстановки обрабатывает Rspack по правилам [`output.filename`](https://v1.rspack.rs/config/output#outputfilename).
+
+В примере сохраняются читаемые имена и добавляется хеш содержимого:
+
+```ts file="../../../../code/configuration/filenames.config.ts" title="adnbn.config.ts"
+```
+
+<DocHeading level={3} id="config-cssfilename" toc={true}>`cssFilename`</DocHeading>
+
+**Тип:** `Filename` из `@rspack/core`. **По умолчанию:** по [таблице шаблонов](#config-filename-defaults).
+
+Строка или функция `(pathData, assetInfo?) => string`, задающая имя выходного CSS-файла. Используется и для основных, и для дополнительных CSS-чанков. Addon Bone подставляет `[app]` и добавляет [`cssDir`](#config-cssdir).
+
+<DocHeading level={3} id="config-cssidentname" toc={true}>`cssIdentName`</DocHeading>
+
+**Тип:** `string`. **По умолчанию:** по [таблице шаблонов](#config-filename-defaults).
+
+Шаблон локальных имён классов CSS Modules. Передаётся в `css-loader` как `modules.localIdentName`; `[app]` предварительно заменяется идентификатором приложения в kebab-case. Например, `"[app]-[local]-[hash:base64:5]"` сохраняет исходное имя класса и добавляет короткий хеш. На имя CSS-файла эта настройка не влияет.
+
+## `ActionOptions`
+
+<PropertyBadge text="interface" type="info" outline />
+
+Настройки внешнего вида кнопки расширения из [`Config.action`](#config-action).
+
+```ts file="../../../../code/configuration/api/action-options.ts" title="ActionOptions"
+```
+
+<DocHeading level={3} id="actionoptions-icon" toc={true}>`icon`</DocHeading>
+
+**Тип:** [`IconName`](/api/adnbn/icons#iconname). **Если не задан:** используется [`Config.icon`](#config-icon).
+
+Имя группы иконок для кнопки. `IconName` принимает имена из сгенерированного [`IconNameRegistry`](/api/adnbn/icons#iconnameregistry); пока реестр пуст, допускается `string`. Addon Bone подставляет размеры и пути из группы в `action.default_icon` для MV3 или `browser_action.default_icon` для MV2. Popup с `apply: true` и собственным `icon` имеет больший приоритет. Пустая строка выбирает группу `default`. Если запрошенной группы нет, Addon Bone выбирает `default`, затем первую доступную группу.
+
+Во время работы меняйте иконку через [`changeActionIcon()`](/api/adnbn/icons#changeactionicon). У этой функции неизвестное имя вызывает ошибку, а вызов без имени выбирает `default` независимо от начальных настроек кнопки.
+
+<DocHeading level={3} id="actionoptions-title" toc={true}>`title`</DocHeading>
+
+**Тип:** `string`. **Если не задан:** используется имя расширения.
+
+Подсказка кнопки: обычный текст или ключ локализации, например `"@action.title"`. Собственный [`tooltip`](/api/adnbn/popup#popupconfig-tooltip) начального Popup имеет больший приоритет. Пустая строка сохраняется как `default_title: ""`; запасное имя используется при отсутствии значения. Иконка и подсказка выбираются независимо: popup может переопределить одно поле, сохранив другое из `action`.

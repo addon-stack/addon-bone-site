@@ -1,0 +1,302 @@
+---
+description: "API боковой панели расширения: defineSidebar, changeSidebar, getSidebars, SidebarMapEntry, опции label, apply и icon, различия браузеров."
+---
+
+<span id="sidebar-api" />
+
+# API боковой панели
+
+import DocHeading from "@components/DocHeading";
+import PropertyBadge from "@components/PropertyBadge";
+import {Tab, Tabs} from "@rspress/core/theme";
+
+Функции и типы для объявления боковой панели расширения и переключения между собранными HTML-документами. Публичные экспорты доступны из `adnbn`. Создание интерфейса, открытие и закрытие панели, структура файлов и выбор между несколькими Sidebar — в [руководстве Sidebar](/guide/entrypoints/sidebar).
+
+| Экспорт | Вид | Назначение |
+| --- | --- | --- |
+| [`defineSidebar`](#definesidebar) | function | Объявление боковой панели. |
+| [`changeSidebar`](#changesidebar) | function | Назначение собранного варианта панели. |
+| [`getSidebars`](#getsidebars) | function | Данные вариантов Sidebar текущей сборки. |
+| [`SidebarAliasRegistry`](#sidebaraliasregistry) | interface | Расширяемый реестр имён Sidebar. |
+| [`SidebarAlias`](#sidebaralias) | type | Допустимое имя варианта панели. |
+| [`SidebarMap`](#sidebarmap) | type | Таблица путей и параметров панелей. |
+| [`SidebarMapEntry`](#sidebarmapentry) | interface | Путь, подпись и группа иконок одного варианта. |
+
+В сигнатурах также используются [`SidebarDefinition`](#sidebardefinition), [`SidebarProps`](#sidebarprops), [`SidebarConfig`](#sidebarconfig) и [`SidebarEntrypointOptions`](#sidebarentrypointoptions). Они описаны ниже, но напрямую из `adnbn` не экспортируются. Способ получить типы объявления и props через публичную функцию приведён у [`SidebarDefinition`](#sidebardefinition).
+
+## `defineSidebar`
+
+<PropertyBadge text="function" type="info" outline />
+
+Принимает объявление для `export default` точки входа Sidebar. Addon Bone создаёт HTML-документ и назначает выбранный начальный вариант боковой панели через манифест.
+
+```ts file="../../../../code/entrypoints/sidebar/api/define-sidebar.ts" title="defineSidebar"
+```
+
+**Параметр:** `options` — [`SidebarDefinition`](#sidebardefinition). **Обязательный параметр.** Все поля объекта можно опустить, поэтому `defineSidebar({})` допустим.
+
+**Результат:** [`SidebarDefinition`](#sidebardefinition) — тот же объект, синхронно, без копирования и подстановки значений по умолчанию. Функция не открывает панель и не вызывает `render`.
+
+Поле манифеста зависит от цели сборки:
+
+| Цель | Результат Addon Bone |
+| --- | --- |
+| Firefox и Opera, Manifest V2 или V3 | `sidebar_action.default_panel`. В Firefox также записывается `open_at_install: false`. |
+| Остальные цели, Manifest V3 | `side_panel.default_path`; при наличии Sidebar автоматически добавляется разрешение `sidePanel`. |
+| Остальные цели, Manifest V2 | HTML для Sidebar не создаётся, таблица [`getSidebars()`](#getsidebars) остаётся пустой. |
+
+Это выбор генератора, а не проверка возможностей браузера. Для Chrome [Side Panel API](https://developer.chrome.com/docs/extensions/reference/api/sidePanel) требует Manifest V3 и разрешение `sidePanel`; Firefox использует [`sidebar_action`](https://developer.mozilla.org/en-US/docs/Mozilla/Add-ons/WebExtensions/manifest.json/sidebar_action). При сборке для других целей проверяйте поддержку соответствующего API.
+
+В примере [`title`](/api/adnbn/view#viewconfig-title) задаёт заголовок HTML-документа `Reading list`, а [`label`](#sidebarconfig-label) — подпись панели `Saved articles` там, где браузер её поддерживает. При стандартном [`htmlDir`](/api/adnbn/configuration#config-htmldir) создаётся `sidebar.html`. Вкладки с результатом содержат относящиеся к Sidebar фрагменты фактического манифеста; остальные поля опущены. Для Firefox этот фрагмент одинаков в Manifest V2 и V3.
+
+<Tabs>
+    <Tab label="Код Sidebar">
+```ts file="../../../../code/entrypoints/sidebar/api/sidebar.ts" title="src/sidebar.ts"
+```
+    </Tab>
+    <Tab label="Сгенерированный Manifest V3: Chrome">
+```json file="../../../../code/entrypoints/sidebar/api/manifest-chrome-mv3.json" title="manifest.json"
+```
+    </Tab>
+    <Tab label="Сгенерированный манифест: Firefox (V2/V3)">
+```json file="../../../../code/entrypoints/sidebar/api/manifest-firefox.json" title="manifest.json"
+```
+    </Tab>
+</Tabs>
+
+В Chrome генератор записывает в `side_panel` только `default_path`. Поля `default_title` и `default_icon` туда не добавляются; `title` продолжает действовать как настройка HTML-документа.
+
+## `changeSidebar`
+
+<PropertyBadge text="function" type="info" outline />
+
+Назначает собранный вариант панели для всех вкладок или для одной вкладки. Функция меняет путь документа, затем применяет заданные [`label`](#sidebarconfig-label) и [`icon`](#sidebarconfig-icon), если браузер поддерживает соответствующие операции. Отдельного вызова открытия панели она не делает.
+
+```ts file="../../../../code/entrypoints/sidebar/api/change-sidebar.ts" title="changeSidebar"
+```
+
+**Параметры:**
+
+- `alias` — [`SidebarAlias`](#sidebaralias). **Обязательный параметр.** Имя из [`getSidebars()`](#getsidebars).
+- `tab` — ID вкладки или объект `Tab`. Здесь `Tab` — локальный алиас браузерного [`chrome.tabs.Tab`](https://developer.chrome.com/docs/extensions/reference/api/tabs#type-Tab). Из объекта используется только `id`; при его отсутствии меняется общее значение. Числовой ID `0` передаётся без замены.
+
+**Результат:** `Promise<void>`. Функция последовательно ожидает смену пути, подписи и иконки. Вызывайте её из фонового контекста или страницы расширения с доступом к API боковой панели. Из Content Script передайте запрос в фон, например через [Service](/api/adnbn/service).
+
+Без `tab` задаётся общее значение; настройка конкретной вкладки имеет приоритет. В Firefox браузер также поддерживает настройки окна, но `changeSidebar` не принимает `windowId`. Подробности области действия — в контрактах [`sidebarAction.setPanel`](https://developer.mozilla.org/en-US/docs/Mozilla/Add-ons/WebExtensions/API/sidebarAction/setPanel) и [`sidePanel.setOptions`](https://developer.chrome.com/docs/extensions/reference/api/sidePanel#method-setOptions).
+
+Из записи [`SidebarMapEntry`](#sidebarmapentry) функция использует:
+
+| Поле | Действие |
+| --- | --- |
+| [`path`](#sidebarmapentry-path) | Передаёт непустой путь в `setSidebarPath`: обёртка использует `sidePanel.setOptions` или `sidebarAction.setPanel`. |
+| [`label`](#sidebarmapentry-label) | При наличии поля и поддержке `canSetSidebarTitle()` получает перевод маркера локализации и вызывает `setSidebarTitle`. Обычный текст передаёт без изменений. |
+| [`icon`](#sidebarmapentry-icon) | При непустом имени и поддержке `canSetSidebarIcon()` вызывает [`changeSidebarIcon`](/api/adnbn/icons#changesidebaricon) с этой группой. |
+
+Проверки возможностей и методы работы с панелью доступны из `adnbn/browser`. В Chrome и Edge обновления подписи и иконки пропускаются; это не мешает смене пути. Текущая браузерная обёртка также пропускает динамическую смену иконки в Opera. Неподдерживаемая операция не вызывает ошибку и не запускает получение перевода или поиск группы иконок.
+
+Для `label: "@sidebar.reader"` функция получает `getI18nMessage("sidebar_reader")` и передаёт результат в браузер. Отсутствующий `label` сохраняет текущую подпись; `label: ""`, пустой или отсутствующий перевод передаются как пустая строка. Это не гарантирует скрытую подпись: например, [Firefox показывает имя расширения](https://developer.mozilla.org/en-US/docs/Mozilla/Add-ons/WebExtensions/API/sidebarAction/setTitle#parameters). Без `icon` текущая иконка сохраняется. Поле [`title`](/api/adnbn/view#viewconfig-title) относится к HTML-документу и не участвует в этих обновлениях.
+
+[`apply: false`](#sidebarconfig-apply) не препятствует выбору собранного варианта через эту функцию.
+
+**Ошибки:** неизвестное имя отклоняет Promise с `Not found sidebar: "<имя>"`; отсутствующий или пустой путь — с `Not found sidebar path: "<имя>"`. Эти проверки выполняются до обращения к браузеру. При поддерживаемой смене иконки неизвестная группа вызывает [ошибку `changeSidebarIcon`](/api/adnbn/icons#changesidebaricon). Ошибки выполняемых браузерных вызовов также отклоняют Promise. Последующие шаги не выполняются, а уже применённые изменения не откатываются: например, ошибка иконки сохраняет новый путь и подпись.
+
+## `getSidebars`
+
+<PropertyBadge text="function" type="info" outline />
+
+Возвращает таблицу Sidebar текущей сборки. Подходит для списка вариантов и проверки имени перед переключением.
+
+```ts file="../../../../code/entrypoints/sidebar/api/get-sidebars.ts" title="getSidebars"
+```
+
+**Параметры:** отсутствуют. **Результат:** [`SidebarMap`](#sidebarmap), синхронно. Ключ — имя варианта, значение — [`SidebarMapEntry`](#sidebarmapentry) с путём HTML и исходными `label` и `icon` из объявления.
+
+В таблицу входят собранные варианты с [`apply: false`](#sidebarconfig-apply). Файлы, исключённые фильтрами или выбором единственной панели, не входят в неё. При отсутствии Sidebar или отключённой для цели сборке Sidebar возвращается пустой `Map`.
+
+Функция читает сгенерированные данные. Она не определяет, какая панель сейчас назначена или открыта, не переводит `label` и не подставляет значения из манифеста. Перевод выполняется при [`changeSidebar()`](#changesidebar), если браузер поддерживает смену подписи.
+
+Каждый вызов создаёт новый `Map`, но объекты записей остаются общими. Добавление и удаление ключей не меняет таблицу сборки; изменение полей полученного объекта может повлиять на следующие вызовы в том же контексте. Для собственных изменений создавайте копию записи.
+
+При ошибке чтения функция выводит `Failed getting sidebars:` и возвращает уже заполненную часть `Map`, которая может быть пустой.
+
+## `SidebarAliasRegistry`
+
+<PropertyBadge text="interface" type="info" outline />
+
+Расширяемый интерфейс, ключи которого задают имена для [`SidebarAlias`](#sidebaralias).
+
+```ts file="../../../../code/entrypoints/sidebar/api/sidebar-alias-registry.ts" title="SidebarAliasRegistry"
+```
+
+Addon Bone дополняет его в `.adnbn/sidebar.d.ts` по выбранным вариантам. Подключите сгенерированные декларации через `.adnbn/tsconfig.json`, как описано в [настройке TypeScript](/guide/configuration/typescript).
+
+Имя определяется по исходному файлу или [`as`](/api/adnbn/view#viewconfig-as):
+
+| Исходный файл или опция | Имя для `changeSidebar` | HTML при стандартном `htmlDir` |
+| --- | --- | --- |
+| `sidebar.ts` или `sidebar/index.ts` | `sidebar` | `sidebar.html` |
+| `reader.sidebar.ts` или `reader.sidebar/index.ts` | `reader` | `reader.sidebar.html` |
+| `as: "reader"` | `reader` | `reader.sidebar.html` |
+
+Собственного поля `name` у Sidebar нет. При совпадении имён генератор добавляет числовые суффиксы; для стабильных ссылок задавайте разные имена файлов или `as`. У внешней панели из плагина ключом служит путь импорта модуля.
+
+Не редактируйте `.adnbn/sidebar.d.ts` вручную: сборка обновляет файл. Значение `true` отмечает имя в типах. Наличие имени не гарантирует доступность панели при выполнении: например, декларации могут содержать найденную панель и при сборке Chrome MV2, которая не создаёт её HTML. Проверяйте [`getSidebars().has(alias)`](#getsidebars).
+
+## `SidebarAlias`
+
+<PropertyBadge text="type" type="info" outline />
+
+Имя варианта для [`changeSidebar`](#changesidebar) и ключей [`SidebarMap`](#sidebarmap).
+
+```ts file="../../../../code/entrypoints/sidebar/api/sidebar-alias.ts" title="SidebarAlias"
+```
+
+Если [`SidebarAliasRegistry`](#sidebaraliasregistry) пуст, тип допускает любую строку. После подключения сгенерированных деклараций он становится объединением строковых ключей, например `"sidebar" | "reader"`. Ручное расширение реестра само по себе не создаёт документ и не регистрирует вариант при выполнении.
+
+## `SidebarMap`
+
+<PropertyBadge text="type" type="info" outline />
+
+Таблица вариантов, которую возвращает [`getSidebars`](#getsidebars).
+
+```ts file="../../../../code/entrypoints/sidebar/api/sidebar-map.ts" title="SidebarMap"
+```
+
+Ключ имеет тип [`SidebarAlias`](#sidebaralias), значение — [`SidebarMapEntry`](#sidebarmapentry). `map.get(alias)` может вернуть `undefined`, если записи нет.
+
+Наличие записи означает, что вариант включён в runtime-таблицу, а не что панель открыта или назначена текущей вкладке. Семантика применения полей описана у [`changeSidebar`](#changesidebar).
+
+## `SidebarMapEntry`
+
+<PropertyBadge text="interface" type="info" outline />
+
+Данные одного собранного варианта для [`getSidebars()`](#getsidebars) и [`changeSidebar()`](#changesidebar). Интерфейс экспортируется из `adnbn`.
+
+```ts file="../../../../code/entrypoints/sidebar/api/sidebar-map-entry.ts" title="SidebarMapEntry"
+```
+
+Запись содержит исходные параметры переключения. [`ManifestSidebar`](/api/adnbn/manifest#manifestsidebar) описывает параметры для билдера манифеста; у него отдельный контракт с полем `title`. Заголовок HTML из [`ViewConfig.title`](/api/adnbn/view#viewconfig-title) в `SidebarMapEntry` не входит.
+
+<DocHeading level={3} id="sidebarmapentry-path" toc={true}>`path`</DocHeading>
+
+**Тип:** `string`.
+
+Путь созданного HTML относительно корня расширения, с учётом [`htmlDir`](/api/adnbn/configuration#config-htmldir). Генератор заполняет его, хотя в интерфейсе поле необязательно. Для [`changeSidebar()`](#changesidebar) нужен непустой путь; отсутствие или пустая строка вызывают ошибку до обращения к браузеру.
+
+<DocHeading level={3} id="sidebarmapentry-icon" toc={true}>`icon`</DocHeading>
+
+**Тип:** `string`.
+
+Исходное имя группы из [`SidebarConfig.icon`](#sidebarconfig-icon). Если опция отсутствует, запасная группа из манифеста сюда не подставляется. При переключении отсутствие или пустая строка сохраняют текущую иконку; непустое имя применяется только при поддержке операции. Неизвестная группа в этом случае вызывает [ошибку `changeSidebarIcon`](/api/adnbn/icons#changesidebaricon).
+
+<DocHeading level={3} id="sidebarmapentry-label" toc={true}>`label`</DocHeading>
+
+**Тип:** `string`.
+
+Исходная [`SidebarConfig.label`](#sidebarconfig-label), включая неразрешённый маркер вроде `"@sidebar.reader"`. [`getSidebars()`](#getsidebars) не получает перевод и не подставляет имя расширения при отсутствии поля. [`changeSidebar()`](#changesidebar) переводит маркер при поддержке смены подписи; отсутствие поля сохраняет текущую подпись, а пустая строка передаётся браузеру явно.
+
+## `SidebarDefinition`
+
+<PropertyBadge text="type" type="info" outline />
+
+Объявление, которое принимает и возвращает [`defineSidebar`](#definesidebar). Внутренний тип: напрямую из `adnbn` не экспортируется.
+
+```ts file="../../../../code/entrypoints/sidebar/api/sidebar-definition.ts" title="SidebarDefinition"
+```
+
+[`SidebarEntrypointOptions`](#sidebarentrypointoptions) объединяет собственные опции Sidebar, разрешения, CSP и настройки страницы. [`ViewDefinition<SidebarProps>`](/api/adnbn/view#viewdefinition) добавляет [`render`](/api/adnbn/view#viewrenderdefinition-render) и [`container`](/api/adnbn/view#viewrenderdefinition-container).
+
+`render` задаёт значение Vanilla, синхронную функцию или React-компонент в соответствии с типом исходного файла. `container` выбирает элемент для монтирования. Параметры обработчиков имеют тип [`SidebarProps`](#sidebarprops). При отсутствии `render` Addon Bone сохраняет содержимое HTML-шаблона без отдельного контейнера результата отображения.
+
+Для аннотаций получите тип из публичной функции. В примере `SidebarDefinition` и `SidebarProps` — локальные алиасы вашего модуля:
+
+```ts file="../../../../code/entrypoints/sidebar/api/inferred-types.ts" title="src/sidebar-types.ts"
+```
+
+## `SidebarProps`
+
+<PropertyBadge text="type" type="info" outline />
+
+Опции текущей панели, которые Addon Bone передаёт в функцию `render`, React-компонент и функцию `container`. Внутренний тип: напрямую из `adnbn` не экспортируется; способ аннотации приведён у [`SidebarDefinition`](#sidebardefinition).
+
+```ts file="../../../../code/entrypoints/sidebar/api/sidebar-props.ts" title="SidebarProps"
+```
+
+Состав совпадает с [`SidebarEntrypointOptions`](#sidebarentrypointoptions). Объект содержит поля объявления без `render` и `container`. Вычисленные при сборке значения в него не подставляются: например, при отсутствии `apply` обработчик получает `undefined`, хотя при выборе начальной панели используется `true`.
+
+Здесь [`title`](/api/adnbn/view#viewconfig-title) — исходная опция документа, [`label`](#sidebarconfig-label) — подпись панели, включая исходный маркер локализации, а [`icon`](#sidebarconfig-icon) — имя группы. Props не содержат состояние открытой панели, ID активной вкладки или результат браузерного API. Правила отображения описаны в [`ViewRenderDefinition`](/api/adnbn/view#viewrenderdefinition).
+
+## `SidebarConfig`
+
+<PropertyBadge text="interface" type="info" outline />
+
+Собственные опции Sidebar. Внутренний интерфейс: напрямую из `adnbn` не экспортируется. Входит в [`SidebarDefinition`](#sidebardefinition) и [`SidebarProps`](#sidebarprops) через [`SidebarEntrypointOptions`](#sidebarentrypointoptions).
+
+```ts file="../../../../code/entrypoints/sidebar/api/sidebar-config.ts" title="SidebarConfig"
+```
+
+<DocHeading level={3} id="sidebarconfig-icon" toc={true}>`icon`</DocHeading>
+
+**Тип:** [`IconName`](/api/adnbn/icons#iconname). Имя группы иконок для начальной панели и переключения через [`changeSidebar()`](#changesidebar).
+
+В Firefox и Opera группа попадает в `sidebar_action.default_icon`. При отсутствии опции или неизвестном имени билдер использует `default`, затем первую доступную группу. [`config.icon`](/api/adnbn/configuration#config-icon) не меняет этот выбор Sidebar. При пустом реестре поле иконки не записывается. Пустая строка в опции точки входа вызывает ошибку сборки `Invalid options icon`.
+
+В Chrome панель использует иконку расширения; `sidePanel` не предоставляет отдельный `setIcon`. Генератор не добавляет `default_icon` в `side_panel`. Для настройки иконок расширения используйте [API иконок](/api/adnbn/icons).
+
+[`changeSidebar()`](#changesidebar) применяет явно заданную группу после смены пути и подписи, если `canSetSidebarIcon()` возвращает `true`. Без `icon` текущая иконка сохраняется. Неизвестная группа при поддерживаемой операции вызывает ошибку вместо выбора запасной группы. Текущая браузерная обёртка отключает динамическую смену иконки в Opera; исходная `sidebar_action.default_icon` по-прежнему задаётся через манифест. Для отдельной смены иконки используйте [`changeSidebarIcon`](/api/adnbn/icons#changesidebaricon), учитывая ограничения этой функции.
+
+<DocHeading level={3} id="sidebarconfig-apply" toc={true}>`apply`</DocHeading>
+
+**Тип:** `boolean`. **По умолчанию:** `true` при выборе начальной панели.
+
+Разрешает назначить вариант в манифесте:
+
+| Значение | Результат |
+| --- | --- |
+| Не задано или `true` | Вариант может стать начальной панелью. |
+| `false` | HTML создаётся и остаётся доступным через [`getSidebars`](#getsidebars), если вариант выбран для сборки, но не назначается начальным. |
+
+При [`multipleSidebar: false`](/api/adnbn/configuration#config-multiplesidebar) сначала выбирается один файл — последний кандидат после упорядочивания по приоритету источников и имени, затем проверяется его `apply`. Значение `false` не возвращает сборщик к другим кандидатам. При `multipleSidebar: true` начальным становится первый собранный вариант с `apply: true` или без этой опции.
+
+Если все собранные варианты имеют `apply: false`, плагин Sidebar не задаёт начальный путь в манифесте. В ветке `sidePanel` разрешение `sidePanel` всё равно добавляется. Для `sidebarAction` runtime API требует объявленного ключа манифеста, поэтому оставьте хотя бы один начальный вариант либо задайте подходящее объявление через [Manifest API](/api/adnbn/manifest#manifestbuilder-setsidebar).
+
+`apply: false` не исключает разрешения и CSP собранной панели из общего манифеста. Это опция начального назначения, а не фильтр сборки.
+
+<DocHeading level={3} id="sidebarconfig-label" toc={true}>`label`</DocHeading>
+
+**Тип:** `string`.
+
+Подпись панели в интерфейсе браузера. В Firefox используется для заголовка панели, пункта меню и подсказки её иконки; в Opera — для подсказки иконки Sidebar. Принимает обычный текст или маркер локализации, например `"@sidebar.reader"`. Пустая строка допустима. Заголовок HTML задавайте отдельно через [`title`](/api/adnbn/view#viewconfig-title); подпись кнопки Action настраивается через [`ActionOptions.title`](/api/adnbn/configuration#actionoptions-title).
+
+Применение зависит от момента:
+
+| Значение | Начальный манифест Firefox и Opera | Переключение через `changeSidebar()` при поддержке подписи |
+| --- | --- | --- |
+| Не задано | В `sidebar_action.default_title` попадает имя расширения. | Текущая подпись сохраняется. |
+| Обычный текст | Записывается в `default_title`. | Передаётся в `setSidebarTitle` без изменений. |
+| `"@sidebar.reader"` | Преобразуется в `__MSG_sidebar_reader__`. | Перевод получается через `getI18nMessage("sidebar_reader")`. |
+| `""` | Пустая строка сохраняется. | Пустая строка передаётся в `setSidebarTitle`. |
+
+Пустой или отсутствующий перевод при переключении также даёт пустую строку. Её отображение определяет браузер; [Firefox использует имя расширения](https://developer.mozilla.org/en-US/docs/Mozilla/Add-ons/WebExtensions/API/sidebarAction/setTitle#parameters). В Chrome и Edge `label` не записывается в `side_panel` и не применяется при переключении. Проверка поддержки выполняется до получения перевода.
+
+## `SidebarEntrypointOptions`
+
+<PropertyBadge text="type" type="info" outline />
+
+Общие опции сборки Sidebar. Внутренний тип: напрямую из `adnbn` не экспортируется.
+
+```ts file="../../../../code/entrypoints/sidebar/api/sidebar-entrypoint-options.ts" title="SidebarEntrypointOptions"
+```
+
+| Контракт | Что добавляет |
+| --- | --- |
+| [`SidebarConfig`](#sidebarconfig) | [`icon`](#sidebarconfig-icon), [`apply`](#sidebarconfig-apply) и [`label`](#sidebarconfig-label): иконка, начальное назначение и подпись панели. |
+| [`PermissionsOptions`](/api/adnbn/permissions#permissionsoptions) | `permissions`, `optionalPermissions`, `hostPermissions` и `optionalHostPermissions`. |
+| [`CspOptions`](/api/adnbn/csp#cspoptions) | `csp`: разрешение WebAssembly и источники ресурсов. |
+| [`ViewOptions`](/api/adnbn/view#viewoptions) | `as`, `title`, `template`, статические настройки [`HtmlEntrypointOptions`](/api/adnbn/html#htmlentrypointoptions) и фильтры [`EntrypointOptions`](/api/adnbn/entrypoint-options#entrypointoptions). |
+
+Все поля можно опустить. [`multipleSidebar`](/api/adnbn/configuration#config-multiplesidebar) управляет количеством собранных панелей, а [`mergeSidebar`](/api/adnbn/configuration#config-mergesidebar) — выбором между shared-слоем и приложением. Это настройки проекта, они не входят в объект `defineSidebar`.
+
+Разрешения и CSP всех собранных Sidebar добавляются в общий манифест, включая варианты с `apply: false`, даже если их никогда не открывают. Исключённые или не выбранные файлы не добавляют свои настройки.
+
+Начальный вариант формирует [`ManifestSidebar`](/api/adnbn/manifest#manifestsidebar): `path` содержит путь HTML, `icon` — группу иконок, а `title` получает [`label`](#sidebarconfig-label) с преобразованным маркером локализации. Для переключения генератор отдельно создаёт [`SidebarMapEntry`](#sidebarmapentry) с исходным `label`. Для точки входа вручную вызывать [`ManifestBuilder.setSidebar()`](/api/adnbn/manifest#manifestbuilder-setsidebar) не нужно.

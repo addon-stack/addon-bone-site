@@ -1,0 +1,1 @@
+export type Manifest = ChromeManifest | FirefoxManifest | SafariManifest;

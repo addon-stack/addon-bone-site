@@ -24,7 +24,9 @@ Options создаёт страницу настроек расширения, �
 Вы пишете код на TypeScript, работая с DOM напрямую или используя React; Addon Bone создаёт HTML и регистрирует его в манифесте.
 
 Разместите код в `options.ts` или `options.tsx`.
-По умолчанию Addon Bone настраивает открытие в отдельной вкладке; через `openInTab: false` можно запросить встроенный интерфейс настроек, если браузер его поддерживает.
+По умолчанию Addon Bone настраивает открытие в отдельной вкладке; через [`openInTab: false`](/api/adnbn/options#optionsconfig-openintab) можно запросить встроенный интерфейс настроек, если браузер его поддерживает.
+
+Сигнатура `defineOptions` и контракты объявления описаны в [API страницы настроек](/api/adnbn/options).
 Options не запускается вместе с background: код страницы выполняется при её загрузке.
 
 ## Быстрый старт
@@ -219,8 +221,8 @@ Addon Bone создаёт контейнер и React root; вручную вы�
 
 <DocHeading level={3} id="options-render-types" toc={false}>Типы `render` и `props`</DocHeading>
 
-Для переиспользуемой функции импортируйте `ViewRenderHandler<OptionsProps>` из `adnbn`, а для React-компонента — `ViewRenderReactComponent<OptionsProps>`.
-`OptionsProps` описывает опции, которые получает функция; оба контракта требуют синхронного результата:
+Для переиспользуемой функции импортируйте [`ViewRenderHandler<OptionsProps>`](/api/adnbn/view#viewrenderhandler) из `adnbn`, а для React-компонента — [`ViewRenderReactComponent<OptionsProps>`](/api/adnbn/view#viewrenderreactcomponent).
+[`OptionsProps`](/api/adnbn/options#optionsprops) описывает опции, которые получает функция; оба контракта требуют синхронного результата:
 
 <FrameworkTabs>
     <Tab label="Vanilla">

@@ -1,0 +1,1 @@
+export const SandboxReadyMessageType = `${SandboxNamespace}:ready`;

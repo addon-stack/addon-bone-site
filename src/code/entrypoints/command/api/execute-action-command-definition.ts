@@ -1,0 +1,1 @@
+export type ExecuteActionCommandDefinition = Omit<CommandDefinition, "name">;

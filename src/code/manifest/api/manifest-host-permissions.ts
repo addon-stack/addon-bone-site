@@ -1,0 +1,1 @@
+export type ManifestHostPermissions = Set<string>;

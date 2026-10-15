@@ -1,0 +1,1 @@
+export type TransportTarget<T extends object, K extends keyof T> = T[K];

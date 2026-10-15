@@ -1,0 +1,1 @@
+export type OffscreenParameters = chrome.offscreen.CreateParameters;

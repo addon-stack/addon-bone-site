@@ -1,0 +1,1 @@
+export type OffscreenMap = Map<OffscreenAlias, OffscreenParameters>;

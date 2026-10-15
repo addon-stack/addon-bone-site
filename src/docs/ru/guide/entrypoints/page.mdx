@@ -23,10 +23,12 @@ Page создаёт отдельную страницу расширения: с
 Вы пишете код страницы на TypeScript, работая с DOM напрямую или используя React.
 Addon Bone создаёт HTML и подключает необходимые скрипты.
 
-Разместите код в файле `*.page.ts` или `*.page.tsx` и получите адрес страницы через `getPageUrl(name)`.
+Разместите код в файле `*.page.ts` или `*.page.tsx` и получите адрес страницы через [`getPageUrl(name)`](/api/adnbn/page#getpageurl).
 Для JavaScript доступны те же имена с расширениями `.js` и `.jsx`.
 Этот адрес можно открыть в новой вкладке или использовать в ссылке внутри расширения.
 Когда именно открыть страницу, решает ваш код.
+
+Сигнатуры функций, типы и собственные опции Page собраны в [API страниц расширения](/api/adnbn/page).
 
 ## Быстрый старт
 
@@ -100,7 +102,7 @@ Addon Bone находит страницы по именам файлов и к�
 | `help.page.ts` или `help.page/index.ts` | `help` | `help.html` |
 | `pages/help.page.ts` | `help` | `help.html` |
 
-`name` задаёт имя для `getPageUrl`, а `as` — имя HTML-файла.
+[`name`](/api/adnbn/page#pageconfig-name) задаёт имя для `getPageUrl`, а [`as`](/api/adnbn/view#viewconfig-as) — имя HTML-файла.
 Например, следующий файл создаст `guide.html`, но вызывать его нужно через `getPageUrl("help")`:
 
 ```ts file="../../../../code/entrypoints/page/naming.page.ts" title="src/help.page.ts"
@@ -113,7 +115,7 @@ Addon Bone находит страницы по именам файлов и к�
 
 ## Объявление Page
 
-Используйте `definePage`, чтобы получить подсказки опций и проверку типов.
+Используйте [`definePage`](/api/adnbn/page#definepage), чтобы получить подсказки опций и проверку типов.
 Вместо него можно объявить опции именованными экспортами, а содержимое или функцию отображения — через `export default`.
 
 <Tabs>
@@ -139,7 +141,7 @@ Addon Bone находит страницы по именам файлов и к�
 
 ## Открытие страницы
 
-Получите URL через `getPageUrl(name)` из `adnbn` и передайте его в `createTab` из `adnbn/browser`, как в Quick Start.
+Получите URL через [`getPageUrl(name)`](/api/adnbn/page#getpageurl) из `adnbn` и передайте его в `createTab` из `adnbn/browser`, как в Quick Start.
 Функция возвращает строку сразу: `await` нужен для открытия вкладки, а не для получения URL.
 
 В интерфейсе расширения этот же URL можно использовать как адрес ссылки:
@@ -150,7 +152,7 @@ Addon Bone находит страницы по именам файлов и к�
 Здесь `help.page.ts` из Quick Start должен входить в ту же сборку.
 Addon Bone связывает имя с фактическим HTML-файлом, поэтому вызывающий код не должен угадывать путь или учитывать изменение `as`.
 
-`getPages()` из `adnbn` возвращает `Map` с именами и относительными путями всех включённых Page.
+[`getPages()`](/api/adnbn/page#getpages) из `adnbn` возвращает [`PageMap`](/api/adnbn/page#pagemap) с именами и относительными путями всех включённых Page.
 Используйте его, чтобы построить меню страниц расширения.
 Например, если в сборку входят `help.page.ts` из Quick Start, `counter.page.ts` из раздела Vanilla и `navigation.page.ts` ниже, результат будет выглядеть так:
 
@@ -169,13 +171,13 @@ Addon Bone связывает имя с фактическим HTML-файлом
 При добавлении ещё одной Page в сборку она появится в меню автоматически.
 `getPages()` и `getPageUrl()` работают в контекстах расширения; страницу открывает переход по ссылке или ваш вызов браузерного API.
 
-Addon Bone создаёт `.adnbn/page.d.ts` с именами включённых страниц для подсказок и проверки аргумента `getPageUrl` в TypeScript.
+Addon Bone создаёт `.adnbn/page.d.ts` и дополняет [`PageAliasRegistry`](/api/adnbn/page#pagealiasregistry) именами включённых страниц для подсказок и проверки аргумента `getPageUrl` в TypeScript.
 
 Если имя не найдено при выполнении, функция выведет `Cannot find page` и построит URL из переданной строки; наличие файла по этому адресу она не проверяет.
 
 <DocHeading level={3} id="external-access" toc={false}>Доступ со страниц сайтов</DocHeading>
 
-Для открытия Page из самого расширения `matches` не нужен.
+Для открытия Page из самого расширения [`matches`](/api/adnbn/page#pageconfig-matches) не нужен.
 Задайте его, если HTML должен быть доступен со страницы сайта, например при переходе по ссылке на страницу расширения:
 
 <Tabs>
@@ -251,8 +253,8 @@ Addon Bone создаёт контейнер и React root; вручную вы�
 
 <DocHeading level={3} id="page-render-types" toc={false}>Типы render и props</DocHeading>
 
-Для переиспользуемой функции импортируйте `ViewRenderHandler<PageProps>` из `adnbn`, а для React-компонента — `ViewRenderReactComponent<PageProps>`.
-`PageProps` описывает опции страницы, которые получит функция.
+Для переиспользуемой функции импортируйте [`ViewRenderHandler<PageProps>`](/api/adnbn/view#viewrenderhandler) из `adnbn`, а для React-компонента — [`ViewRenderReactComponent<PageProps>`](/api/adnbn/view#viewrenderreactcomponent).
+[`PageProps`](/api/adnbn/page#pageprops) описывает опции страницы, которые получит функция.
 Оба контракта требуют синхронного результата.
 
 <FrameworkTabs>

@@ -1,0 +1,171 @@
+---
+description: "API adnbn/service: прямой getService в background, реестр и типы сервисов, классы ProxyService и RegisterService."
+---
+
+# adnbn/service
+
+import DocHeading from "@components/DocHeading";
+import PropertyBadge from "@components/PropertyBadge";
+
+Прямой доступ к сервисам в background, типы их реестра и классы для получения proxy и ручной регистрации. Все экспорты этой страницы доступны из `adnbn/service`. Примеры использования и жизненный цикл — в [руководстве Service](/guide/entrypoints/service).
+
+Объявление точки входа через `defineService` и получение proxy через `getService` из корневого `adnbn` описаны в [основном API сервисов](/api/adnbn/service).
+
+| Экспорт | Вид | Назначение |
+| --- | --- | --- |
+| [`getService`](#getservice) | function | Получение исходного экземпляра в background. |
+| [`ServiceRegistry`](#serviceregistry) | interface | Реестр имён и контрактов сервисов. |
+| [`ServiceName`](#servicename) | type | Имена из реестра. |
+| [`ServiceTarget`](#servicetarget) | type | Исходный контракт выбранного сервиса. |
+| [`ServiceProxyTarget`](#serviceproxytarget) | type | Асинхронный контракт выбранного сервиса. |
+| [`ProxyService`](#proxyservice) | class | Создание proxy по имени сервиса. |
+| [`RegisterService`](#registerservice) | class | Ручная регистрация экземпляра и обработчика сообщений. |
+
+<span id="функции" />
+
+## `getService`
+
+<PropertyBadge text="function" type="info" outline />
+
+Возвращает зарегистрированный экземпляр сервиса в фоновом контексте.
+
+```ts file="../../../../code/service/api/get-service.ts" title="getService"
+```
+
+**Параметр:** `name` — [`ServiceName`](#servicename). **Обязательный параметр.** Параметр типа `N` сохраняет конкретное имя и выбирает его контракт из реестра.
+
+**Результат:** [`ServiceTarget<N>`](#servicetarget) — исходный экземпляр без копирования и обмена сообщениями. Синхронные методы остаются синхронными, свойства читаются обычным обращением. Функция не вызывает `init`, не регистрирует отсутствующий сервис и не ожидает завершения его `main`.
+
+**Условие вызова:** сервис должен быть зарегистрирован. Для обращения к автоматически подключённым сервисам при запуске используйте `background.main`. Асинхронная подготовка внутри `main` сервиса может ещё продолжаться; её ожидание должен обеспечивать сам API сервиса.
+
+**Ошибка контекста:** вне background функция выбрасывает `Service "…" can be getting only from background context.`. Из content script, popup и других контекстов используйте [`getService` из `adnbn`](/api/adnbn/service#getservice).
+
+**Ошибка регистрации:** если в текущем background нет экземпляра с указанным именем, функция синхронно выбрасывает `Transport instance "…" is not registered in the current context.`. Это происходит до регистрации или после её удаления через `destroy()`. Проверка контекста выполняется первой.
+
+Наличие имени в [`ServiceRegistry`](#serviceregistry) описывает контракт, но не гарантирует наличие зарегистрированного экземпляра. При ручной регистрации сначала вызовите [`register()`](#registerservice-register); при отсутствии экземпляра функция не ожидает его появления.
+
+<span id="типы-и-интерфейсы" />
+
+## `ServiceRegistry`
+
+<PropertyBadge text="interface" type="info" outline />
+
+Связывает имя сервиса с исходным типом его API.
+
+```ts file="../../../../code/service/api/service-registry.ts" title="ServiceRegistry"
+```
+
+В библиотеке интерфейс пустой. При сборке Addon Bone создаёт `.adnbn/service.d.ts`, который дополняет `ServiceRegistry` через `declare module "adnbn/service"`. Сгенерированный файл должен входить в TypeScript-проект потребителя.
+
+Контракт выводится из API, возвращаемого `init`. В него входят публичные методы и свойства, вложенные объекты и унаследованные публичные члены класса. `private`, `protected`, статические члены и имена с начальным `_` исключаются из сгенерированных типов. Это не удаляет соответствующие члены из реального экземпляра.
+
+Реестр существует только на уровне типов. Ручное дополнение интерфейса не регистрирует сервис, а вызов [`RegisterService.register`](#registerservice-register) сам по себе не дополняет TypeScript-реестр.
+
+## `ServiceName`
+
+<PropertyBadge text="type" type="info" outline />
+
+Строковые имена, объявленные в [`ServiceRegistry`](#serviceregistry).
+
+```ts file="../../../../code/service/api/service-name.ts" title="ServiceName"
+```
+
+Используется обеими функциями `getService`: из [`adnbn`](/api/adnbn/service#getservice) и из [`adnbn/service`](#getservice). Если реестр не дополнен ни сгенерированными, ни пользовательскими декларациями, результат — `never`, поэтому TypeScript не разрешает передать строку.
+
+Правила имени файла, явной опции `name` и совпадений описаны в [`ServiceConfig.name`](/api/adnbn/service#serviceconfig-name).
+
+## `ServiceTarget`
+
+<PropertyBadge text="type" type="info" outline />
+
+Исходный контракт сервиса, выбранного из реестра.
+
+```ts file="../../../../code/service/api/service-target.ts" title="ServiceTarget"
+```
+
+`N` — ключ [`ServiceRegistry`](#serviceregistry). Общий [`TransportTarget`](/api/transport/index#transporttarget) возвращает тип по этому ключу без преобразования членов. Тип используется для результата прямого [`getService`](#getservice).
+
+## `ServiceProxyTarget`
+
+<PropertyBadge text="type" type="info" outline />
+
+Контракт сервиса для вызова через сообщения.
+
+```ts file="../../../../code/service/api/service-proxy-target.ts" title="ServiceProxyTarget"
+```
+
+Выбирает API из [`ServiceRegistry`](#serviceregistry) и применяет [`TransportProxyTarget`](/api/transport/index#transportproxytarget). Методы возвращают promise, простые свойства становятся функциями чтения, вложенные объекты сохраняют вложенный доступ. Это результат [`getService` из `adnbn`](/api/adnbn/service#getservice).
+
+Правила преобразования описаны в [`RpcAsyncProxy`](/api/transport/index#rpcasyncproxy), включая [ограничение чтения вложенного объекта целиком](/api/transport/index#rpcasyncproxyobject).
+
+<span id="классы" />
+
+## `ProxyService`
+
+<PropertyBadge text="class" type="info" outline />
+
+Создаёт proxy сервиса по строковому имени. Для типизированного доступа к сервисам приложения обычно достаточно [`getService` из `adnbn`](/api/adnbn/service#getservice).
+
+```ts file="../../../../code/service/api/proxy-service.ts" title="ProxyService"
+```
+
+Показана публичная часть объявления с сохранением наследования. `ProxyTransport` — внутренний базовый класс, не экспортируемый из `adnbn/transport`.
+
+**Параметры типов:** `N extends TransportName` — имя; `T` — тип возвращаемого proxy. [`TransportName`](/api/transport/index#transportname) допускает любую строку, а [`TransportDictionary`](/api/transport/index#transportdictionary) содержит `any`. Поэтому этот класс сам не выбирает контракт из `ServiceRegistry`: для ручного указания `T` можно использовать [`ServiceProxyTarget<N>`](#serviceproxytarget), если имя есть в реестре. Тип по умолчанию использует [`RpcAsyncProxy`](/api/transport/index#rpcasyncproxy).
+
+<DocHeading level={3} id="proxyservice-constructor" toc={true}>`constructor`</DocHeading>
+
+**Сигнатура:** `new ProxyService(name: N)`.
+
+**Параметр:** `name` — **обязательный** ключ сервиса. Конструктор сохраняет имя, но не отправляет сообщение и не проверяет наличие сервиса. Ограничение контекста проверяется при `get()`.
+
+<DocHeading level={3} id="proxyservice-get" toc={true}>`get`</DocHeading>
+
+**Сигнатура:** `get(): T`.
+
+Синхронно возвращает новый proxy. Методы выполняют запросы при вызове; создание proxy не проверяет регистрацию. В background выбрасывает ту же ошибку контекста, что [`getService` из `adnbn`](/api/adnbn/service#getservice).
+
+<DocHeading level={3} id="proxyservice-destroy" toc={true}>`destroy`</DocHeading>
+
+**Сигнатура:** `destroy(): void`. Унаследован от внутреннего `BaseTransport`.
+
+Удаляет запись с этим именем из локального реестра текущего контекста. Не отправляет сообщение об удалении удалённого сервиса и не отключает уже полученные proxy. Для снятия ручной регистрации используйте [`RegisterService.destroy`](#registerservice-destroy).
+
+## `RegisterService`
+
+<PropertyBadge text="class" type="info" outline />
+
+Регистрирует сервис и его обработчик сообщений вручную. Используйте в background, когда регистрацией должен управлять ваш код. Для обычной точки входа эти действия выполняет Addon Bone по объявлению [`defineService`](/api/adnbn/service#defineservice).
+
+```ts file="../../../../code/service/api/register-service.ts" title="RegisterService"
+```
+
+Показана публичная часть объявления с сохранением наследования. `RegisterTransport` — внутренний базовый класс; он предоставляет `register` и `destroy`. Напрямую из `adnbn/transport` этот класс не экспортируется.
+
+**Параметры типов:** `N extends TransportName` — строковое имя; `T extends object` — создаваемый экземпляр; `A extends any[]` — кортеж аргументов фабрики, по умолчанию `[]`. В отличие от [`ServiceName`](#servicename), [`TransportName`](/api/transport/index#transportname) не ограничен сгенерированным реестром. Значение `T` по умолчанию берётся из внутреннего [`TransportDictionary`](/api/transport/index#transportdictionary), поэтому для собственного контракта задайте тип фабрики.
+
+<DocHeading level={3} id="registerservice-constructor" toc={true}>`constructor`</DocHeading>
+
+**Сигнатура:** `new RegisterService(name: N, init: (...args: A) => T)`.
+
+Оба параметра **обязательны**. `name` задаёт ключ регистрации, `init` — синхронную фабрику. Конструктор не вызывает фабрику и не регистрирует экземпляр.
+
+<DocHeading level={3} id="registerservice-register" toc={true}>`register`</DocHeading>
+
+**Сигнатура:** `register(...args: A): T`. Унаследован от `RegisterTransport`.
+
+Передаёт `args` в фабрику, сохраняет возвращённый экземпляр в реестре, подключает обработчик сообщений и возвращает тот же экземпляр. Promise фабрики не ожидается. Этот метод не вызывает `main` и не формирует декларации или манифест точки входа.
+
+Если имя уже зарегистрировано, выбрасывает `A instance with name "…" already exists. The name must be unique.` до вызова фабрики. Числовые суффиксы здесь не добавляются. Если фабрика выбросит исключение, регистрация и подписка не выполняются.
+
+<DocHeading level={3} id="registerservice-get" toc={true}>`get`</DocHeading>
+
+**Сигнатура:** `get(): T`.
+
+Возвращает исходный экземпляр по имени без вызова фабрики. Вне background выбрасывает `Service "…" can be getting only from background context.`. Если контекст подходит, но экземпляр ещё не зарегистрирован или уже удалён, синхронно выбрасывает `Transport instance "…" is not registered in the current context.`, как и [`getService`](#getservice).
+
+<DocHeading level={3} id="registerservice-destroy" toc={true}>`destroy`</DocHeading>
+
+**Сигнатура:** `destroy(): void`. Унаследован от `RegisterTransport`.
+
+Снимает обработчик сообщений этой регистрации и удаляет экземпляр из реестра. Сохранённые в вашем коде ссылки на объект остаются обычными ссылками; его собственные подписки и ресурсы автоматически не освобождаются. После `destroy()` можно снова вызвать `register()`, и фабрика создаст новый экземпляр.

@@ -1,0 +1,1 @@
+declare function getService<N extends ServiceName>(name: N): ServiceTarget<N>;

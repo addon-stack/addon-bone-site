@@ -1,0 +1,1 @@
+export type PageMap = Map<PageAlias, string>;

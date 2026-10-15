@@ -1,0 +1,112 @@
+[
+  {
+    "type": "file",
+    "name": "configuration",
+    "label": "configuration"
+  },
+  {
+    "type": "file",
+    "name": "manifest",
+    "label": "apiManifest"
+  },
+  {
+    "type": "file",
+    "name": "environment",
+    "label": "apiEnvironment"
+  },
+  {
+    "type": "file",
+    "name": "entrypoint-options",
+    "label": "apiEntrypointOptions"
+  },
+  {
+    "type": "file",
+    "name": "background",
+    "label": "Background"
+  },
+  {
+    "type": "file",
+    "name": "command",
+    "label": "Command"
+  },
+  {
+    "type": "file",
+    "name": "content",
+    "label": "Content Script"
+  },
+  {
+    "type": "file",
+    "name": "service",
+    "label": "Service"
+  },
+  {
+    "type": "file",
+    "name": "offscreen",
+    "label": "Offscreen"
+  },
+  {
+    "type": "file",
+    "name": "relay",
+    "label": "Relay"
+  },
+  {
+    "type": "file",
+    "name": "sandbox",
+    "label": "Sandbox"
+  },
+  {
+    "type": "file",
+    "name": "page",
+    "label": "Page"
+  },
+  {
+    "type": "file",
+    "name": "popup",
+    "label": "Popup"
+  },
+  {
+    "type": "file",
+    "name": "sidebar",
+    "label": "Sidebar"
+  },
+  {
+    "type": "file",
+    "name": "options",
+    "label": "Options"
+  },
+  {
+    "type": "file",
+    "name": "override",
+    "label": "apiBrowserOverrides"
+  },
+  {
+    "type": "file",
+    "name": "html",
+    "label": "HTML"
+  },
+  {
+    "type": "file",
+    "name": "view",
+    "label": "apiView"
+  },
+  {
+    "type": "file",
+    "name": "permissions",
+    "label": "apiPermissions"
+  },
+  {
+    "type": "file",
+    "name": "csp",
+    "label": "Content Security Policy"
+  },
+  {
+    "type": "file",
+    "name": "icons",
+    "label": "apiIcons"
+  },
+  {
+    "type": "file",
+    "name": "entrypoint-assets",
+    "label": "apiEntrypointAssets"
+  }
+]

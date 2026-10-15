@@ -1,0 +1,152 @@
+---
+description: "API иконок Addon Bone: получение групп через getIcons, смена иконок кнопки и Sidebar, типы IconName, IconNameRegistry и IconsMap."
+---
+
+# API иконок
+
+import PropertyBadge from "@components/PropertyBadge";
+import {Tab, Tabs} from "@rspress/core/theme";
+
+<span id="icons-api" />
+
+Функции и типы для чтения собранных групп иконок и смены иконки кнопки расширения или Sidebar во время работы. Все экспорты доступны из `adnbn`. Начальную иконку кнопки и приоритет настроек Popup описывает [руководство по конфигурации](/guide/configuration/config).
+
+| Экспорт | Вид | Назначение |
+| --- | --- | --- |
+| [`getIcons`](#geticons) | function | Группы иконок текущей сборки и пути к файлам. |
+| [`changeActionIcon`](#changeactionicon) | function | Смена иконки кнопки расширения. |
+| [`changeSidebarIcon`](#changesidebaricon) | function | Смена иконки Sidebar при поддержке браузером. |
+| [`IconNameRegistry`](#iconnameregistry) | interface | Сгенерированный реестр имён групп. |
+| [`IconName`](#iconname) | type | Допустимое имя группы иконок. |
+| [`IconsMap`](#iconsmap) | type | Карта групп с размерами и путями иконок. |
+
+## `getIcons`
+
+<PropertyBadge text="function" type="info" outline />
+
+Возвращает группы иконок, включённые в текущую сборку расширения.
+
+```ts file="../../../../code/icons/api/get-icons.ts" title="getIcons"
+```
+
+**Параметры:** отсутствуют. **Результат:** [`IconsMap`](#iconsmap). Функция синхронная; не читает файлы и не обращается к браузерному API. Данные подставляет сборка Addon Bone.
+
+Ключ карты — [`IconName`](#iconname), значение — объект вида `{16: "/icons/active-16.png", 32: "/icons/active-32.png"}`. Путь начинается с `/` и относится к корню расширения. Для получения полного URL используйте `getUrl` из `adnbn/browser`.
+
+Например, при наличии `src/icons/active16.png` и `src/icons/active32.png` и стандартном [`iconOutDir`](/api/adnbn/configuration#config-iconoutdir) чтение группы даст следующий объект. Размеры изображений должны соответствовать числам в именах файлов:
+
+<Tabs>
+    <Tab label="Чтение группы">
+```ts file="../../../../code/icons/api/examples/read-icons.ts" title="src/icon-paths.ts"
+```
+    </Tab>
+    <Tab label="Полученный объект">
+```json file="../../../../code/icons/api/examples/active-icons.json" title="activeIcons"
+```
+    </Tab>
+</Tabs>
+
+Если группы нет, `getIcons().get(name)` возвращает `undefined`. Без найденных иконок карта пуста. При импорте пакета вне сборки Addon Bone запасной модуль также содержит пустые данные.
+
+Каждый вызов создаёт новую `Map`, но вложенные объекты размеров остаются общими. Изменение самой карты не меняет другие результаты; для изменения вложенного объекта сначала создайте его копию. Запись в карту не копирует файлы и не обновляет иконки браузера.
+
+## `changeActionIcon`
+
+<PropertyBadge text="function" type="info" outline />
+
+Меняет иконку кнопки расширения для всех вкладок или одной вкладки, используя готовую группу из [`getIcons()`](#geticons).
+
+```ts file="../../../../code/icons/api/change-action-icon.ts" title="changeActionIcon"
+```
+
+**Параметры:**
+
+- `icon` — [`IconName`](#iconname). Без аргумента, при `undefined` или пустой строке во время выполнения выбирается группа `default`. Это не восстановление значения из [`config.action.icon`](/api/adnbn/configuration#actionoptions-icon) или Popup. Если реестр уже содержит имена, пустая строка не входит в тип `IconName`.
+- `tab` — `number | Tab`, где внутренний алиас `Tab` означает `chrome.tabs.Tab` и отдельно из `adnbn` не экспортируется. Число передаётся как ID вкладки; из объекта берётся `id`. Без `tab` задаётся общая иконка. Если у переданного объекта нет `id`, вызов также становится общим — для отдельной вкладки передавайте существующий ID.
+
+**Результат:** `Promise<void>`. Дождитесь завершения через `await`; ошибки браузерного API отклоняют Promise.
+
+Вызов доступен из фонового контекста и страниц расширения с доступом к Action API. Из Content Script передайте запрос в фон через [Service](/api/adnbn/service). Объявите кнопку при сборке, например через [`action: {}`](/api/adnbn/configuration#config-action). Функция не меняет `manifest.icons`, не создаёт Popup и не переключает его.
+
+Группа передаётся в `action.setIcon` для Manifest V3 или `browserAction.setIcon` для Manifest V2. Браузер выбирает размер изображения по плотности экрана. Настройка вкладки имеет приоритет над общей и сбрасывается при закрытии вкладки. Подробнее — [Action API](https://developer.chrome.com/docs/extensions/reference/api/action#method-setIcon).
+
+Для группы `active` из примера выше этот обработчик задаёт иконку только переданной вкладке:
+
+```ts file="../../../../code/icons/api/examples/action-icon.ts" title="src/action-icon.ts"
+```
+
+Вызов `await changeActionIcon("active")` задаёт общую иконку; `await changeActionIcon()` выбирает общую группу `default`, если она существует. Общий вызов не снимает уже заданные переопределения отдельных вкладок.
+
+**Ошибка группы:** если выбранного имени нет, Promise отклоняется с `Icon group name "…" not found for action icon.`. Поиск точный: функция не меняет регистр имени и не выбирает первую доступную группу. Это отличается от запасного выбора при [генерации манифеста](/api/adnbn/manifest#manifestbuilder-seticon).
+
+## `changeSidebarIcon`
+
+<PropertyBadge text="function" type="info" outline />
+
+Передаёт группу иконок в `sidebarAction.setIcon` для изменения иконки боковой панели.
+
+```ts file="../../../../code/icons/api/change-sidebar-icon.ts" title="changeSidebarIcon"
+```
+
+**Параметры:**
+
+- `icon` — [`IconName`](#iconname). Без значения или при пустой строке во время выполнения выбирается `default`; подстановка первой доступной группы не выполняется.
+- `tab` — `number | Tab`, где `Tab` — внутренний алиас `chrome.tabs.Tab`. Передайте ID вкладки либо объект с `id`. Без ID задаётся общая иконка. Параметр выбора окна эта функция не предоставляет.
+
+**Результат:** `Promise<void>`. Используйте `await changeSidebarIcon("active")` для общей иконки или передайте ID вторым аргументом для отдельной вкладки. Функция не открывает Sidebar, не меняет его HTML и не влияет на иконку кнопки Action.
+
+Начальная группа задаётся через [`SidebarConfig.icon`](/api/adnbn/sidebar#sidebarconfig-icon). При переключении документа [`changeSidebar()`](/api/adnbn/sidebar#changesidebar) применяет заданный [`SidebarMapEntry.icon`](/api/adnbn/sidebar#sidebarmapentry-icon), если `canSetSidebarIcon()` из `adnbn/browser` подтверждает поддержку. Прямой вызов `changeSidebarIcon()` позволяет изменить только иконку и отклоняет Promise при неподдерживаемой операции.
+
+В Firefox функция ожидает завершения `browser.sidebarAction.setIcon`. Если браузер сообщает об ошибке, Promise функции отклоняется. Текущая браузерная обёртка отключает динамическую смену иконки в Opera MV2 и MV3: прямой вызов завершается с `Changing the sidebar icon is temporarily unsupported in Opera due to a native browser bug` до обращения к нативному `setIcon`. Исходную иконку для Opera задавайте через [`SidebarConfig.icon`](/api/adnbn/sidebar#sidebarconfig-icon) в манифесте; [`changeSidebar()`](/api/adnbn/sidebar#changesidebar) пропускает её динамическое обновление.
+
+Вызывайте её из фонового контекста или страницы расширения с доступом к Sidebar API. Для Firefox должна быть объявлена боковая панель через [Sidebar](/guide/entrypoints/sidebar). Общую настройку перекрывает иконка отдельной вкладки; браузер также поддерживает настройки окна, доступные через его собственный API. Подробнее — [`sidebarAction.setIcon` в MDN](https://developer.mozilla.org/en-US/docs/Mozilla/Add-ons/WebExtensions/API/sidebarAction/setIcon).
+
+**Ошибка группы:** неизвестное имя, включая отсутствующую `default`, отклоняет Promise с `Icon group name "…" not found for sidebar icon.`. Эта проверка выполняется до обращения к браузеру.
+
+В Chrome и Edge используется другой API — [`sidePanel`](https://developer.chrome.com/docs/extensions/reference/api/sidePanel), который не предоставляет `setIcon`. При отсутствии `sidebarAction.setIcon` текущая обёртка отклоняет Promise с `The sidebarAction.setIcon API is not supported in this browser`.
+
+## `IconNameRegistry`
+
+<PropertyBadge text="interface" type="info" outline />
+
+Расширяемый интерфейс, ключи которого задают доступные имена групп для [`IconName`](#iconname).
+
+```ts file="../../../../code/icons/api/icon-name-registry.ts" title="IconNameRegistry"
+```
+
+В пакете интерфейс пуст. При сборке Addon Bone находит иконки и создаёт `.adnbn/icon.d.ts`: добавляет имена групп как ключи со значением `true`. Например, файлы `16.png`, `active16.png` и `active32.png` в `src/icons` дают две группы:
+
+```ts file="../../../../code/icons/api/examples/generated-registry.d.ts" title=".adnbn/icon.d.ts"
+```
+
+Это сгенерированная декларация для TypeScript. Подключайте настройки проекта через `.adnbn/tsconfig.json`, чтобы имена участвовали в проверке типов. Не редактируйте созданный файл вручную: обновляйте исходные иконки и пересобирайте проект.
+
+Реестр описывает имена, а не пути или размеры. Ручное расширение интерфейса само по себе не добавляет изображений в сборку; наличие ключа в TypeScript не заменяет проверку фактических данных [`getIcons()`](#geticons).
+
+## `IconName`
+
+<PropertyBadge text="type" type="info" outline />
+
+Имя группы иконок, которую принимают функции смены иконок, [`ActionOptions.icon`](/api/adnbn/configuration#actionoptions-icon), [`PopupConfig.icon`](/api/adnbn/popup#popupconfig-icon) и [`SidebarConfig.icon`](/api/adnbn/sidebar#sidebarconfig-icon).
+
+```ts file="../../../../code/icons/api/icon-name.ts" title="IconName"
+```
+
+Если [`IconNameRegistry`](#iconnameregistry) пуст, тип равен `string`. Когда в реестре появляются ключи, тип ограничивается его строковыми именами. Для декларации выше это `"default" | "active"`. Свободный `string` до генерации не гарантирует, что запрошенная группа существует во время выполнения.
+
+При стандартном поиске Addon Bone принимает PNG с размерами в имени: `16`, `32`, `48`, `64`, `128`, `256` или `512`. Файл `16.png` относится к `default`; `active16.png`, `active-16.png` и `active_16.png` — варианты имени файла для группы `active`. Для имён групп используйте латинские буквы; при разборе имени файла они приводятся к нижнему регистру. Готовые изображения копируются без изменения размера.
+
+Каталог исходников задаёт [`iconSrcDir`](/api/adnbn/configuration#config-iconsrcdir), каталог результата — [`iconOutDir`](/api/adnbn/configuration#config-iconoutdir), объединение слоёв приложения — [`mergeIcons`](/api/adnbn/configuration#config-mergeicons).
+
+## `IconsMap`
+
+<PropertyBadge text="type" type="info" outline />
+
+Результат [`getIcons()`](#geticons): карта имён групп и объектов с путями к изображениям по размерам.
+
+```ts file="../../../../code/icons/api/icons-map.ts" title="IconsMap"
+```
+
+Ключ внешней `Map` — [`IconName`](#iconname). Ключ вложенного объекта — размер в пикселях, значение — путь от корня расширения. Например, `icons.get("active")?.[32]` получает путь `/icons/active-32.png` при стандартном каталоге результата и наличии этого файла. Объявление `Record<number, string>` не означает, что в группе есть все размеры: отсутствующий размер возвращает `undefined` во время выполнения.
+
+[`ManifestIcons`](/api/adnbn/manifest#manifesticons) — отдельный контракт билдера манифеста с вложенными `Map`, тогда как `IconsMap` содержит обычные объекты размеров. Добавление записи в [`ManifestBuilder.setIcons()`](/api/adnbn/manifest#manifestbuilder-seticons) само по себе не добавляет её в данные `getIcons()` и не копирует изображения: публичный getter читает группы, подготовленные сборкой иконок.

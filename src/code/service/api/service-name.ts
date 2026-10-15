@@ -1,0 +1,1 @@
+export type ServiceName = Extract<keyof ServiceRegistry, string>;

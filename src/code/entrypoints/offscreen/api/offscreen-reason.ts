@@ -1,0 +1,17 @@
+export enum OffscreenReason {
+	Testing = "TESTING",
+	AudioPlayback = "AUDIO_PLAYBACK",
+	IframeScripting = "IFRAME_SCRIPTING",
+	DOMScraping = "DOM_SCRAPING",
+	Blobs = "BLOBS",
+	DOMParser = "DOM_PARSER",
+	UserMedia = "USER_MEDIA",
+	DisplayMedia = "DISPLAY_MEDIA",
+	WebRTC = "WEB_RTC",
+	Clipboard = "CLIPBOARD",
+	LocalStorage = "LOCAL_STORAGE",
+	Workers = "WORKERS",
+	BatteryStatus = "BATTERY_STATUS",
+	MatchMedia = "MATCH_MEDIA",
+	Geolocation = "GEOLOCATION",
+}

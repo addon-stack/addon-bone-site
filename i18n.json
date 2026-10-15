@@ -71,6 +71,18 @@
     "en": "API Overview",
     "ru": "Обзор API"
   },
+  "apiCliReference": {
+    "en": "CLI Reference",
+    "ru": "Справочник CLI"
+  },
+  "apiCliOptions": {
+    "en": "Common options",
+    "ru": "Общие параметры"
+  },
+  "apiReference": {
+    "en": "API Reference",
+    "ru": "Справочник API"
+  },
   "resources": {
     "en": "Resources",
     "ru": "Ресурсы"
@@ -106,5 +118,37 @@
   "target_badge": {
     "en": "primary",
     "ru": "primary"
+  },
+  "apiEnvironment": {
+    "en": "Environment",
+    "ru": "Окружение"
+  },
+  "apiBrowserOverrides": {
+    "en": "Browser Page Overrides",
+    "ru": "Переопределение страниц браузера"
+  },
+  "apiManifest": {
+    "en": "Manifest",
+    "ru": "Манифест"
+  },
+  "apiEntrypointOptions": {
+    "en": "Common Entrypoint Options",
+    "ru": "Общие опции точек входа"
+  },
+  "apiPermissions": {
+    "en": "Permissions",
+    "ru": "Разрешения"
+  },
+  "apiView": {
+    "en": "View",
+    "ru": "Отображение страниц"
+  },
+  "apiIcons": {
+    "en": "Icons",
+    "ru": "Иконки"
+  },
+  "apiEntrypointAssets": {
+    "en": "Entrypoint Assets",
+    "ru": "Ресурсы точек входа"
   }
 }

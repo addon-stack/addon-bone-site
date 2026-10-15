@@ -1,0 +1,1 @@
+export type ServiceConfig = TransportConfig & BackgroundConfig;

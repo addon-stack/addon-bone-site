@@ -1,0 +1,335 @@
+---
+description: "API Content Security Policy: CspOptions, CspConfig, источники ресурсов, CspSource и правила объединения политики страниц расширения в Addon Bone."
+---
+
+# API Content Security Policy
+
+import DocHeading from "@components/DocHeading";
+import PropertyBadge from "@components/PropertyBadge";
+import {Tab, Tabs} from "@rspress/core/theme";
+
+<span id="csp-api" />
+
+Типы для настройки источников ресурсов и разрешения WebAssembly на страницах расширения. Все экспорты доступны из `adnbn`.
+
+Контракт `CspOptions` используют [Page](/guide/entrypoints/page), [Popup](/guide/entrypoints/popup), [Sidebar](/guide/entrypoints/sidebar), [Options](/guide/entrypoints/options), [Offscreen](/guide/entrypoints/offscreen), [New Tab](/guide/entrypoints/newtab), [Bookmarks](/guide/entrypoints/bookmarks) и [History](/guide/entrypoints/history). Применение CSP к этим документам описано в соответствующих руководствах. У [Sandbox](/guide/entrypoints/sandbox) отдельная политика и контракт [`SandboxCspOptions`](/api/adnbn/sandbox#sandboxcspoptions) с [`SandboxCspConfig`](/api/adnbn/sandbox#sandboxcspconfig); опции `eval`, `inline` и `allow` относятся к нему.
+
+| Экспорт | Вид | Назначение |
+| --- | --- | --- |
+| [`CspOptions`](#cspoptions) | interface | Поле `csp` в объявлении точки входа. |
+| [`CspConfig`](#cspconfig) | interface | Настройки политики страниц расширения. |
+| [`CspSources`](#cspsources) | interface | Источники по видам ресурсов. |
+| [`CspSource`](#cspsource) | enum | Готовые ключевые слова и схемы CSP. |
+| [`CspSourceValue`](#cspsourcevalue) | type | Одно выражение источника CSP. |
+
+## `CspOptions`
+
+<PropertyBadge text="interface" type="info" outline />
+
+Общий контракт для добавления настроек политики страниц расширения через поле `csp`.
+
+```ts file="../../../../code/csp/api/csp-options.ts" title="CspOptions"
+```
+
+<DocHeading level={3} id="cspoptions-csp" toc={true}>`csp`</DocHeading>
+
+**Тип:** [`CspConfig`](#cspconfig).
+
+Добавляет настройки в общую политику манифеста. Она действует на страницы и worker-контексты расширения, а не только на документ, в котором объявлено поле. Настройки включённой точки входа учитываются при сборке, даже если её документ ещё не открывался.
+
+| Значение | Результат |
+| --- | --- |
+| Поле отсутствует | Эта точка входа не добавляет настройки CSP. Если другие источники также не задают политику, действует политика браузера по умолчанию. |
+| `csp: {}` | Активирует сборку политики с `script-src 'self'; object-src 'self';`. |
+| Объект с настройками | Добавляет WebAssembly и директивы ресурсов по правилам [`CspConfig`](#cspconfig). |
+
+В Manifest V2 политика записывается в строку `content_security_policy`, в Manifest V3 — в `content_security_policy.extension_pages`. Ограничения браузера описаны в [справочнике Chrome](https://developer.chrome.com/docs/extensions/reference/manifest/content-security-policy).
+
+В примерах ниже настройки передаются в поле `csp` через [`definePage`](/api/adnbn/page#definepage). Page выбран для демонстрации; эти настройки доступны всем перечисленным выше потребителям [`CspOptions`](#cspoptions) и формируют общую политику расширения.
+
+Вкладки манифеста содержат только сгенерированное поле CSP из `manifest.json`; остальные поля опущены. Каждый пример рассматривается отдельно, без дополнительных настроек из других источников.
+
+Пустой объект активирует базовую политику:
+
+<Tabs>
+    <Tab label="Код Page">
+```ts file="../../../../code/entrypoints/page/api/csp/base.page.ts" title="src/preview.page.ts"
+```
+    </Tab>
+    <Tab label="Сгенерированный Manifest V3">
+```json file="../../../../code/entrypoints/page/api/csp/base.manifest-v3.json" title="manifest.json"
+```
+    </Tab>
+    <Tab label="Сгенерированный Manifest V2">
+```json file="../../../../code/entrypoints/page/api/csp/base.manifest-v2.json" title="manifest.json"
+```
+    </Tab>
+</Tabs>
+
+## `CspConfig`
+
+<PropertyBadge text="interface" type="info" outline />
+
+Настройки поля [`CspOptions.csp`](#cspoptions-csp). Этот же объект принимают [`ManifestBuilder.addCsp()`](/api/adnbn/manifest#manifestbuilder-addcsp) и [`appendCsp()`](/api/adnbn/manifest#manifestbuilder-appendcsp).
+
+```ts file="../../../../code/csp/api/csp-config.ts" title="CspConfig"
+```
+
+<DocHeading level={3} id="cspconfig-wasm" toc={true}>`wasm`</DocHeading>
+
+**Тип:** `boolean`. **По умолчанию:** `false`.
+
+При `true` добавляет `'wasm-unsafe-eval'` в `script-src`. Это разрешение на выполнение WebAssembly; оно не добавляет `'unsafe-eval'` для выполнения JavaScript из строк.
+
+Значение `true` хотя бы в одном добавленном объекте включает разрешение в общей политике. `false` и отсутствие поля не отменяют `true`, полученное из другого объявления.
+
+<Tabs>
+    <Tab label="Код Page">
+```ts file="../../../../code/entrypoints/page/api/csp/wasm.page.ts" title="src/preview.page.ts"
+```
+    </Tab>
+    <Tab label="Сгенерированный Manifest V3">
+```json file="../../../../code/entrypoints/page/api/csp/wasm.manifest-v3.json" title="manifest.json"
+```
+    </Tab>
+    <Tab label="Сгенерированный Manifest V2">
+```json file="../../../../code/entrypoints/page/api/csp/wasm.manifest-v2.json" title="manifest.json"
+```
+    </Tab>
+</Tabs>
+
+<DocHeading level={3} id="cspconfig-sources" toc={true}>`sources`</DocHeading>
+
+**Тип:** [`CspSources`](#cspsources). При отсутствии или `{}` не добавляет директивы ресурсов.
+
+Источники одного вида из разных объявлений объединяются. Одинаковые строки не дублируются; более поздний объект не заменяет ранее добавленный список. Значение `'self'` автоматически присутствует в `script-src` и `object-src`, но не подставляется в пользовательские списки.
+
+Если обе страницы `gallery.page.ts` и `preview.page.ts` включены в одну сборку, Addon Bone объединяет их настройки CSP. В итоговом `img-src` сохраняются все три источника, а повторяющийся `data:` появляется один раз. Эта общая политика действует на обе страницы:
+
+<Tabs>
+    <Tab label="Код Page: gallery">
+```ts file="../../../../code/entrypoints/page/api/csp/sources-merge-gallery.page.ts" title="src/gallery.page.ts"
+```
+    </Tab>
+    <Tab label="Код Page: preview">
+```ts file="../../../../code/entrypoints/page/api/csp/sources-merge-preview.page.ts" title="src/preview.page.ts"
+```
+    </Tab>
+    <Tab label="Сгенерированный Manifest V3">
+```json file="../../../../code/entrypoints/page/api/csp/sources-merge.manifest-v3.json" title="manifest.json"
+```
+    </Tab>
+    <Tab label="Сгенерированный Manifest V2">
+```json file="../../../../code/entrypoints/page/api/csp/sources-merge.manifest-v2.json" title="manifest.json"
+```
+    </Tab>
+</Tabs>
+
+<DocHeading level={3} id="cspconfig-raw" toc={false}>Совмещение с сырой политикой</DocHeading>
+
+Addon Bone не объединяет структурированный `CspConfig` с сырой политикой страниц расширения из [`manifest`](/api/adnbn/configuration#config-manifest) или [`ManifestBuilder.raw()`](/api/adnbn/manifest#manifestbuilder-raw). Если заданы оба варианта, получение манифеста завершается ошибкой `Cannot merge … content security policy …`. Это относится и к пустому `csp: {}`, который уже активирует структурированную политику. Выберите один способ задания политики страниц расширения.
+
+## `CspSources`
+
+<PropertyBadge text="interface" type="info" outline />
+
+Списки разрешённых источников для отдельных директив CSP.
+
+```ts file="../../../../code/csp/api/csp-sources.ts" title="CspSources"
+```
+
+Для каждого поля действуют общие правила:
+
+- Отсутствующее поле не добавляет соответствующую директиву. Браузер применяет правила fallback CSP, если для неё предусмотрена другая директива.
+- Пустой массив добавляет директиву без источников, например `img-src;`. При отсутствии источников из других объявлений она запрещает загрузку этого вида ресурсов.
+- Непустой массив задаёт разрешённые источники. Каждая строка передаётся браузеру как выражение CSP; Addon Bone не добавляет кавычки и не проверяет применимость выражения к выбранной директиве.
+
+`CspSources` не содержит `script`, `object` или `default`: соответствующие поля нельзя задать через этот интерфейс. Политика ресурсов не заменяет [`hostPermissions`](/api/adnbn/permissions#permissionsoptions-hostpermissions) и другие разрешения extension API.
+
+<DocHeading level={3} id="cspsources-connect" toc={true}>`connect`</DocHeading>
+
+**Тип:** [`CspSourceValue[]`](#cspsourcevalue). Добавляет `connect-src` для сетевых соединений, например `fetch`, `XMLHttpRequest`, WebSocket и EventSource. Если поле не задано, Addon Bone не добавляет `connect-src`.
+
+<Tabs>
+    <Tab label="Код Page">
+```ts file="../../../../code/entrypoints/page/api/csp/connect.page.ts" title="src/preview.page.ts"
+```
+    </Tab>
+    <Tab label="Сгенерированный Manifest V3">
+```json file="../../../../code/entrypoints/page/api/csp/connect.manifest-v3.json" title="manifest.json"
+```
+    </Tab>
+    <Tab label="Сгенерированный Manifest V2">
+```json file="../../../../code/entrypoints/page/api/csp/connect.manifest-v2.json" title="manifest.json"
+```
+    </Tab>
+</Tabs>
+
+<DocHeading level={3} id="cspsources-image" toc={true}>`image`</DocHeading>
+
+**Тип:** [`CspSourceValue[]`](#cspsourcevalue). Добавляет `img-src` для изображений. Если поле не задано, Addon Bone не добавляет `img-src`. Для локальных изображений в явно заданном списке используйте [`CspSource.Self`](#cspsource).
+
+Настройка `csp.sources.image` в этом примере разрешает изображения из файлов расширения и `data:`. Если оставить только `CspSource.Data`, список будет ограничен схемой `data:`, пока другое объявление не расширит его.
+
+<Tabs>
+    <Tab label="Код Page">
+```ts file="../../../../code/entrypoints/page/api/csp/image.page.ts" title="src/preview.page.ts"
+```
+    </Tab>
+    <Tab label="Сгенерированный Manifest V3">
+```json file="../../../../code/entrypoints/page/api/csp/image.manifest-v3.json" title="manifest.json"
+```
+    </Tab>
+    <Tab label="Сгенерированный Manifest V2">
+```json file="../../../../code/entrypoints/page/api/csp/image.manifest-v2.json" title="manifest.json"
+```
+    </Tab>
+</Tabs>
+
+<DocHeading level={3} id="cspsources-style" toc={true}>`style`</DocHeading>
+
+**Тип:** [`CspSourceValue[]`](#cspsourcevalue). Добавляет `style-src` для стилей. Если поле не задано, Addon Bone не добавляет `style-src`. [`CspSource.UnsafeInline`](#cspsource) разрешает встроенные стили в рамках этой директивы.
+
+<Tabs>
+    <Tab label="Код Page">
+```ts file="../../../../code/entrypoints/page/api/csp/style.page.ts" title="src/preview.page.ts"
+```
+    </Tab>
+    <Tab label="Сгенерированный Manifest V3">
+```json file="../../../../code/entrypoints/page/api/csp/style.manifest-v3.json" title="manifest.json"
+```
+    </Tab>
+    <Tab label="Сгенерированный Manifest V2">
+```json file="../../../../code/entrypoints/page/api/csp/style.manifest-v2.json" title="manifest.json"
+```
+    </Tab>
+</Tabs>
+
+<DocHeading level={3} id="cspsources-font" toc={true}>`font`</DocHeading>
+
+**Тип:** [`CspSourceValue[]`](#cspsourcevalue). Добавляет `font-src` для файлов шрифтов. Если поле не задано, Addon Bone не добавляет `font-src`.
+
+<Tabs>
+    <Tab label="Код Page">
+```ts file="../../../../code/entrypoints/page/api/csp/font.page.ts" title="src/preview.page.ts"
+```
+    </Tab>
+    <Tab label="Сгенерированный Manifest V3">
+```json file="../../../../code/entrypoints/page/api/csp/font.manifest-v3.json" title="manifest.json"
+```
+    </Tab>
+    <Tab label="Сгенерированный Manifest V2">
+```json file="../../../../code/entrypoints/page/api/csp/font.manifest-v2.json" title="manifest.json"
+```
+    </Tab>
+</Tabs>
+
+<DocHeading level={3} id="cspsources-media" toc={true}>`media`</DocHeading>
+
+**Тип:** [`CspSourceValue[]`](#cspsourcevalue). Добавляет `media-src` для аудио и видео. Если поле не задано, Addon Bone не добавляет `media-src`.
+
+<Tabs>
+    <Tab label="Код Page">
+```ts file="../../../../code/entrypoints/page/api/csp/media.page.ts" title="src/preview.page.ts"
+```
+    </Tab>
+    <Tab label="Сгенерированный Manifest V3">
+```json file="../../../../code/entrypoints/page/api/csp/media.manifest-v3.json" title="manifest.json"
+```
+    </Tab>
+    <Tab label="Сгенерированный Manifest V2">
+```json file="../../../../code/entrypoints/page/api/csp/media.manifest-v2.json" title="manifest.json"
+```
+    </Tab>
+</Tabs>
+
+<DocHeading level={3} id="cspsources-worker" toc={true}>`worker`</DocHeading>
+
+**Тип:** [`CspSourceValue[]`](#cspsourcevalue). Добавляет `worker-src` для скриптов Worker, SharedWorker и ServiceWorker. При отсутствии директивы браузер проверяет `child-src`, затем `script-src`, затем `default-src`; это [правило CSP](https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Content-Security-Policy/worker-src), а не дополнительное объединение настроек Addon Bone.
+
+<Tabs>
+    <Tab label="Код Page">
+```ts file="../../../../code/entrypoints/page/api/csp/worker.page.ts" title="src/preview.page.ts"
+```
+    </Tab>
+    <Tab label="Сгенерированный Manifest V3">
+```json file="../../../../code/entrypoints/page/api/csp/worker.manifest-v3.json" title="manifest.json"
+```
+    </Tab>
+    <Tab label="Сгенерированный Manifest V2">
+```json file="../../../../code/entrypoints/page/api/csp/worker.manifest-v2.json" title="manifest.json"
+```
+    </Tab>
+</Tabs>
+
+<DocHeading level={3} id="cspsources-child" toc={true}>`child`</DocHeading>
+
+**Тип:** [`CspSourceValue[]`](#cspsourcevalue). Добавляет `child-src` для дочерних контекстов и как fallback для `frame-src` и `worker-src`. Если поле не задано, Addon Bone не добавляет `child-src`. Для раздельной настройки используйте [`frame`](#cspsources-frame) и [`worker`](#cspsources-worker).
+
+<Tabs>
+    <Tab label="Код Page">
+```ts file="../../../../code/entrypoints/page/api/csp/child.page.ts" title="src/preview.page.ts"
+```
+    </Tab>
+    <Tab label="Сгенерированный Manifest V3">
+```json file="../../../../code/entrypoints/page/api/csp/child.manifest-v3.json" title="manifest.json"
+```
+    </Tab>
+    <Tab label="Сгенерированный Manifest V2">
+```json file="../../../../code/entrypoints/page/api/csp/child.manifest-v2.json" title="manifest.json"
+```
+    </Tab>
+</Tabs>
+
+<DocHeading level={3} id="cspsources-frame" toc={true}>`frame`</DocHeading>
+
+**Тип:** [`CspSourceValue[]`](#cspsourcevalue). Добавляет `frame-src` для загружаемых фреймов, включая `iframe`. При отсутствии директивы браузер проверяет `child-src`, затем `default-src`. Поле управляет тем, какие документы можно встроить, а не тем, кто может встроить саму страницу. Подробнее — [контракт `frame-src`](https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Content-Security-Policy/frame-src).
+
+<Tabs>
+    <Tab label="Код Page">
+```ts file="../../../../code/entrypoints/page/api/csp/frame.page.ts" title="src/preview.page.ts"
+```
+    </Tab>
+    <Tab label="Сгенерированный Manifest V3">
+```json file="../../../../code/entrypoints/page/api/csp/frame.manifest-v3.json" title="manifest.json"
+```
+    </Tab>
+    <Tab label="Сгенерированный Manifest V2">
+```json file="../../../../code/entrypoints/page/api/csp/frame.manifest-v2.json" title="manifest.json"
+```
+    </Tab>
+</Tabs>
+
+## `CspSource`
+
+<PropertyBadge text="enum" type="info" outline />
+
+Готовые выражения для массивов [`CspSources`](#cspsources).
+
+```ts file="../../../../code/csp/api/csp-source.ts" title="CspSource"
+```
+
+| Элемент | Значение | Назначение |
+| --- | --- | --- |
+| `Self` | `"'self'"` | Ресурсы того же origin; для страницы расширения — её собственные ресурсы. |
+| `None` | `"'none'"` | Запрет источников для директивы. Используйте как единственное значение списка. |
+| `Data` | `"data:"` | URL со схемой `data:`. |
+| `Blob` | `"blob:"` | URL со схемой `blob:`. |
+| `UnsafeInline` | `"'unsafe-inline'"` | Встроенное содержимое там, где директива поддерживает это значение, например встроенные стили в `style`. |
+
+Ключевые слова уже содержат одинарные кавычки. `CspSource.Self` эквивалентен строке `"'self'"`, а не `"self"`. Наличие элемента в enum не делает его допустимым для каждой директивы. В частности, `UnsafeInline` здесь не разрешает встроенные скрипты: `script-src` собирается отдельно.
+
+При объединении `'none'` с другими источниками браузер игнорирует `'none'`. Поэтому это значение не отменяет источники, добавленные другой точкой входа. Синтаксис и значения описаны в [справочнике CSP](https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Content-Security-Policy#fetch_directive_syntax).
+
+## `CspSourceValue`
+
+<PropertyBadge text="type" type="info" outline />
+
+Одно значение в массиве источников.
+
+```ts file="../../../../code/csp/api/csp-source-value.ts" title="CspSourceValue"
+```
+
+Принимает [`CspSource`](#cspsource), его строковые значения и другие строки CSP, например `"https://api.example.com"`, `"wss://socket.example.com"` или `"https:"`. Ветка `string & Record<never, never>` сохраняет открытый строковый тип вместе с подсказками известных значений.
+
+Одна запись массива должна содержать одно выражение источника. TypeScript и парсер точки входа не проверяют грамматику CSP: пустая строка или неподходящее выражение могут пройти эту проверку, но не задают корректное правило. Используйте полный синтаксис выбранной директивы; для nonce и hash он также включает одинарные кавычки вокруг выражения.

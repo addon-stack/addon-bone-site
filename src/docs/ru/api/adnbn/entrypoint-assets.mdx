@@ -1,0 +1,166 @@
+---
+description: "API ресурсов точек входа Addon Bone: getEntrypointAssets, getEntrypointAssetsMap, начальные и асинхронные JS/CSS-файлы, дополнительные ресурсы и пути сборки."
+---
+
+<span id="entrypoint-assets-api" />
+
+# API ресурсов точек входа
+
+import DocHeading from "@components/DocHeading";
+import PropertyBadge from "@components/PropertyBadge";
+import {Tab, Tabs} from "@rspress/core/theme";
+
+Функции и типы для чтения списков файлов, которые Addon Bone собрал для точек входа. Используйте их, когда нужно узнать выходные пути скриптов, стилей и дополнительных ресурсов без привязки к сгенерированным именам. Все экспорты доступны из `adnbn`.
+
+| Экспорт | Вид | Назначение |
+| --- | --- | --- |
+| [`getEntrypointAssets`](#getentrypointassets) | function | JS и CSS текущей точки входа вне фонового контекста. |
+| [`getEntrypointAssetsMap`](#getentrypointassetsmap) | function | Карта файлов всей сборки из фонового контекста. |
+| [`EntrypointAssets`](#entrypointassets) | interface | Начальные и асинхронные файлы точки входа. |
+| [`EntrypointAssetsFiles`](#entrypointassetsfiles) | interface | Списки JavaScript- и CSS-файлов. |
+| [`EntrypointAssetsMapEntry`](#entrypointassetsmapentry) | interface | Файлы точки входа вместе с дополнительными ресурсами. |
+| [`EntrypointAssetsMap`](#entrypointassetsmap) | type | Словарь по именам точек входа сборщика. |
+
+Обе функции синхронные. Они читают данные, подготовленные сборкой, не обращаются к файловой системе и не загружают перечисленные файлы. Списки описывают состав сборки, а не состояние загрузки в браузере.
+
+## `getEntrypointAssets`
+
+<PropertyBadge text="function" type="info" outline />
+
+Возвращает JS- и CSS-файлы текущей точки входа: отдельно для начальной загрузки и для асинхронных частей кода — чанков, создаваемых, например, через `import()`.
+
+```ts file="../../../../code/entrypoint-assets/api/get-entrypoint-assets.ts" title="getEntrypointAssets"
+```
+
+**Параметры:** отсутствуют. **Результат:** [`EntrypointAssets`](#entrypointassets). В нём есть только `initial` и `async`; дополнительные ресурсы доступны через [`EntrypointAssetsMapEntry.assets`](#entrypointassetsmapentry-assets) в общей карте.
+
+Вызывайте функцию в собственной сборке страницы или Content Script. В общем модуле и внутри динамического импорта она возвращает данные той точки входа, в которой выполняется этот код, а не отдельный список зависимостей исходного файла.
+
+Этот пример выводит списки файлов в `preview.html`. В показанном результате сборка использует `jsFilename: "[name].js"`; у страницы нет стилей и динамических импортов. При других настройках имена и состав списков могут отличаться:
+
+<Tabs>
+    <Tab label="Код Page">
+```ts file="../../../../code/entrypoints/page/api/assets/preview.page.ts" title="src/preview.page.ts"
+```
+    </Tab>
+    <Tab label="Полученный объект">
+```json file="../../../../code/entrypoint-assets/api/examples/current-assets.json" title="getEntrypointAssets()"
+```
+    </Tab>
+</Tabs>
+
+**Ошибка контекста:** в фоне функция выбрасывает `Current entrypoint assets are unavailable in this runtime`. Для его файлов используйте `getEntrypointAssetsMap().background`. Это относится и к Service, Command и другому коду, включённому в общую фоновую сборку.
+
+Та же ошибка возникает при вызове вне сборки Addon Bone, например в Node.js или обычном тесте с прямым импортом пакета: там данные текущей точки входа не подготовлены. Функция не возвращает пустой объект вместо отсутствующих данных.
+
+## `getEntrypointAssetsMap`
+
+<PropertyBadge text="function" type="info" outline />
+
+Возвращает карту файлов всех точек входа текущей сборки. Доступна только из фонового контекста, в том числе из выполняющихся в нём Service и Command.
+
+```ts file="../../../../code/entrypoint-assets/api/get-entrypoint-assets-map.ts" title="getEntrypointAssetsMap"
+```
+
+**Параметры:** отсутствуют. **Результат:** [`EntrypointAssetsMap`](#entrypointassetsmap). Каждая запись содержит `initial`, `async` и `assets`, включая запись `background` для самой фоновой сборки.
+
+В этом примере обработчик [`BackgroundDefinition.main`](/api/adnbn/background#backgrounddefinition-main) читает карту при запуске. Если проект содержит только этот Background и Page из примера выше, при `jsFilename: "[name].js"` результат имеет следующий вид:
+
+<Tabs>
+    <Tab label="Код Background">
+```ts file="../../../../code/entrypoints/background/api/assets/background.ts" title="src/background.ts"
+```
+    </Tab>
+    <Tab label="Полученный объект">
+```json file="../../../../code/entrypoint-assets/api/examples/assets-map.json" title="getEntrypointAssetsMap()"
+```
+    </Tab>
+</Tabs>
+
+**Ошибка контекста:** из Popup, Page, Content Script и других отдельных сборок функция выбрасывает `getEntrypointAssetsMap() is available only in the background entrypoint`. При прямом импорте пакета вне сборки Addon Bone она выбрасывает ту же ошибку. Для собственных JS/CSS этих точек входа используйте [`getEntrypointAssets()`](#getentrypointassets).
+
+**Ограничение сборки:** фон, использующий общую карту, должен оставаться одним самостоятельным JS-чанком. Динамические импорты, создающие отдельные чанки, и извлечение общих начальных чанков из фона останавливают сборку. Используйте статические импорты в фоне; при изменении [`bundler`](/api/adnbn/configuration#config-bundler) сохраняйте это условие. Ограничение не запрещает асинхронные чанки у других точек входа в карте.
+
+## `EntrypointAssets`
+
+<PropertyBadge text="interface" type="info" outline />
+
+Списки JS и CSS одной точки входа. Результат [`getEntrypointAssets()`](#getentrypointassets) и основа [`EntrypointAssetsMapEntry`](#entrypointassetsmapentry).
+
+```ts file="../../../../code/entrypoint-assets/api/entrypoint-assets.ts" title="EntrypointAssets"
+```
+
+Оба поля всегда присутствуют и доступны только для чтения в TypeScript. Функции возвращают сохранённые объекты, а не копии: не изменяйте их через приведение типа. Если нужен собственный список, скопируйте массив, например `[...assets.initial.js]`.
+
+<DocHeading level={3} id="entrypointassets-initial" toc={true}>`initial`</DocHeading>
+
+**Тип:** [`EntrypointAssetsFiles`](#entrypointassetsfiles). **Обязательное поле результата.**
+
+JS и CSS, необходимые для начальной загрузки точки входа, включая общие начальные чанки, если сборка их выделила. Списки сохраняют порядок зависимостей сборщика; не сортируйте JS-файлы перед последовательным выполнением.
+
+<DocHeading level={3} id="entrypointassets-async" toc={true}>`async`</DocHeading>
+
+**Тип:** [`EntrypointAssetsFiles`](#entrypointassetsfiles). **Обязательное поле результата.**
+
+JS и CSS асинхронных чанков, достижимых из точки входа, включая вложенные динамические импорты. При отсутствии таких файлов оба массива пусты. Файлы из `initial` сюда повторно не включаются.
+
+Список доступен до выполнения `import()` и не меняется по мере загрузки модулей. Это общий перечень файлов, а не соответствие между конкретным вызовом `import()` и его зависимостями. Для загрузки модуля используйте сам `import()`.
+
+## `EntrypointAssetsFiles`
+
+<PropertyBadge text="interface" type="info" outline />
+
+Два списка выходных файлов для [`initial`](#entrypointassets-initial) или [`async`](#entrypointassets-async).
+
+```ts file="../../../../code/entrypoint-assets/api/entrypoint-assets-files.ts" title="EntrypointAssetsFiles"
+```
+
+Пути относительны корню результата сборки, используют `/` и не содержат префикс URL расширения. Например, `js/preview.page.js`. Для полного URL в контексте с доступом к extension API используйте `getUrl(path)` из `adnbn/browser`.
+
+Списки содержат итоговые имена с учётом [`jsDir`](/api/adnbn/configuration#config-jsdir), [`jsFilename`](/api/adnbn/configuration#config-jsfilename), [`cssDir`](/api/adnbn/configuration#config-cssdir) и [`cssFilename`](/api/adnbn/configuration#config-cssfilename). Они не содержат повторов внутри одного массива. Общий файл может присутствовать у нескольких точек входа.
+
+<DocHeading level={3} id="entrypointassetsfiles-js" toc={true}>`js`</DocHeading>
+
+**Тип:** `readonly string[]`. **Обязательное поле результата.**
+
+JavaScript-файлы соответствующей группы. Если файлов нет, возвращается `[]`. Учитываются скрипты сборки, а не любой ресурс с расширением `.js`: файл, выпущенный как отдельный ресурс, относится к [`assets`](#entrypointassetsmapentry-assets).
+
+<DocHeading level={3} id="entrypointassetsfiles-css" toc={true}>`css`</DocHeading>
+
+**Тип:** `readonly string[]`. **Обязательное поле результата.**
+
+Отдельные CSS-файлы соответствующей группы. Если сборка не создаёт их, возвращается `[]`. Наличие SCSS или CSS в исходниках само по себе не гарантирует файл в списке: встроенные в JavaScript стили не являются отдельным CSS-ресурсом.
+
+## `EntrypointAssetsMapEntry`
+
+<PropertyBadge text="interface" type="info" outline />
+
+Запись общей карты. Наследует [`initial`](#entrypointassets-initial) и [`async`](#entrypointassets-async) из [`EntrypointAssets`](#entrypointassets) и добавляет список других ресурсов.
+
+```ts file="../../../../code/entrypoint-assets/api/entrypoint-assets-map-entry.ts" title="EntrypointAssetsMapEntry"
+```
+
+<DocHeading level={3} id="entrypointassetsmapentry-assets" toc={true}>`assets`</DocHeading>
+
+**Тип:** `readonly string[]`. **Обязательное поле результата.**
+
+Дополнительные файлы, связанные с начальными и асинхронными чанками: например, изображения и шрифты из импортов или `url()` в собранном CSS. Массив содержит пути без повторов, отсортированные по имени. Без отдельных ресурсов возвращается `[]`.
+
+Встроенные `data:`-ресурсы не создают отдельного файла и сюда не попадают. Список не является перечнем всего выходного каталога: HTML-документы, манифест и файлы, просто скопированные из [`publicDir`](/api/adnbn/configuration#config-publicdir), автоматически в него не добавляются. Карты исходников, файлы hot update и служебные файлы разработки исключаются из списков ресурсов сборки.
+
+Чтение карты не делает файлы доступными веб-страницам. Доступ регулируется сгенерированным [`web_accessible_resources`](https://developer.mozilla.org/en-US/docs/Mozilla/Add-ons/WebExtensions/manifest.json/web_accessible_resources); явные правила описаны в [`ManifestAccessibleResource`](/api/adnbn/manifest#manifestaccessibleresource).
+
+## `EntrypointAssetsMap`
+
+<PropertyBadge text="type" type="info" outline />
+
+Объект-словарь, который возвращает [`getEntrypointAssetsMap()`](#getentrypointassetsmap).
+
+```ts file="../../../../code/entrypoint-assets/api/entrypoint-assets-map.ts" title="EntrypointAssetsMap"
+```
+
+Ключ — имя точки входа сборщика, значение — [`EntrypointAssetsMapEntry`](#entrypointassetsmapentry). Это обычный объект, не JavaScript `Map`; перебирайте его через `Object.entries()` или `Object.keys()`.
+
+Например, `src/preview.page.ts` даёт ключ `preview.page`, а фоновая сборка — `background`. Имя HTML-файла из [`ViewConfig.as`](/api/adnbn/view#viewconfig-as) не является ключом карты. Несколько исходных файлов, объединённых в одну точку входа сборщика, дают одну запись. Карта учитывает текущие приложение, браузер и фильтры сборки; исключённые точки входа в неё не входят.
+
+Несмотря на `Record<string, EntrypointAssetsMapEntry>` в объявлении, произвольного ключа может не быть: во время выполнения такое чтение возвращает `undefined`. Проверяйте наличие записи перед обращением к её полям. `Readonly` запрещает изменение словаря средствами TypeScript; getter не копирует и не замораживает объект.

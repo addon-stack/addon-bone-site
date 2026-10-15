@@ -78,9 +78,10 @@ Keep the tone calm, direct, and precise.
 
 - Use one documentation text for developers and agents. Make names, defaults,
   ordering, conditions, and exceptions explicit so both can act on the same text.
-- Use the `primary` badge for the main entrypoint option that receives a bare
-  `export default` value in the named-export format. Keep this mapping explicit
-  beside the declaration examples; do not call the badge `target` or `prime`.
+- In entrypoint Guides, use the `primary` badge for the main entrypoint option
+  that receives a bare `export default` value in the named-export format. Keep
+  this mapping explicit beside the declaration examples; do not call the badge
+  `target` or `prime`. Do not use `primary` badges in API reference pages.
 - In named-export examples with a primary handler or factory, declare options
   with `export const` and export the function directly as an arrow function:
   `export default () => ...` or `export default async () => ...`. Do not add an
@@ -205,6 +206,66 @@ Keep the tone calm, direct, and precise.
   browser constraints against official documentation. Distinguish framework
   behavior, browser requirements, and recommendations.
 
+## Write API reference pages
+
+These rules apply to the API reference and refine the general documentation
+and table-of-contents guidance in this file.
+
+- Use one page per public module or agreed group of closely related APIs.
+  Follow the framework's public export boundaries, including `src/main` for
+  the root `adnbn` export. Keep related functions, interfaces, and types on the
+  same page; do not create a separate page for every symbol.
+- Start with an H1 naming the subject, such as `Background API` or the natural
+  localized equivalent of `Environment API`. Add a concise purpose and the
+  public import path. When a corresponding Guide exists, link to it in this
+  introduction and explain what it covers, such as usage examples and lifecycle.
+  For example, Background API links to the Background Guide. Shared-contract
+  pages without a relevant Guide do not need an unrelated Guide link.
+- Follow the introduction with a table of symbols, their kinds, and purposes.
+  Link each symbol to its section. Use an Export column only for symbols
+  publicly available from the stated import path. A page for an internal shared
+  contract may use a Type column instead; explicitly state that the contract
+  cannot be imported directly from that public path.
+- Give each independent symbol a code-formatted H2 and a `PropertyBadge` for
+  its kind, such as `function`, `interface`, `type`, or `enum`. Keep related
+  symbols together and match the section order to the introductory table.
+  Do not introduce umbrella Functions, Types, or Interfaces sections.
+- Document functions through their purpose, signature, parameters, and return
+  value. Add invocation conditions, asynchronous behavior, errors, and other
+  details when they affect usage. Show callable exports as `declare function`,
+  preserving the actual generic parameters, parameter types, optionality, and
+  return type rather than copying an implementation's `const` arrow syntax.
+- Preserve real interface inheritance and type composition. Describe own
+  fields beside the interface and link inherited shared fields to their owning
+  contract page. Do not flatten inherited fields into an invented declaration.
+  Show internal aliases only when they clarify the contract, identify them as
+  non-public, and exclude them from public-export tables.
+- Give each documented field a code-formatted H3 with a stable explicit anchor.
+  State its type, accepted values, omission behavior, and effect. Explicitly
+  label required fields or parameters only; do not repeat an Optional field
+  label. Explain meaningful differences between omission, empty values, `false`,
+  and defaults, including precedence or merging when applicable.
+- For type aliases, show the declaration and meaning; for callable types, also
+  explain parameters and results. For enums, preserve exact member names and
+  values and explain their purposes and significant distinctions. Keep `extends`
+  on the interface declaration's first line. Compound type expressions may
+  span multiple lines for readability.
+- Include symbol H2s and field H3s in the page navigation and search index.
+  Use `DocHeading` with `level={3}`, an explicit `id`, and `toc={true}` for field
+  headings. Supporting subsections, such as Inherited options, may use
+  `toc={false}`; they must remain searchable. Preserve existing anchor IDs.
+- Link framework types and enums mentioned in parameter, result, and field
+  descriptions to their existing reference sections. Use code formatting for
+  linked identifiers. Keep standard syntax highlighting in code blocks; do not
+  add type-preview popups, Twoslash, or generated TypeDoc reference output.
+- Keep API pages compact and focused on contracts. Put complete scenarios,
+  step-by-step instructions, and lifecycle walkthroughs in Guides. Exact
+  contracts may appear in both sections. Add an API example only when it
+  clarifies a contract detail; do not repeat a Guide's full example by default.
+- Apply the shared-snippet, source-verification, known-bug, and validation rules
+  in this file to API pages as well. Verify reference links, anchors, search
+  entries, rendered navigation, and generated Markdown after composition changes.
+
 ## Document current behavior, including bugs
 
 - Describe verified behavior in the current local framework, including known
@@ -230,11 +291,13 @@ Keep the tone calm, direct, and precise.
   what the reader will find.
 - Include nested entries only for substantial, self-contained topics that
   readers may need to find directly, such as integrations with React or Vue
-  that have their own setup and usage instructions.
+  that have their own setup and usage instructions. API reference fields are
+  an explicit exception: include their H3 headings beneath the owning symbol.
 - Keep useful subheadings in the article without adding each option group,
   syntax detail, example variant, or supporting explanation to the navigation.
   Use `DocHeading` from `@components/DocHeading` with the appropriate `level`,
-  an explicit `id`, and `toc={false}` for these headings.
+  an explicit `id`, and `toc={false}` for these headings. For API field headings,
+  follow the API reference rules above and use `toc={true}`.
 - Preserve the semantic heading hierarchy. Promote a subsection to H2 only
   when it is a main topic in its own right; do not change heading levels just
   to flatten the menu. Leave selected Markdown H3 headings in the navigation

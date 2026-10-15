@@ -1,0 +1,165 @@
+---
+description: "API окружения Addon Bone: getEnv, getApp, getBrowser, isBrowser, getManifestVersion и перечисления Browser, Mode, Command, Workspace."
+---
+
+# API окружения
+
+import DocHeading from "@components/DocHeading";
+import PropertyBadge from "@components/PropertyBadge";
+
+Функции для чтения переменных окружения и параметров текущей сборки, а также перечисления для её настройки. Все экспорты доступны из `adnbn`.
+
+| Экспорт | Вид | Назначение |
+| --- | --- | --- |
+| [`getEnv`](#getenv) | function | Чтение переменной окружения. |
+| [`getApp`](#getapp) | function | Имя приложения. |
+| [`getBrowser`](#getbrowser) | function | Целевой браузер сборки. |
+| [`isBrowser`](#isbrowser) | function | Проверка целевого браузера. |
+| [`Browser`](#browser) | enum | Идентификаторы браузеров. |
+| [`getManifestVersion`](#getmanifestversion) | function | Версия манифеста. |
+| [`Mode`](#mode) | enum | Режимы сборки. |
+| [`Command`](#command) | enum | Команды CLI. |
+| [`Workspace`](#workspace) | enum | Варианты структуры проекта. |
+
+## `getEnv`
+
+<PropertyBadge text="function" type="info" outline />
+
+Читает переменную окружения по имени и возвращает запасное значение, если переменная отсутствует.
+
+```ts file="../../../../code/environment/api/get-env.ts" title="getEnv"
+```
+
+| Параметр | Тип | Назначение |
+| --- | --- | --- |
+| `key` | `string` | **Обязательный параметр.** Имя переменной, например `"APP"`. |
+| `defaults` | `D` | Значение при отсутствии переменной. Если не передано, используется `undefined`. |
+
+**Результат:** `T | D`. Значение переменной либо `defaults`, если переменная отсутствует или содержит `null`. Пустая строка сохраняется и не заменяется запасным значением.
+
+**Параметры типов:** `T extends string` задаёт ожидаемый тип строки, `D` — тип запасного значения. Они не проверяют и не преобразуют данные во время выполнения: строки `"false"` и `"123"` остаются строками.
+
+**Источник данных:** в коде расширения Addon Bone подставляет значения при сборке. Пользовательские переменные загружаются из файлов `.env` и проходят фильтр настройки `env`. Изменение `.env` влияет на результат после пересборки. При прямом вызове в Node.js функция читает `process.env`.
+
+<DocHeading level={3} id="getenv-reserved-variables" toc={false}>Служебные переменные</DocHeading>
+
+Addon Bone формирует эти значения из параметров сборки и включает их независимо от фильтра `env`:
+
+| Имя | Значение |
+| --- | --- |
+| `APP` | Строка из параметра `app`. |
+| `BROWSER` | Строковое значение [`Browser`](#browser). |
+| `MODE` | Строковое значение [`Mode`](#mode). |
+| `MANIFEST_VERSION` | Версия манифеста как строка: `"2"` или `"3"`. |
+
+## `getApp`
+
+<PropertyBadge text="function" type="info" outline />
+
+Возвращает имя приложения из переменной `APP`.
+
+```ts file="../../../../code/environment/api/get-app.ts" title="getApp"
+```
+
+**Результат:** `string` — значение параметра `app`, выбранного для сборки. Это идентификатор приложения в проекте; отображаемое имя расширения задаётся отдельно через `name`.
+
+**Ошибка:** `Error` с сообщением `App is not defined`, если `APP` отсутствует. Пустая строка возвращается без ошибки.
+
+## `getBrowser`
+
+<PropertyBadge text="function" type="info" outline />
+
+Возвращает целевой браузер из переменной `BROWSER`.
+
+```ts file="../../../../code/environment/api/get-browser.ts" title="getBrowser"
+```
+
+**Результат:** [`Browser`](#browser) — значение параметра `browser`, выбранного для сборки. Если сборку для Chrome загрузить в другой браузер, функция продолжит возвращать `Browser.Chrome`: она читает параметр сборки, а не определяет среду выполнения.
+
+**Ошибка:** `Error` с сообщением `Browser is not defined`, если `BROWSER` отсутствует. Сама функция не проверяет, входит ли заданная строка в перечисление `Browser`.
+
+## `isBrowser`
+
+<PropertyBadge text="function" type="info" outline />
+
+Сравнивает указанный браузер с результатом [`getBrowser`](#getbrowser).
+
+```ts file="../../../../code/environment/api/is-browser.ts" title="isBrowser"
+```
+
+**Параметр:** `browser` — [`Browser`](#browser). **Обязательный параметр.**
+
+**Результат:** `true` при точном совпадении, иначе `false`. В TypeScript возвращаемый тип записан как предикат `browser is Browser`.
+
+**Ошибка:** та же, что у [`getBrowser`](#getbrowser), если переменная `BROWSER` отсутствует.
+
+## `Browser`
+
+<PropertyBadge text="enum" type="info" outline />
+
+Строковое перечисление целевых браузеров. Используется в параметре сборки `browser`, функции [`isBrowser`](#isbrowser) и общих фильтрах [`includeBrowser`](/api/adnbn/entrypoint-options#entrypointoptions-includebrowser) и [`excludeBrowser`](/api/adnbn/entrypoint-options#entrypointoptions-excludebrowser).
+
+```ts file="../../../../code/environment/api/browser.ts" title="Browser"
+```
+
+`Browser.Chrome` и `Browser.Chromium` — разные значения. Сравнение с `Browser.Chromium` не означает проверку всех браузеров на базе Chromium: Edge и Opera имеют собственные значения.
+
+Фильтры точек входа принимают как значения enum, например `Browser.Firefox`, так и соответствующие строки, например `"firefox"`. Функция `isBrowser` объявляет параметр именно с типом `Browser`.
+
+## `getManifestVersion`
+
+<PropertyBadge text="function" type="info" outline />
+
+Возвращает версию манифеста из переменной `MANIFEST_VERSION`.
+
+```ts file="../../../../code/environment/api/get-manifest-version.ts" title="getManifestVersion"
+```
+
+**Результат:** [`ManifestVersion`](/api/adnbn/manifest#manifestversion), то есть `2 | 3`. Если переменная отсутствует, функция использует строку `"3"` и возвращает число `3`.
+
+**Преобразование:** функция вызывает `parseInt` и не проверяет результат на соответствие `2 | 3`. В сборке Addon Bone переменная формируется из версии манифеста; при прямом вызове с некорректным окружением возможны другие числа или `NaN`. Пустая строка тоже даёт `NaN`, а не запасное значение `3`.
+
+## `Mode`
+
+<PropertyBadge text="enum" type="info" outline />
+
+Строковое перечисление режимов сборки. Используется в параметре `mode` и служебной переменной `MODE`, которую можно прочитать через [`getEnv`](#getenv).
+
+```ts file="../../../../code/environment/api/mode.ts" title="Mode"
+```
+
+`Mode.Development` задаёт режим разработки, `Mode.Production` — режим production. `Mode.None` явно передаёт сборщику режим `none`; это отдельное значение, а не отсутствие настройки.
+
+TypeScript-контракт фильтра [`EntrypointOptions.mode`](/api/adnbn/entrypoint-options#entrypointoptions-mode) допускает только `Development` и `Production` либо соответствующие строки. Особенность проверки `"none"` при сборке описана рядом с этим полем.
+
+## `Command`
+
+<PropertyBadge text="enum" type="info" outline />
+
+Строковое перечисление команд CLI. В параметре `command` итоговой конфигурации показывает, какая команда запустила сборку.
+
+```ts file="../../../../code/environment/api/command.ts" title="Command"
+```
+
+| Значение | Назначение |
+| --- | --- |
+| `Command.Build` | Однократная сборка через [`adnbn build`](/api/cli/build). |
+| `Command.Watch` | Сборка с отслеживанием изменений через [`adnbn watch`](/api/cli/watch). |
+
+Команду задаёт CLI; поле `command` исключено из `UserConfig`. Тип `Command` описывает запуск сборки и не относится к горячим клавишам расширения.
+
+## `Workspace`
+
+<PropertyBadge text="enum" type="info" outline />
+
+Строковое перечисление вариантов структуры проекта. Используется в настройке `workspace`.
+
+```ts file="../../../../code/environment/api/workspace.ts" title="Workspace"
+```
+
+| Значение | Поведение |
+| --- | --- |
+| `Workspace.Single` | Проект одного приложения. Общим слоем служит сам каталог исходников; `sharedDir` получает значение `"."`. |
+| `Workspace.Multi` | Структура с несколькими приложениями. Общий слой находится в каталоге `sharedDir`, по умолчанию `"shared"`. |
+
+Если `workspace` не задан, используется `Workspace.Single`. Конфигурация принимает как значения enum, так и строки `"single"` и `"multi"`.

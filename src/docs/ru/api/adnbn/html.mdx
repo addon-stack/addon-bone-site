@@ -1,0 +1,476 @@
+---
+description: "API HTML Addon Bone: HtmlOptions, HtmlEntrypointOptions, метатеги, скрипты и стили, фильтрация документов, копирование ресурсов и преобразование путей."
+---
+
+# API HTML
+
+import DocHeading from "@components/DocHeading";
+import PropertyBadge from "@components/PropertyBadge";
+import {Tab, Tabs} from "@rspress/core/theme";
+
+<span id="html-api" />
+
+Типы для добавления метатегов, ссылок и скриптов в HTML-документы расширения. Все экспорты из таблицы доступны из `adnbn`. Для отдельного документа задайте опции в объявлении точки входа; для нескольких документов используйте [`config.html`](/api/adnbn/configuration#config-html).
+
+Опции HTML используют [Page](/guide/entrypoints/page), [Popup](/guide/entrypoints/popup), [Sidebar](/guide/entrypoints/sidebar), [Options](/guide/entrypoints/options), [New Tab](/guide/entrypoints/newtab), [Bookmarks](/guide/entrypoints/bookmarks), [History](/guide/entrypoints/history), [Offscreen](/guide/entrypoints/offscreen) и [Sandbox](/guide/entrypoints/sandbox). Примеры настройки документов и их жизненный цикл описаны в соответствующих руководствах.
+
+| Экспорт | Вид | Назначение |
+| --- | --- | --- |
+| [`HtmlOptions`](#htmloptions) | type | Настройки HTML в конфигурации сборки. |
+| [`HtmlEntrypointOptions`](#htmlentrypointoptions) | type | Статические настройки HTML отдельной точки входа. |
+| [`HtmlMetaTagOptions`](#htmlmetatagoptions) | type | Объект метатега с атрибутами. |
+| [`HtmlHashHandler`](#htmlhashhandler) | type | Функция добавления hash к пути ресурса. |
+| [`HtmlPublicPathHandler`](#htmlpublicpathhandler) | type | Функция преобразования пути с учётом public path. |
+
+Addon Bone использует контракты [`@rspackjs/plugin-html-tags`](https://www.npmjs.com/package/@rspackjs/plugin-html-tags). Нужные для чтения сигнатур внешние типы описаны ниже; из `adnbn` они напрямую не экспортируются. Для аннотации пользовательского кода доступны пять типов из таблицы и их индексированные свойства, например `HtmlOptions["links"]`.
+
+## `HtmlOptions`
+
+<PropertyBadge text="type" type="info" outline />
+
+Настройки добавления тегов через [`config.html`](/api/adnbn/configuration#config-html). Применяются к HTML, который уже создаёт сборка; сами документы эта опция не создаёт.
+
+```ts file="../../../../code/html/api/html-options.ts" title="HtmlOptions"
+```
+
+Сохраняет поля [`HtmlTagsPluginOptions`](#htmltagspluginoptions), но сужает `metas` до объекта или массива объектов. Общие настройки порядка и путей приходят из [`CommonOptions`](#commonoptions). Функции преобразования путей разрешены в `config.html`.
+
+`config.html` принимает один `HtmlOptions`, массив объектов или синхронную функцию без аргументов, возвращающую объект либо массив. Каждый объект применяется отдельно. По умолчанию его теги добавляются во все создаваемые HTML-файлы; поле [`files`](#htmltagspluginoptions-files) ограничивает набор документов. Если HTML в сборке нет, эти настройки, включая функцию `html`, не используются.
+
+Настройки из точки входа и `config.html` добавляются к одному документу независимо. Не рассчитывайте, что одинаковый `name` метатега заменит ранее добавленный тег: одинаковые записи могут появиться несколько раз.
+
+<DocHeading level={3} id="htmloptions-metas" toc={true}>`metas`</DocHeading>
+
+**Тип:** [`HtmlMetaTagOptions | HtmlMetaTagOptions[]`](#htmlmetatagoptions). При отсутствии или `[]` не добавляет метатеги.
+
+Добавляет `<meta>` в `<head>`. У каждой записи обязателен непустой [`attributes`](#htmlmetatagoptions-attributes). Строки путей, смешанные массивы со строками и объекты без атрибутов не поддерживаются; некорректное значение останавливает сборку.
+
+В примерах этой страницы Page показывает применение опций к отдельному документу. Те же поля доступны остальным перечисленным потребителям `HtmlEntrypointOptions`.
+
+Во всех вкладках «Сгенерированный HTML» показан полный документ `preview.html`: зелёным выделены теги, добавленные опциями из примера. Для удобства чтения добавлены переносы строк и отступы; сборка записывает минифицированный HTML. Имена скриптов в `js/` зависят от сборки, а заголовок `Addon` в этих примерах формируется из стандартного имени приложения.
+
+<Tabs>
+    <Tab label="Код Page">
+```ts file="../../../../code/entrypoints/page/api/html/metas.page.ts" title="src/preview.page.ts"
+```
+    </Tab>
+    <Tab label="Сгенерированный HTML">
+```html file="../../../../code/entrypoints/page/api/html/metas.generated.html" title="preview.html"
+```
+    </Tab>
+</Tabs>
+
+## `HtmlEntrypointOptions`
+
+<PropertyBadge text="type" type="info" outline />
+
+Вариант [`HtmlOptions`](#htmloptions) для статического чтения из файла точки входа. Входит в [`ViewOptions`](/api/adnbn/view#viewoptions); поля `links`, `scripts`, `tags` и `metas` располагаются непосредственно в объекте [`definePage`](/api/adnbn/page#definepage), [`definePopup`](/api/adnbn/popup#definepopup), [`defineSidebar`](/api/adnbn/sidebar#definesidebar) и других функций объявления.
+
+```ts file="../../../../code/html/api/html-entrypoint-options.ts" title="HtmlEntrypointOptions"
+```
+
+Внутренний [`HtmlStaticOptions<T>`](#htmlstaticoptions) рекурсивно исключает функции. Поэтому `hash` и `publicPath` здесь принимают только `boolean | string`, а `addHash` и `addPublicPath` задать нельзя, в том числе внутри отдельного тега. Для callback-функций используйте `config.html`.
+
+Остальные поля сохраняют смысл [`HtmlOptions`](#htmloptions), но применяются только к выходному HTML этой точки входа. Значения должны быть доступны статическому анализу при сборке: вычисление опций во время открытия страницы не меняет сгенерированные теги.
+
+Имя документа, заголовок и шаблон задаются отдельно через [`ViewConfig`](/api/adnbn/view#viewconfig). Опции HTML не предоставляют разрешения браузера и не меняют [`CSP`](/api/adnbn/csp#cspoptions).
+
+<DocHeading level={3} id="htmlentrypointoptions-files" toc={true}>`files`</DocHeading>
+
+**Тип:** `never`. Передавать поле нельзя: Addon Bone сам связывает настройки с выходным HTML точки входа. Для выбора документов из общей конфигурации используйте [`HtmlOptions.files`](#htmltagspluginoptions-files).
+
+## `HtmlMetaTagOptions`
+
+<PropertyBadge text="type" type="info" outline />
+
+Публичный алиас внешнего `MetaTagOptions`. Описывает одну запись в [`metas`](#htmloptions-metas). Ниже показаны исходный контракт и алиас Addon Bone:
+
+```ts file="../../../../code/html/api/html-meta-tag-options.ts" title="HtmlMetaTagOptions"
+```
+
+Наследует [`BaseTagOptions`](#basetagoptions): обработку пути, `sourcePath` и glob-настройки. Поле `append` не управляет размещением метатегов: они добавляются в конец текущего списка тегов `<head>`.
+
+<DocHeading level={3} id="htmlmetatagoptions-path" toc={true}>`path`</DocHeading>
+
+**Тип:** `string`. Если `path` не задан, атрибут `content` задаётся только через `attributes`.
+
+Путь, из которого формируется атрибут `content` после применения public path и hash. Например, для метатега с URL изображения задайте `path` и `attributes: {property: "og:image"}`. Если одновременно указан `attributes.content`, он имеет приоритет над вычисленным путём.
+
+Само поле не копирует ресурс. Для копирования используйте [`sourcePath`](#basetagoptions-sourcepath). При использовании glob у метатега поле `path` необходимо как префикс выходных путей.
+
+<DocHeading level={3} id="htmlmetatagoptions-attributes" toc={true}>`attributes`</DocHeading>
+
+**Тип:** [`AttributesObject`](#attributesobject). **Обязательное поле.** Объект должен содержать хотя бы один атрибут.
+
+Задаёт атрибуты `<meta>`, например `{name: "description", content: "Preview"}`, `{name: "color-scheme", content: "light dark"}` или `{charset: "utf-8"}`. Допустимые значения атрибутов — строки, логические значения и числа. Проверка непустого объекта выполняется при сборке; TypeScript сам по себе не запрещает `{}`.
+
+## `HtmlHashHandler`
+
+<PropertyBadge text="type" type="info" outline />
+
+Синхронная функция преобразования пути ресурса с hash сборки. `AddHashFunction` — исходное имя типа в `@rspackjs/plugin-html-tags`.
+
+```ts file="../../../../code/html/api/html-hash-handler.ts" title="HtmlHashHandler"
+```
+
+**Параметры:** `assetPath` — текущий путь после обработки public path; `hash` — hash компиляции, строка. **Результат:** полный путь ресурса, строка; `Promise` не поддерживается.
+
+Используется в [`hash`](#commonoptions-hash) или [`addHash`](#commonoptions-addhash) внутри `config.html`, в том числе у отдельного тега. Функция только изменяет ссылку в HTML, не переименовывает файл в сборке.
+
+Например, этот callback добавляет параметр `build`, сохраняя уже существующие параметры URL. Файл `assets/print.css` берётся из примера [`links`](#htmltagspluginoptions-links); итоговая ссылка имеет вид `assets/print.css?build=…`, где значение зависит от сборки.
+
+```ts file="../../../../code/html/api/examples/hash-handler.config.ts" title="adnbn.config.ts"
+```
+
+## `HtmlPublicPathHandler`
+
+<PropertyBadge text="type" type="info" outline />
+
+Синхронная функция преобразования пути перед добавлением hash. `AddPublicPathFunction` — исходное имя типа в `@rspackjs/plugin-html-tags`.
+
+```ts file="../../../../code/html/api/html-public-path-handler.ts" title="HtmlPublicPathHandler"
+```
+
+**Параметры:** `assetPath` — путь тега до добавления префикса; `publicPath` — public path, переданный генератором HTML. **Результат:** полный путь ресурса, строка; `Promise` не поддерживается.
+
+Используется в [`publicPath`](#commonoptions-publicpath) или [`addPublicPath`](#commonoptions-addpublicpath) через `config.html`. Callback должен вернуть весь путь, а не только префикс. После него может выполниться `HtmlHashHandler`. Функция не перемещает и не копирует ресурс.
+
+## `HtmlStaticOptions`
+
+<PropertyBadge text="type" type="info" outline />
+
+Внутренний вспомогательный тип Addon Bone. Напрямую из `adnbn` не экспортируется; для пользовательских аннотаций используйте [`HtmlEntrypointOptions`](#htmlentrypointoptions).
+
+```ts file="../../../../code/html/api/html-static-options.ts" title="HtmlStaticOptions"
+```
+
+Преобразует функции в `never`, рекурсивно обрабатывает элементы массивов и свойства объектов, а остальные значения сохраняет. Поэтому ограничения статических HTML-опций действуют и на вложенные записи тегов.
+
+## `HtmlTagsPluginOptions`
+
+<PropertyBadge text="interface" type="info" outline />
+
+Внешний интерфейс из `@rspackjs/plugin-html-tags`, на котором основан [`HtmlOptions`](#htmloptions). Из `adnbn` под этим именем не экспортируется. Наследует [`CommonOptions`](#commonoptions).
+
+```ts file="../../../../code/html/api/html-tags-plugin-options.ts" title="HtmlTagsPluginOptions"
+```
+
+В исходном интерфейсе `metas` допускает строки. В контракте Addon Bone это поле заменено на [`HtmlOptions.metas`](#htmloptions-metas), где разрешены только объекты и массивы объектов.
+
+<DocHeading level={3} id="htmltagspluginoptions-tags" toc={true}>`tags`</DocHeading>
+
+**Тип:** `string | MaybeLinkTagOptions | MaybeScriptTagOptions | Array<string | MaybeLinkTagOptions | MaybeScriptTagOptions>`. Типы объектов: [`MaybeLinkTagOptions`](#maybelinktagoptions), [`MaybeScriptTagOptions`](#maybescripttagoptions). При отсутствии или `[]` не добавляет теги.
+
+Общий список ссылок и скриптов. Строка задаёт `path`; объект позволяет добавить атрибуты и настройки ресурса. Вид тега определяется по окончанию пути: `.css` создаёт `<link rel="stylesheet">`, `.js` — `<script>`. Объект с `type: "css"` или `type: "js"` задаёт вид явно.
+
+Неизвестное окончание пути без `type` останавливает сборку. Проверяется вся строка, поэтому для `"vendor.js?v=1"` используйте `scripts` или объект с `type: "js"`. Дополнительные окончания задаются через [`jsExtensions`](#htmltagspluginoptions-jsextensions) и [`cssExtensions`](#htmltagspluginoptions-cssextensions).
+
+Если одновременно заданы `tags` и `links` либо `scripts`, списки дополняют друг друга: сначала идут записи из `tags`, затем из соответствующего отдельного поля. Разделение по [`append`](#commonoptions-append) определяет итоговое расположение относительно тегов сборки.
+
+<DocHeading level={3} id="htmltagspluginoptions-links" toc={true}>`links`</DocHeading>
+
+**Тип:** `string | LinkTagOptions | Array<string | LinkTagOptions>`, где [`LinkTagOptions`](#linktagoptions) описывает объект ресурса. При отсутствии или `[]` не добавляет ссылки.
+
+Добавляет `<link>` в `<head>`. Для строки достаточно пути; объект с `path` позволяет задать `attributes`. По умолчанию создаётся ссылка на таблицу стилей с `rel="stylesheet"`. Для другого назначения задайте атрибут явно, например `attributes: {rel: "icon"}`.
+
+Путь относится к ресурсу в собранном расширении. Готовые файлы можно разместить в [`publicDir`](/api/adnbn/configuration#config-publicdir) либо скопировать через [`sourcePath`](#basetagoptions-sourcepath). Добавление тега само по себе не компилирует CSS или JavaScript и не заменяет импорт исходного модуля.
+
+В этом примере `sourcePath` копирует два готовых файла из `assets/` проекта в `assets/` сборки. Дополнительный скрипт размещается перед скриптом точки входа, а ссылка на CSS получает `media="print"`. В сгенерированном HTML выделены оба добавленных тега; подключение кода самой Page также видно в `<body>`.
+
+<Tabs>
+    <Tab label="Код Page">
+```ts file="../../../../code/entrypoints/page/api/html/assets.page.ts" title="src/preview.page.ts"
+```
+    </Tab>
+    <Tab label="Готовый CSS">
+```css file="../../../../code/entrypoints/page/api/html/print.css" title="assets/print.css"
+```
+    </Tab>
+    <Tab label="Готовый JavaScript">
+```js file="../../../../code/entrypoints/page/api/html/init.js" title="assets/init.js"
+```
+    </Tab>
+    <Tab label="Сгенерированный HTML">
+```html file="../../../../code/entrypoints/page/api/html/assets.generated.html" title="preview.html"
+```
+    </Tab>
+</Tabs>
+
+<DocHeading level={3} id="htmltagspluginoptions-scripts" toc={true}>`scripts`</DocHeading>
+
+**Тип:** `string | ScriptTagOptions | Array<string | ScriptTagOptions>`, где [`ScriptTagOptions`](#scripttagoptions) описывает объект ресурса. При отсутствии или `[]` не добавляет скрипты.
+
+Добавляет `<script src="…">`. При стандартной генерации HTML в Addon Bone скрипты находятся в `<body>`. Объект поддерживает `attributes`, например `{type: "module"}`, и [`external`](#scripttagoptions-external) для готовой библиотеки, предоставляющей глобальную переменную.
+
+Опция добавляет ссылку на файл; ограничения загрузки и исполнения по-прежнему определяет [`CSP`](/api/adnbn/csp#cspoptions). Положение тега регулирует `append`, а атрибуты вроде `async` влияют на поведение браузера отдельно от порядка тегов.
+
+<DocHeading level={3} id="htmltagspluginoptions-files" toc={true}>`files`</DocHeading>
+
+**Тип:** `string | string[]`. При отсутствии применяется ко всем генерируемым HTML-файлам. Пустой массив `[]` не выбирает ни одного документа.
+
+Ограничивает применение одного объекта `HtmlOptions` по имени выходного HTML-файла. Поддерживает шаблоны minimatch: например, `"preview.html"`, `"pages/*.html"` или `"**/*.html"`. Сравнивается путь внутри каталога сборки, включая [`htmlDir`](/api/adnbn/configuration#config-htmldir), а не путь исходного `.ts`-файла. Для вложенного документа укажите, например, `"pages/preview.html"`.
+
+Доступно только в `config.html`. Фильтр не создаёт документ и не исключает точку входа из сборки. В примере предполагается, что сборка уже создаёт `preview.html`; другие HTML-файлы этот метатег не получат.
+
+<Tabs>
+    <Tab label="Конфигурация">
+```ts file="../../../../code/html/api/examples/file-filter.config.ts" title="adnbn.config.ts"
+```
+    </Tab>
+    <Tab label="Сгенерированный HTML">
+```html file="../../../../code/html/api/examples/file-filter.generated.html" title="preview.html"
+```
+    </Tab>
+</Tabs>
+
+<DocHeading level={3} id="htmltagspluginoptions-prependexternals" toc={true}>`prependExternals`</DocHeading>
+
+**Тип:** `boolean`. **По умолчанию:** `true`.
+
+Размещает скрипты с [`external`](#scripttagoptions-external) перед скриптами сборки, даже если общий `append` равен `true`. При `false` для них действует общий `append`. Явный `append` у конкретного скрипта имеет приоритет в обоих случаях.
+
+<DocHeading level={3} id="htmltagspluginoptions-jsextensions" toc={true}>`jsExtensions`</DocHeading>
+
+**Тип:** `string | string[]`. **По умолчанию:** `[".js"]`.
+
+Окончания путей, по которым [`tags`](#htmltagspluginoptions-tags) определяет скрипты. Например, `[".js", ".mjs"]`. Значение заменяет список по умолчанию, а не дополняет его; `[]` отключает определение скриптов по окончанию. На явное поле `scripts` и `type: "js"` не влияет. Это не список расширений исходных файлов точек входа.
+
+<DocHeading level={3} id="htmltagspluginoptions-cssextensions" toc={true}>`cssExtensions`</DocHeading>
+
+**Тип:** `string | string[]`. **По умолчанию:** `[".css"]`.
+
+Окончания путей, по которым [`tags`](#htmltagspluginoptions-tags) определяет ссылки на стили. Значение заменяет список по умолчанию; `[]` отключает определение по окончанию. На явное поле `links` и `type: "css"` не влияет. Если один путь подходит под оба списка расширений, он рассматривается как CSS.
+
+## `CommonOptions`
+
+<PropertyBadge text="interface" type="info" outline />
+
+Внешний контракт общих опций из `@rspackjs/plugin-html-tags`; из `adnbn` напрямую не экспортируется. Используется объектом [`HtmlOptions`](#htmloptions) и отдельными записями через [`BaseTagOptions`](#basetagoptions).
+
+```ts file="../../../../code/html/api/common-options.ts" title="CommonOptions"
+```
+
+Настройки отдельного тега переопределяют соответствующие настройки общего объекта. Логическое `true` включает текущий обработчик и не сбрасывает унаследованную функцию преобразования. Сначала преобразуется public path, затем добавляется hash. В статическом [`HtmlEntrypointOptions`](#htmlentrypointoptions) функциональные значения этих полей исключены.
+
+<DocHeading level={3} id="commonoptions-append" toc={true}>`append`</DocHeading>
+
+**Тип:** `boolean`. **По умолчанию:** `true` у общего объекта; отдельный тег наследует настройку с учётом [`prependExternals`](#htmltagspluginoptions-prependexternals).
+
+При `true` дополнительные ссылки и скрипты идут после соответствующих тегов сборки; при `false` — перед ними. Настройка сохраняет относительный порядок внутри каждой группы. Не выбирает между `<head>` и `<body>` и не управляет размещением `metas`.
+
+<DocHeading level={3} id="commonoptions-hash" toc={true}>`hash`</DocHeading>
+
+**Тип:** `boolean | string | HtmlHashHandler`, где [`HtmlHashHandler`](#htmlhashhandler) — функция преобразования. При отсутствии действует `useHash`, по умолчанию `false`.
+
+| Значение | Результат |
+| --- | --- |
+| `false` | Отключает добавление hash для этого объекта или тега. |
+| `true` | Включает обработку hash; со стандартным обработчиком используется hash компиляции. |
+| Строка | Включает добавление указанной строки вместо hash компиляции. |
+| Функция | Включает преобразование пути через callback; доступно в `config.html`. |
+
+Сокращённая запись для `useHash` и `addHash`. На одном уровне нельзя одновременно задавать `hash` и любое из этих двух полей: сборка завершится ошибкой. Настройки на разных уровнях разрешены, например общий `hash: true` и `hash: false` у одного тега.
+
+Стандартное преобразование добавляет `?` и hash в конец пути. Оно не разбирает существующую строку запроса; для такого URL используйте callback, как в [`HtmlHashHandler`](#htmlhashhandler).
+
+В примере `publicPath: "/"` добавляет корневой префикс, затем `hash: "v1"` добавляет `?v1`. Файл `assets/print.css` берётся из примера [`links`](#htmltagspluginoptions-links). Он сохраняется как `assets/print.css`; query-параметр появляется только в ссылке.
+
+<Tabs>
+    <Tab label="Конфигурация">
+```ts file="../../../../code/html/api/examples/paths.config.ts" title="adnbn.config.ts"
+```
+    </Tab>
+    <Tab label="Сгенерированный HTML">
+```html file="../../../../code/html/api/examples/paths.generated.html" title="preview.html"
+```
+    </Tab>
+</Tabs>
+
+<DocHeading level={3} id="commonoptions-usehash" toc={true}>`useHash`</DocHeading>
+
+**Тип:** `boolean`. **По умолчанию:** `false`.
+
+Включает вызов `addHash`. У отдельного тега переопределяет унаследованный переключатель. Используйте вместе с `addHash`, если задаёте функцию через отдельное поле; не сочетайте с `hash` на том же уровне.
+
+<DocHeading level={3} id="commonoptions-addhash" toc={true}>`addHash`</DocHeading>
+
+**Тип:** [`HtmlHashHandler`](#htmlhashhandler). **По умолчанию:** функция, возвращающая `assetPath + "?" + hash`.
+
+Задаёт преобразование пути, которое вызывается при `useHash: true`. Само наличие `addHash` не включает обработку hash. Разрешено только через `config.html`; короткая форма `hash: callback` включает обработку автоматически.
+
+<DocHeading level={3} id="commonoptions-publicpath" toc={true}>`publicPath`</DocHeading>
+
+**Тип:** `boolean | string | HtmlPublicPathHandler`, где [`HtmlPublicPathHandler`](#htmlpublicpathhandler) — функция преобразования. При отсутствии действует `usePublicPath`, по умолчанию `true`.
+
+| Значение | Результат |
+| --- | --- |
+| `false` | Оставляет путь без public path. |
+| `true` | Включает обработку public path; стандартная функция использует public path генератора HTML. |
+| Строка | Использует строку как префикс; `""` сохраняет путь без префикса. |
+| Функция | Включает callback, получающий путь и public path; доступно в `config.html`. |
+
+Сокращённая запись для `usePublicPath` и `addPublicPath`. Не сочетайте её с любым из этих полей на одном уровне. Стандартная функция соединяет префикс и путь, добавляя `/` между ними, если разделителя нет с обеих сторон.
+
+Преобразование применяется и к строкам с полным URL. Если путь уже готов и префикс ему не нужен, задайте для тега `publicPath: false`. Настройка меняет ссылку, а не место сохранения файла.
+
+<DocHeading level={3} id="commonoptions-usepublicpath" toc={true}>`usePublicPath`</DocHeading>
+
+**Тип:** `boolean`. **По умолчанию:** `true`.
+
+Включает или отключает вызов `addPublicPath`. При `false` преобразование public path пропускается, но hash может по-прежнему добавляться. Не сочетайте с `publicPath` на том же уровне.
+
+<DocHeading level={3} id="commonoptions-addpublicpath" toc={true}>`addPublicPath`</DocHeading>
+
+**Тип:** [`HtmlPublicPathHandler`](#htmlpublicpathhandler). **По умолчанию:** функция соединения public path и пути ресурса.
+
+Переопределяет функцию, вызываемую при `usePublicPath: true`. Доступно только через `config.html`, в том числе внутри записи тега. Если обработку нужно включить независимо от унаследованного `usePublicPath`, задайте `publicPath: callback`.
+
+## `BaseTagOptions`
+
+<PropertyBadge text="interface" type="info" outline />
+
+Внешний контракт общих полей ресурса из `@rspackjs/plugin-html-tags`; из `adnbn` напрямую не экспортируется. Наследует [`CommonOptions`](#commonoptions).
+
+```ts file="../../../../code/html/api/base-tag-options.ts" title="BaseTagOptions"
+```
+
+<DocHeading level={3} id="basetagoptions-glob" toc={true}>`glob`</DocHeading>
+
+**Тип:** `string`. При отсутствии glob-настроек используется один `path`.
+
+Шаблон поиска файлов, например `"**/*.css"`. Требует `globPath`; найденные относительные пути добавляются к `path`, создавая несколько тегов. Если совпадений нет, сборка завершается ошибкой. Поиск выполняется при подготовке настроек сборки.
+
+`glob` разворачивает список ссылок и сам не копирует найденные файлы. Для уже готовых ресурсов в `src/public/styles` можно использовать `path: "styles"`, `globPath: "src/public/styles"`, `glob: "**/*.css"`: в сборку их переносит механизм [`publicDir`](/api/adnbn/configuration#config-publicdir).
+
+<DocHeading level={3} id="basetagoptions-globpath" toc={true}>`globPath`</DocHeading>
+
+**Тип:** `string`. Требуется вместе с `glob`.
+
+Каталог, внутри которого ищутся файлы. Относительный путь разрешается от рабочего каталога процесса сборки, не от файла точки входа. Если задаёте любое из полей `glob`, `globPath` или `globFlatten`, передайте оба строковых поля `glob` и `globPath`.
+
+<DocHeading level={3} id="basetagoptions-globflatten" toc={true}>`globFlatten`</DocHeading>
+
+**Тип:** `boolean`. **По умолчанию:** `false`.
+
+При `false` сохраняет подпапки найденных файлов в ссылках. При `true` оставляет только имя файла: для `path: "styles"` совпадение `print/page.css` становится `styles/page.css`. Не перемещает ресурсы; выходные файлы должны действительно находиться по полученным путям.
+
+<DocHeading level={3} id="basetagoptions-sourcepath" toc={true}>`sourcePath`</DocHeading>
+
+**Тип:** `string`. При отсутствии тег только ссылается на ресурс и не копирует его.
+
+Копирует готовый файл в сборку без преобразования содержимого. Исходный путь разрешается от `context` сборщика; в обычном проекте это корень проекта. Имя выходного файла берётся из `path` до добавления public path и hash. Для метатега без `path` используется имя исходного файла.
+
+Исходник должен существовать и быть доступен для чтения; ошибка чтения останавливает сборку. `sourcePath` не является шаблоном glob: после разворачивания `glob` каждая запись сохраняет тот же `sourcePath`. Для набора разных файлов используйте отдельные записи либо копирование из `publicDir`.
+
+## `LinkTagOptions`
+
+<PropertyBadge text="interface" type="info" outline />
+
+Внешний контракт объекта из [`links`](#htmltagspluginoptions-links); из `adnbn` напрямую не экспортируется. Наследует [`BaseTagOptions`](#basetagoptions).
+
+```ts file="../../../../code/html/api/link-tag-options.ts" title="LinkTagOptions"
+```
+
+<DocHeading level={3} id="linktagoptions-path" toc={true}>`path`</DocHeading>
+
+**Тип:** `string`. **Обязательное поле.** Путь ресурса, из которого формируется атрибут `href` после применения public path и hash. При использовании glob задаёт префикс путей найденных файлов.
+
+<DocHeading level={3} id="linktagoptions-attributes" toc={true}>`attributes`</DocHeading>
+
+**Тип:** [`AttributesObject`](#attributesobject). При отсутствии сохраняются атрибуты, созданные генератором HTML.
+
+Дополнительные атрибуты `<link>`, например `{media: "print"}` или `{rel: "icon", type: "image/png"}`. Одноимённый атрибут заменяет сгенерированное значение. `external` у ссылки не поддерживается.
+
+## `ScriptTagOptions`
+
+<PropertyBadge text="interface" type="info" outline />
+
+Внешний контракт объекта из [`scripts`](#htmltagspluginoptions-scripts); из `adnbn` напрямую не экспортируется. Наследует [`BaseTagOptions`](#basetagoptions).
+
+```ts file="../../../../code/html/api/script-tag-options.ts" title="ScriptTagOptions"
+```
+
+<DocHeading level={3} id="scripttagoptions-path" toc={true}>`path`</DocHeading>
+
+**Тип:** `string`. **Обязательное поле.** Путь ресурса для атрибута `src` после применения public path и hash. При использовании glob задаёт префикс найденных путей.
+
+<DocHeading level={3} id="scripttagoptions-attributes" toc={true}>`attributes`</DocHeading>
+
+**Тип:** [`AttributesObject`](#attributesobject). При отсутствии сохраняются атрибуты генератора HTML.
+
+Задаёт или переопределяет атрибуты `<script>`, например `{type: "module"}`, `{async: true}` или `{defer: false}`. Настройки ресурса вроде `append` и `hash` располагаются рядом с `attributes`, а не внутри него.
+
+<DocHeading level={3} id="scripttagoptions-external" toc={true}>`external`</DocHeading>
+
+**Тип:** [`ExternalObject`](#externalobject). При отсутствии не регистрирует внешнюю библиотеку.
+
+Сообщает сборщику, что импорт указанного пакета должен обращаться к глобальной переменной, которую создаёт этот готовый скрипт. Файл должен действительно предоставлять такую переменную. По умолчанию скрипт размещается перед кодом сборки благодаря `prependExternals`.
+
+Регистрация external действует на всю компиляцию, а не только на HTML, выбранный через `files`. Если другой документ импортирует этот пакет, обеспечьте загрузку библиотеки и в нём. Объект поддерживается только у скриптов, включая записи `tags` с видом `js`.
+
+## `MaybeLinkTagOptions`
+
+<PropertyBadge text="interface" type="info" outline />
+
+Внешний вариант [`LinkTagOptions`](#linktagoptions) для смешанного списка [`tags`](#htmltagspluginoptions-tags); из `adnbn` напрямую не экспортируется.
+
+```ts file="../../../../code/html/api/maybe-link-tag-options.ts" title="MaybeLinkTagOptions"
+```
+
+<DocHeading level={3} id="maybelinktagoptions-type" toc={true}>`type`</DocHeading>
+
+**Тип:** [`TypeString`](#typestring). При отсутствии вид определяется по окончанию `path`. Значение `"css"` явно выбирает `<link>`; значение `"js"` выбирает `<script>` независимо от имени TypeScript-интерфейса.
+
+## `MaybeScriptTagOptions`
+
+<PropertyBadge text="interface" type="info" outline />
+
+Внешний вариант [`ScriptTagOptions`](#scripttagoptions) для [`tags`](#htmltagspluginoptions-tags); из `adnbn` напрямую не экспортируется.
+
+```ts file="../../../../code/html/api/maybe-script-tag-options.ts" title="MaybeScriptTagOptions"
+```
+
+<DocHeading level={3} id="maybescripttagoptions-type" toc={true}>`type`</DocHeading>
+
+**Тип:** [`TypeString`](#typestring). При отсутствии вид определяется по окончанию `path`. Для записи с `external` выберите скрипт через `"js"` либо подходящее окончание пути; `type: "css"` с `external` приведёт к ошибке сборки.
+
+## `ExternalObject`
+
+<PropertyBadge text="interface" type="info" outline />
+
+Внешний контракт связи пакета с глобальной переменной; из `adnbn` напрямую не экспортируется.
+
+```ts file="../../../../code/html/api/external-object.ts" title="ExternalObject"
+```
+
+<DocHeading level={3} id="externalobject-packagename" toc={true}>`packageName`</DocHeading>
+
+**Тип:** `string`. **Обязательное поле.** Имя модуля, которое используется в импорте и регистрируется в настройке `externals` сборщика.
+
+<DocHeading level={3} id="externalobject-variablename" toc={true}>`variableName`</DocHeading>
+
+**Тип:** `string`. **Обязательное поле.** Имя глобальной переменной, через которую собранный код получает экспорт библиотеки. Само объявление `external` не создаёт эту переменную.
+
+## `AttributesObject`
+
+<PropertyBadge text="type" type="info" outline />
+
+Внешний словарь HTML-атрибутов; из `adnbn` напрямую не экспортируется.
+
+```ts file="../../../../code/html/api/attributes-object.ts" title="AttributesObject"
+```
+
+Ключ — имя атрибута. Строки сохраняются, числа преобразуются в строки. Логическое `true` задаёт атрибут без строкового значения, `false` исключает его из сериализованного HTML. Для строковых атрибутов, например `aria-hidden="false"`, передавайте строку `"false"`.
+
+Функции и вложенные объекты не принимаются. В файле точки входа числовое значение должно быть конечным. Для [`HtmlMetaTagOptions.attributes`](#htmlmetatagoptions-attributes) пустой словарь запрещён; у `links` и `scripts` он допустим.
+
+## `TypeString`
+
+<PropertyBadge text="type" type="info" outline />
+
+Внешний тип явного вида записи в `tags`; из `adnbn` напрямую не экспортируется.
+
+```ts file="../../../../code/html/api/type-string.ts" title="TypeString"
+```
+
+`"css"` создаёт `<link>`, `"js"` — `<script>`. Это выбор HTML-тега, а не инструкция компилировать исходный файл или переключить его язык.

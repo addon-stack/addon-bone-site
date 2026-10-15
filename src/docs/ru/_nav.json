@@ -3,5 +3,10 @@
     "text": "navGuide",
     "link": "/guide/entrypoints/service",
     "activeMatch": "/guide/"
+  },
+  {
+    "text": "navAPI",
+    "link": "/api/",
+    "activeMatch": "/api/"
   }
 ]

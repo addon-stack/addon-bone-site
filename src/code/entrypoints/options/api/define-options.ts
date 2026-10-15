@@ -1,0 +1,1 @@
+declare function defineOptions(options: OptionsDefinition): OptionsDefinition;

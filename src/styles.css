@@ -2,6 +2,11 @@
 	height: 1.2rem !important;
 }
 
+/* Inline code links */
+.rp-doc a.rp-link:has(> code):hover {
+	border-bottom: none;
+}
+
 /* Code line highlighting */
 .rp-doc .shiki.has-highlighted .line.highlighted:not(.error):not(.warning) {
 	background-color: #10b9811a;

@@ -1,0 +1,1 @@
+declare function defineCommand(options: CommandDefinition): CommandDefinition;

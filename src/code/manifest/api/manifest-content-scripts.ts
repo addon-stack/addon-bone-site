@@ -1,0 +1,1 @@
+export type ManifestContentScripts = Set<ManifestContentScript>;

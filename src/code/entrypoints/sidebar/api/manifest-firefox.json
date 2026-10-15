@@ -1,0 +1,7 @@
+{
+  "sidebar_action": {
+    "open_at_install": false,
+    "default_title": "Saved articles",
+    "default_panel": "sidebar.html"
+  }
+}

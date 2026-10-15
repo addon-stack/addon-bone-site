@@ -1,0 +1,1 @@
+export type SandboxName = Extract<keyof SandboxRegistry, string>;

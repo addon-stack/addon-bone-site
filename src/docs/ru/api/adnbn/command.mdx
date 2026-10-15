@@ -1,0 +1,224 @@
+---
+description: "API команд Addon Bone: defineCommand, defineExecuteActionCommand, типы обработчиков, настройки сочетаний клавиш и команда кнопки расширения."
+---
+
+<span id="command-api" />
+
+# API команд
+
+import DocHeading from "@components/DocHeading";
+import PropertyBadge from "@components/PropertyBadge";
+
+Функции и типы для объявления команд с обработчиками в фоновом контексте. Все экспорты доступны из `adnbn`. Примеры объявления, подключения и использования команд — в [руководстве Command](/guide/entrypoints/command).
+
+| Экспорт | Вид | Назначение |
+| --- | --- | --- |
+| [`defineCommand`](#definecommand) | function | Объявление именованной команды. |
+| [`defineExecuteActionCommand`](#defineexecuteactioncommand) | function | Объявление команды кнопки расширения. |
+| [`CommandDefinition`](#commanddefinition) | interface | Объект объявления команды. |
+| [`ExecuteActionCommandDefinition`](#executeactioncommanddefinition) | type | Объявление команды кнопки без поля `name`. |
+| [`CommandExecute`](#commandexecute) | type | Обработчик выполнения команды. |
+| [`CommandConfig`](#commandconfig) | interface | Имя, описание и настройки клавиш. |
+| [`CommandUnresolvedDefinition`](#commandunresolveddefinition) | type | Объявление с ещё не проверенными обязательными полями. |
+| [`CommandExecuteActionName`](#commandexecuteactionname) | const | Зарезервированное имя команды кнопки. |
+
+## `defineCommand`
+
+<PropertyBadge text="function" type="info" outline />
+
+Принимает объявление команды для `export default` точки входа Command.
+
+```ts file="../../../../code/entrypoints/command/api/define-command.ts" title="defineCommand"
+```
+
+**Параметр:** `options` — [`CommandDefinition`](#commanddefinition). **Обязательный параметр.** В объекте обязателен обработчик `execute`; имя можно опустить.
+
+**Результат:** [`CommandDefinition`](#commanddefinition) — тот же объект без копирования и подстановки значений по умолчанию. Сам вызов не регистрирует и не выполняет команду: Addon Bone подключает её при сборке и запуске фонового контекста.
+
+## `defineExecuteActionCommand`
+
+<PropertyBadge text="function" type="info" outline />
+
+Объявляет команду кнопки расширения. Её сочетание клавиш выполняет действие кнопки; обработчик подписывается на событие нажатия кнопки, а не на обычное событие команды.
+
+```ts file="../../../../code/entrypoints/command/api/define-execute-action-command.ts" title="defineExecuteActionCommand"
+```
+
+**Параметр:** `options` — [`ExecuteActionCommandDefinition`](#executeactioncommanddefinition). **Обязательный параметр.** Принимает опции команды, кроме `name`.
+
+**Результат:** [`CommandDefinition`](#commanddefinition) — новый объект с поверхностной копией опций и `name`, равным [`CommandExecuteActionName`](#commandexecuteactionname). Вложенные значения не копируются. Сам вызов не запускает обработчик.
+
+Если для кнопки назначен popup, браузер открывает его и не отправляет событие нажатия: `execute` не вызывается. Это правило [Action API](https://developer.chrome.com/docs/extensions/reference/api/action#popup).
+
+## `CommandDefinition`
+
+<PropertyBadge text="interface" type="info" outline />
+
+Объект объявления команды с обязательным обработчиком и опциями сборки.
+
+```ts file="../../../../code/entrypoints/command/api/command-definition.ts" title="CommandDefinition"
+```
+
+Все унаследованные поля можно опустить по контракту TypeScript. При этом сборка требует хотя бы одно из полей `defaultKey`, `windowsKey`, `macKey`, `chromeosKey`, `linuxKey`. Это условие действует и для команды кнопки расширения. Без клавиш сборка завершается ошибкой `At least one suggested key must be defined`.
+
+<DocHeading level={3} id="commanddefinition-execute" toc={true}>`execute`</DocHeading>
+
+**Тип:** [`CommandExecute`](#commandexecute). **Обязательное поле.**
+
+Обработчик события команды. Вызывается в фоновом контексте и получает вкладку, если она доступна, и опции текущей команды. Может быть асинхронным.
+
+<DocHeading level={3} id="commandoptions" toc={false}>Унаследованные опции</DocHeading>
+
+```ts file="../../../../code/entrypoints/command/api/command-options.ts" title="CommandEntrypointOptions"
+```
+
+`CommandOptions` и `CommandEntrypointOptions` — внутренние алиасы; напрямую из `adnbn` они не экспортируются. `Partial` делает необязательными все поля [`CommandConfig`](#commandconfig), включая `name`, и общие фильтры [`EntrypointOptions`](/api/adnbn/entrypoint-options#entrypointoptions).
+
+`CommandConfig` наследует настройки фонового контекста из [`BackgroundConfig`](/api/adnbn/background#backgroundconfig), в том числе разрешения из [`PermissionsOptions`](/api/adnbn/permissions#permissionsoptions). Собственные поля этих интерфейсов описаны на их страницах.
+
+## `ExecuteActionCommandDefinition`
+
+<PropertyBadge text="type" type="info" outline />
+
+Опции [`defineExecuteActionCommand`](#defineexecuteactioncommand).
+
+```ts file="../../../../code/entrypoints/command/api/execute-action-command-definition.ts" title="ExecuteActionCommandDefinition"
+```
+
+Сохраняет обязательный `execute` и остальные опции [`CommandDefinition`](#commanddefinition), но исключает `name`: имя назначает функция объявления. Условие о наличии хотя бы одного сочетания клавиш также сохраняется.
+
+## `CommandExecute`
+
+<PropertyBadge text="type" type="info" outline />
+
+Обработчик поля [`CommandDefinition.execute`](#commanddefinition-execute).
+
+```ts file="../../../../code/entrypoints/command/api/command-execute.ts" title="CommandExecute"
+```
+
+| Параметр | Тип | Значение при вызове |
+| --- | --- | --- |
+| `tab` | `Tab \| undefined` | Вкладка, переданная браузером вместе с событием. Перед обращением к её полям проверьте, что она существует. |
+| `options` | [`CommandOptions`](#commandoptions) | Опции текущего файла без `execute`, с определённым при сборке `name`. Опции других команд сюда не объединяются; остальные отсутствующие поля не заполняются значениями по умолчанию. |
+
+`Tab` — внутренний алиас `chrome.tabs.Tab`. Доступность отдельных сведений о вкладке зависит от разрешений расширения. Контракт вкладки описан в [Tabs API](https://developer.chrome.com/docs/extensions/reference/api/tabs#type-Tab).
+
+**Результат:** `Awaiter<void>`, то есть `void | Promise<void>`. `Awaiter<T>` — внутренний тип `T | Promise<T>`. Ни `Tab`, ни `Awaiter` не экспортируются из `adnbn`. Возвращаемое значение не используется как ответ браузеру.
+
+**Вызов:** для обычной команды — при событии с её именем; для команды кнопки — при событии нажатия кнопки. Новый вызов не ожидает завершения предыдущего, поэтому асинхронные обработчики могут выполняться одновременно.
+
+**Ошибка:** синхронное исключение выводится в фоновую консоль с сообщением `The command execute function crashed:`, отклонённый promise — с сообщением `The command execute async function crashed:`. Автоматического повтора нет.
+
+## `CommandConfig`
+
+<PropertyBadge text="interface" type="info" outline />
+
+Настройки команды, используемые при формировании манифеста. В этом интерфейсе `name` обязателен; в объекте [`CommandDefinition`](#commanddefinition) его делает необязательным `Partial`.
+
+```ts file="../../../../code/entrypoints/command/api/command-config.ts" title="CommandConfig"
+```
+
+Унаследованные `persistent` и поля разрешений описаны в [`BackgroundConfig`](/api/adnbn/background#backgroundconfig) и [`PermissionsOptions`](/api/adnbn/permissions#permissionsoptions).
+
+<DocHeading level={3} id="commandconfig-name" toc={true}>`name`</DocHeading>
+
+**Тип:** `string`. **Обязательное поле в `CommandConfig`.**
+
+Непустое имя команды: ключ в `manifest.commands` и идентификатор, по которому подключается обработчик. Если имя не задано в точке входа, Addon Bone определяет его по файлу: `open.command.ts` и `open.command/index.ts` дают имя `open`.
+
+Имена включённых в сборку команд должны быть уникальными; совпадение завершает сборку ошибкой. Для команды кнопки используется [`CommandExecuteActionName`](#commandexecuteactionname).
+
+<DocHeading level={3} id="commandconfig-description" toc={true}>`description`</DocHeading>
+
+**Тип:** `string`. При отсутствии у обычной команды используется её `name`; для команды кнопки описание не добавляется.
+
+Непустое описание команды для интерфейса настройки сочетаний клавиш. Строка вида `"@commands.open"` обозначает ключ локализации: Addon Bone преобразует её в ссылку на сообщение в манифесте. Это не меняет имя команды.
+
+<DocHeading level={3} id="commandconfig-global" toc={true}>`global`</DocHeading>
+
+**Тип:** `boolean`. При отсутствии поле не добавляется в манифест; команда действует, когда браузер в фокусе. `false` записывается явно и сохраняет это поведение.
+
+`true` запрашивает выполнение команды и вне фокуса браузера. Для Chrome, Chromium, Edge и Opera Addon Bone проверяет эффективные сочетания для Windows, macOS и Linux: допускается `Ctrl+Shift+0`–`Ctrl+Shift+9`, а для macOS также `Command+Shift+0`–`Command+Shift+9`. Медиаклавиши проходят эту проверку отдельно и не требуют такого сочетания. Поле `chromeosKey` для глобальной команды в этих сборках не допускается.
+
+Для Firefox и Safari Addon Bone выводит предупреждение о неподдерживаемой глобальной команде, но продолжает сборку. Успешная сборка не означает, что браузер выполнит её вне фокуса. Ограничения глобальных команд в Chrome описаны в [Commands API](https://developer.chrome.com/docs/extensions/reference/api/commands#scope).
+
+<DocHeading level={3} id="commandconfig-defaultkey" toc={true}>`defaultKey`</DocHeading>
+
+**Тип:** `string`. При отсутствии общее сочетание не задаётся.
+
+Сочетание клавиш по умолчанию, например `"Ctrl+Shift+Y"`. Попадает в `suggested_key.default` и используется на платформах, для которых не задано собственное значение. Если нет ни общего, ни подходящего платформенного значения, сочетание для этой платформы не назначается.
+
+Это предлагаемое сочетание: пользователь может переназначить его, а занятая комбинация может остаться неназначенной. Объявление не гарантирует, что выбранные клавиши будут доступны.
+
+<DocHeading level={4} id="commandconfig-shortcut-format" toc={false}>Формат сочетаний</DocHeading>
+
+Правила применяются ко всем пяти полям клавиш. Записывайте модификаторы через `+`, затем одну клавишу, без пробелов и повторных модификаторов. Пустая строка недопустима; чтобы не задавать значение, опустите поле.
+
+Общий разбор принимает буквы, цифры, `F1`–`F12`, клавиши `Comma`, `Period`, `Up`, `Down`, `Left`, `Right`, `Insert`, `Delete`, `Home`, `End`, `PageUp`, `PageDown`, `Space`, `Tab` и медиаклавиши `MediaNextTrack`, `MediaPlayPause`, `MediaPrevTrack`, `MediaStop`. Медиаклавиши записываются без модификаторов.
+
+Затем Addon Bone проверяет совместимость включённых команд с целевым браузером:
+
+| Сборка | Проверка клавиш и модификаторов |
+| --- | --- |
+| Chrome, Chromium, Edge, Opera | Буквы только `A`–`Z`; `F1`–`F12` не допускаются. Не более двух модификаторов, среди которых должен быть модификатор, отличный от `Shift`. `Command`, `MacCtrl`, `Option` допустимы только в `macKey`, `Search` — только в `chromeosKey`. `Alt` или `Option` нельзя сочетать с `Ctrl`, `Command`, `MacCtrl`, `Search`. |
+| Firefox | Буквы только `A`–`Z`; поддерживаются `F1`–`F12`, но не `Tab`. Модификаторы: `Ctrl`, `Alt`, `Command`, `MacCtrl`, `Shift`; не более двух, `Ctrl` и `Command` нельзя сочетать. Для обычной клавиши одного `Shift` недостаточно; функциональные и медиаклавиши можно указать без модификаторов. `chromeosKey` не участвует в этой проверке. |
+| Safari | Выполняется только общий разбор формата; дополнительной проверки совместимости в Addon Bone нет. Допускаются модификаторы `Ctrl`, `Alt`, `Shift`, `Command`, `MacCtrl`, `Option`, `Search`; буква клавиши может быть строчной. Приём значения сборщиком не гарантирует его поддержку браузером. |
+
+Для медиаклавиш правило об обязательном модификаторе не применяется. Общий разбор формата выполняется до фильтрации точек входа, поэтому синтаксически некорректную строку нельзя скрыть через `includeBrowser` или `excludeBrowser`.
+
+Правила платформы: [Chrome Commands API](https://developer.chrome.com/docs/extensions/reference/api/commands#supported_keys) и [справочник `commands` в MDN](https://developer.mozilla.org/en-US/docs/Mozilla/Add-ons/WebExtensions/manifest.json/commands#shortcut_values).
+
+<DocHeading level={3} id="commandconfig-windowskey" toc={true}>`windowsKey`</DocHeading>
+
+**Тип:** `string`. При отсутствии используется `defaultKey`, если он задан.
+
+Сочетание для Windows. Записывается в `suggested_key.windows` и заменяет общее значение на этой платформе.
+
+<DocHeading level={3} id="commandconfig-mackey" toc={true}>`macKey`</DocHeading>
+
+**Тип:** `string`. При отсутствии используется `defaultKey`, если он задан.
+
+Сочетание для macOS, например `"Command+Shift+Y"`. Записывается в `suggested_key.mac`. На macOS `Ctrl` в сочетании означает Command; для физической клавиши Control используйте `MacCtrl`.
+
+<DocHeading level={3} id="commandconfig-chromeoskey" toc={true}>`chromeosKey`</DocHeading>
+
+**Тип:** `string`. При отсутствии используется `defaultKey`, если он задан.
+
+Сочетание для ChromeOS. Записывается в `suggested_key.chromeos`; здесь допускается модификатор `Search`. Firefox не использует этот платформенный ключ. При `global: true` Addon Bone отклоняет его в сборках для браузеров на базе Chromium.
+
+<DocHeading level={3} id="commandconfig-linuxkey" toc={true}>`linuxKey`</DocHeading>
+
+**Тип:** `string`. При отсутствии используется `defaultKey`, если он задан.
+
+Сочетание для Linux. Записывается в `suggested_key.linux` и заменяет общее значение на этой платформе.
+
+## `CommandUnresolvedDefinition`
+
+<PropertyBadge text="type" type="info" outline />
+
+Частичное объявление команды до проверки обязательных полей.
+
+```ts file="../../../../code/entrypoints/command/api/command-unresolved-definition.ts" title="CommandUnresolvedDefinition"
+```
+
+Делает необязательными все поля [`CommandDefinition`](#commanddefinition), включая `execute`. Тип экспортируется из `adnbn`, но не заменяет контракт [`defineCommand`](#definecommand): функция объявления по-прежнему требует `execute`.
+
+Если в загруженном модуле нет функции `execute`, Addon Bone не подключает команду и сообщает в фоновой консоли: `The command entrypoint must export a execute function`.
+
+## `CommandExecuteActionName`
+
+<PropertyBadge text="const" type="info" outline />
+
+Зарезервированное имя команды кнопки расширения.
+
+```ts file="../../../../code/entrypoints/command/api/command-execute-action-name.ts" title="CommandExecuteActionName"
+```
+
+[`defineExecuteActionCommand`](#defineexecuteactioncommand) присваивает это значение автоматически. Его также можно передать в `name` при объявлении через [`defineCommand`](#definecommand).
+
+| Версия манифеста | Имя в `manifest.commands` |
+| --- | --- |
+| Manifest V3 | `_execute_action` |
+| Manifest V2 | `_execute_browser_action` |
+
+Преобразование касается манифеста: внутри Addon Bone и в `options.name` обработчика сохраняется `_execute_action`. В одной сборке допускается только одна такая точка входа; повторное объявление завершается ошибкой.

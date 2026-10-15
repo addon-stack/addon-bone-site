@@ -1,0 +1,131 @@
+---
+description: "API страницы настроек расширения: defineOptions, OptionsDefinition, OptionsProps, OptionsConfig, режим openInTab и общие опции отображения."
+---
+
+<span id="options-api" />
+
+# API страницы настроек
+
+import DocHeading from "@components/DocHeading";
+import PropertyBadge from "@components/PropertyBadge";
+import {Tab, Tabs} from "@rspress/core/theme";
+
+Функция и типы для объявления страницы настроек расширения. Addon Bone создаёт её HTML-документ и регистрирует его в `options_ui` манифеста. Все экспорты доступны из `adnbn`. Создание формы, сохранение предпочтений, открытие страницы и её жизненный цикл разобраны в [руководстве Options](/guide/entrypoints/options).
+
+| Экспорт | Вид | Назначение |
+| --- | --- | --- |
+| [`defineOptions`](#defineoptions) | function | Объявление страницы настроек. |
+| [`OptionsDefinition`](#optionsdefinition) | type | Опции и содержимое страницы настроек. |
+| [`OptionsProps`](#optionsprops) | type | Опции, передаваемые при отображении страницы. |
+| [`OptionsConfig`](#optionsconfig) | interface | Режим открытия настроек в браузере. |
+
+Внутренний контракт [`OptionsEntrypointOptions`](#optionsentrypointoptions) описан в конце страницы. Напрямую из `adnbn` он не экспортируется.
+
+## `defineOptions`
+
+<PropertyBadge text="function" type="info" outline />
+
+Принимает объявление для `export default` точки входа Options. При сборке Addon Bone создаёт страницу и записывает путь к ней в `options_ui.page`.
+
+```ts file="../../../../code/entrypoints/options/api/define-options.ts" title="defineOptions"
+```
+
+**Параметр:** `options` — [`OptionsDefinition`](#optionsdefinition). **Обязательный параметр.** Все поля объекта можно опустить, поэтому `defineOptions({})` допустим.
+
+**Результат:** [`OptionsDefinition`](#optionsdefinition) — тот же объект, синхронно, без копирования и подстановки значений по умолчанию. Функция не открывает страницу и не вызывает `render`.
+
+Чтобы открыть уже зарегистрированные настройки из расширения, вызовите `openOptionsPage()` из `adnbn/browser`. Пример вызова приведён в [разделе об открытии страницы](/guide/entrypoints/options#открытие-страницы).
+
+## `OptionsDefinition`
+
+<PropertyBadge text="type" type="info" outline />
+
+Объявление, которое принимает и возвращает [`defineOptions`](#defineoptions).
+
+```ts file="../../../../code/entrypoints/options/api/options-definition.ts" title="OptionsDefinition"
+```
+
+[`OptionsEntrypointOptions`](#optionsentrypointoptions) объединяет собственную настройку [`openInTab`](#optionsconfig-openintab), разрешения, CSP и опции страницы. [`ViewDefinition<OptionsProps>`](/api/adnbn/view#viewdefinition) добавляет контракт отображения: [`render`](/api/adnbn/view#viewrenderdefinition-render) и [`container`](/api/adnbn/view#viewrenderdefinition-container).
+
+`render` задаёт содержимое страницы: значение Vanilla, синхронную функцию или React-компонент в соответствии с типом исходного файла. `container` выбирает элемент для его монтирования. Параметры обработчиков имеют тип [`OptionsProps`](#optionsprops); поддерживаемые значения и поведение описаны в [`ViewRenderDefinition`](/api/adnbn/view#viewrenderdefinition).
+
+При отсутствии `render` Addon Bone сохраняет содержимое HTML-шаблона и не создаёт отдельный контейнер для результата отображения. Пустое объявление всё равно создаёт страницу и участвует в её регистрации в манифесте.
+
+## `OptionsProps`
+
+<PropertyBadge text="type" type="info" outline />
+
+Опции текущей страницы Options, которые Addon Bone передаёт в функцию `render`, React-компонент и функцию `container`.
+
+```ts file="../../../../code/entrypoints/options/api/options-props.ts" title="OptionsProps"
+```
+
+Состав совпадает с [`OptionsEntrypointOptions`](#optionsentrypointoptions). Объект содержит поля объявления без `render` и `container`. Вычисленные при сборке значения в него автоматически не подставляются: например, при отсутствии `openInTab` обработчик получает `undefined`, хотя в манифест записывается `open_in_tab: true`.
+
+Это опции объявления страницы. Сохранённые предпочтения пользователя нужно читать из выбранного хранилища; в `OptionsProps` они автоматически не попадают. Примеры аннотаций [`ViewRenderHandler<OptionsProps>`](/api/adnbn/view#viewrenderhandler) и [`ViewRenderReactComponent<OptionsProps>`](/api/adnbn/view#viewrenderreactcomponent) приведены в [руководстве Options](/guide/entrypoints/options#options-render-types).
+
+## `OptionsConfig`
+
+<PropertyBadge text="interface" type="info" outline />
+
+Собственная настройка страницы Options. Входит в [`OptionsDefinition`](#optionsdefinition) и [`OptionsProps`](#optionsprops) через [`OptionsEntrypointOptions`](#optionsentrypointoptions).
+
+```ts file="../../../../code/entrypoints/options/api/options-config.ts" title="OptionsConfig"
+```
+
+<DocHeading level={3} id="optionsconfig-openintab" toc={true}>`openInTab`</DocHeading>
+
+**Тип:** `boolean`. **По умолчанию:** `true` при генерации манифеста.
+
+Задаёт `options_ui.open_in_tab` в Manifest V2 и V3:
+
+| Значение | Результат |
+| --- | --- |
+| Не задано или `undefined` | Addon Bone записывает `true`. |
+| `true` | Браузер открывает настройки в отдельной вкладке. |
+| `false` | Addon Bone сохраняет `false`, запрашивая встроенный интерфейс настроек. |
+
+Chrome и Firefox поддерживают встроенное отображение. Opera и Safari открывают настройки в отдельной вкладке даже при `false`; это ограничение браузеров, указанное в [таблице совместимости `options_ui`](https://developer.mozilla.org/en-US/docs/Mozilla/Add-ons/WebExtensions/manifest.json/options_ui#browser_compatibility). При отсутствии поля непосредственно в манифесте браузерный контракт использует `false`; Addon Bone явно записывает собственное значение по умолчанию — `true`.
+
+Передавайте логическое значение. Строка `"false"` и другие значения неподходящего типа останавливают сборку с ошибкой `Invalid options openInTab`.
+
+В примере `src/options.ts` создаёт `options.html` и запрашивает встроенный режим. Во вкладках с результатом показаны фрагменты манифеста при стандартном [`htmlDir`](/api/adnbn/configuration#config-htmldir); остальные поля опущены.
+
+<Tabs>
+    <Tab label="Код Options">
+```ts file="../../../../code/entrypoints/options/embedded.options.ts" title="src/options.ts"
+```
+    </Tab>
+    <Tab label="Сгенерированный Manifest V3">
+```json file="../../../../code/entrypoints/options/api/embedded-manifest-v3.json" title="manifest.json"
+```
+    </Tab>
+    <Tab label="Сгенерированный Manifest V2">
+```json file="../../../../code/entrypoints/options/api/embedded-manifest-v2.json" title="manifest.json"
+```
+    </Tab>
+</Tabs>
+
+При удалении `openInTab: false` из объявления поле `open_in_tab` станет `true`; путь страницы останется прежним. Addon Bone использует `options_ui` в обеих версиях манифеста.
+
+## `OptionsEntrypointOptions`
+
+<PropertyBadge text="type" type="info" outline />
+
+Общие опции сборки страницы настроек. Внутренний тип: напрямую из `adnbn` не экспортируется. Для аннотации опций используйте публичный [`OptionsProps`](#optionsprops), а для объявления с `render` или `container` — [`OptionsDefinition`](#optionsdefinition).
+
+```ts file="../../../../code/entrypoints/options/api/options-entrypoint-options.ts" title="OptionsEntrypointOptions"
+```
+
+| Контракт | Что добавляет |
+| --- | --- |
+| [`OptionsConfig`](#optionsconfig) | `openInTab`: режим открытия настроек. |
+| [`PermissionsOptions`](/api/adnbn/permissions#permissionsoptions) | `permissions`, `optionalPermissions`, `hostPermissions` и `optionalHostPermissions`. |
+| [`CspOptions`](/api/adnbn/csp#cspoptions) | `csp`: разрешение WebAssembly и источники ресурсов для Content Security Policy. |
+| [`ViewOptions`](/api/adnbn/view#viewoptions) | `as`, `title`, `template`, статические настройки [`HtmlEntrypointOptions`](/api/adnbn/html#htmlentrypointoptions) и фильтры [`EntrypointOptions`](/api/adnbn/entrypoint-options#entrypointoptions). |
+
+Все поля можно опустить. [`as`](/api/adnbn/view#viewconfig-as) меняет имя выходного HTML, [`title`](/api/adnbn/view#viewconfig-title) задаёт заголовок документа, а [`template`](/api/adnbn/view#viewconfig-template) — путь к HTML-шаблону. При `as: "preferences"` и стандартном `htmlDir` Addon Bone создаёт `preferences.options.html` и использует этот же путь в `options_ui.page`.
+
+В сборку входит одна страница Options; настройки разных объявлений не объединяются. Разрешения и CSP выбранной страницы добавляются в общий манифест расширения. Кандидаты, исключённые фильтрами или не выбранные среди подходящих файлов, не добавляют свои разрешения и CSP. Приоритет файлов и поведение multi-app описаны в [правилах выбора реализации](/guide/entrypoints/options#options-selection).
+
+Выбранная страница формирует [`ManifestOptions`](/api/adnbn/manifest#manifestoptions): `path` содержит путь к созданному HTML, `openInTab` — режим открытия. Для точки входа Options вручную вызывать [`ManifestBuilder.setOptions()`](/api/adnbn/manifest#manifestbuilder-setoptions) не нужно.

@@ -1,6 +1,6 @@
 import EntrypointSpec from "@components/docs/entrypoints/EntrypointSpec";
 
-export default () => (
+export default ({omitTitle = false}: {omitTitle?: boolean}) => (
 	<>
 		<EntrypointSpec name="as" type="string">
 			Задаёт имя сгенерированного HTML-файла и его точки сборки. Если не
@@ -8,11 +8,13 @@ export default () => (
 			итогового имени зависит от точки входа; смотрите её раздел «Результат
 			сборки».
 		</EntrypointSpec>
-		<EntrypointSpec name="title" type="string">
-			Задаёт заголовок HTML-документа. Если не указать, Addon Bone использует
-			имя текущего приложения с заглавными буквами и пробелами, например{" "}
-			<code>My App</code> для <code>my-app</code>.
-		</EntrypointSpec>
+		{!omitTitle && (
+			<EntrypointSpec name="title" type="string">
+				Задаёт заголовок HTML-документа. Если не указать, Addon Bone использует
+				имя текущего приложения с заглавными буквами и пробелами, например{" "}
+				<code>My App</code> для <code>my-app</code>.
+			</EntrypointSpec>
+		)}
 		<EntrypointSpec name="template" type="string">
 			Задаёт путь к HTML-шаблону относительно файла точки входа. Используйте,
 			когда документу нужна собственная разметка. Если не указать, Addon Bone

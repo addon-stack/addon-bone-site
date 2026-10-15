@@ -1,0 +1,284 @@
+---
+description: "API всплывающего окна расширения: definePopup, changePopup, getPopups, реестр вариантов и опции начального назначения, подсказки и иконки кнопки."
+---
+
+<span id="popup-api" />
+
+# API всплывающего окна
+
+import DocHeading from "@components/DocHeading";
+import PropertyBadge from "@components/PropertyBadge";
+import {Tab, Tabs} from "@rspress/core/theme";
+
+Функции и типы для объявления Popup кнопки расширения и переключения между собранными вариантами. Публичные экспорты доступны из `adnbn`. Создание интерфейса, открытие и закрытие окна, структура файлов и выбор между несколькими Popup разобраны в [руководстве Popup](/guide/entrypoints/popup).
+
+| Экспорт | Вид | Назначение |
+| --- | --- | --- |
+| [`definePopup`](#definepopup) | function | Объявление всплывающего окна. |
+| [`changePopup`](#changepopup) | function | Назначение Popup кнопке расширения. |
+| [`getPopups`](#getpopups) | function | Данные собранных вариантов Popup. |
+| [`PopupAliasRegistry`](#popupaliasregistry) | interface | Расширяемый реестр имён Popup. |
+| [`PopupAlias`](#popupalias) | type | Допустимое имя собранного Popup. |
+| [`PopupMap`](#popupmap) | type | Таблица вариантов для переключения. |
+| [`PopupMapEntry`](#popupmapentry) | interface | Путь, иконка и подсказка одного варианта. |
+
+В сигнатурах также используются [`PopupDefinition`](#popupdefinition), [`PopupProps`](#popupprops), [`PopupConfig`](#popupconfig) и [`PopupEntrypointOptions`](#popupentrypointoptions). Они описаны ниже, но в текущем фреймворке напрямую из `adnbn` не экспортируются. Способ получить типы объявления и props через `definePopup` приведён у [`PopupDefinition`](#popupdefinition).
+
+## `definePopup`
+
+<PropertyBadge text="function" type="info" outline />
+
+Принимает объявление для `export default` точки входа Popup. При сборке Addon Bone создаёт её HTML-документ; выбранный начальный вариант назначается кнопке расширения через `default_popup`.
+
+```ts file="../../../../code/entrypoints/popup/api/define-popup.ts" title="definePopup"
+```
+
+**Параметр:** `options` — [`PopupDefinition`](#popupdefinition). **Обязательный параметр.** Все поля объекта можно опустить, поэтому `definePopup({})` допустим.
+
+**Результат:** [`PopupDefinition`](#popupdefinition) — тот же объект, синхронно, без копирования и подстановки значений по умолчанию. Функция не открывает окно и не вызывает `render`.
+
+В примере `title` задаёт заголовок HTML-документа, а [`tooltip`](#popupconfig-tooltip) — подсказку кнопки. При стандартном [`htmlDir`](/api/adnbn/configuration#config-htmldir) Addon Bone создаёт `popup.html`. Во вкладках с результатом показаны относящиеся к Popup фрагменты манифеста; остальные поля опущены.
+
+<Tabs>
+    <Tab label="Код Popup">
+```ts file="../../../../code/entrypoints/popup/popup.ts" title="src/popup.ts"
+```
+    </Tab>
+    <Tab label="Сгенерированный Manifest V3">
+```json file="../../../../code/entrypoints/popup/manifest-v3.json" title="manifest.json"
+```
+    </Tab>
+    <Tab label="Сгенерированный Manifest V2">
+```json file="../../../../code/entrypoints/popup/manifest-v2.json" title="manifest.json"
+```
+    </Tab>
+</Tabs>
+
+## `changePopup`
+
+<PropertyBadge text="function" type="info" outline />
+
+Назначает собранный Popup кнопке расширения для всех вкладок или для одной вкладки. Окно откроется при следующем нажатии кнопки; сам вызов не открывает Popup и не заменяет уже загруженный документ.
+
+```ts file="../../../../code/entrypoints/popup/api/change-popup.ts" title="changePopup"
+```
+
+**Параметры:**
+
+- `alias` — [`PopupAlias`](#popupalias). **Обязательный параметр.** Имя варианта из [`getPopups()`](#getpopups).
+- `tab` — ID вкладки или объект `Tab`. Здесь `Tab` — локальный алиас браузерного [`chrome.tabs.Tab`](https://developer.chrome.com/docs/extensions/reference/api/tabs#type-Tab). Из объекта используется только `id`; если он отсутствует, изменение применяется ко всем вкладкам. Числовой ID `0` передаётся без замены.
+
+**Результат:** `Promise<void>`. Завершается после последовательного обновления пути Popup, заданной подсказки и заданной иконки. Вызывайте из фонового контекста или страницы расширения с доступом к Action API. Из Content Script передайте запрос в фон, например через [Service](/api/adnbn/service).
+
+Без `tab` меняется общее значение кнопки. Переопределение конкретной вкладки имеет приоритет перед общим и сбрасывается после её закрытия; это [поведение Action API](https://developer.chrome.com/docs/extensions/reference/api/action#per-tab_state).
+
+Из [`PopupMapEntry`](#popupmapentry) функция применяет:
+
+| Поле | Действие |
+| --- | --- |
+| [`path`](#popupmapentry-path) | Передаёт путь в `setActionPopup` из `adnbn/browser`. |
+| [`tooltip`](#popupmapentry-tooltip) | Если задан, переводит маркер локализации и вызывает `setActionTitle`. При отсутствии сохраняет текущую подсказку. |
+| [`icon`](#popupmapentry-icon) | Если задано непустое имя, вызывает [`changeActionIcon`](/api/adnbn/icons#changeactionicon). При отсутствии сохраняет текущую иконку. |
+
+Значения из [`config.action`](/api/adnbn/configuration#config-action) при переключении автоматически не восстанавливаются. [`apply: false`](#popupconfig-apply) не препятствует выбору уже собранного Popup через эту функцию.
+
+**Ошибки:** неизвестное имя отклоняет Promise с `Not found popup: "<имя>"`; отсутствующий или пустой путь — с `Not found popup path: "<имя>"`. Ошибки браузерных API и [`changeActionIcon`](/api/adnbn/icons#changeactionicon) также отклоняют Promise. Если обновление подсказки или иконки завершается ошибкой, уже применённые изменения сохраняются: отката нет, оставшиеся шаги не выполняются.
+
+Полный пример переключения находится в [руководстве Popup](/guide/entrypoints/popup#несколько-popup). Для программного открытия уже назначенного варианта используйте `openActionPopup()` из `adnbn/browser`; условия поддержки описаны в [разделе runtime API руководства](/guide/entrypoints/popup#popup-runtime).
+
+## `getPopups`
+
+<PropertyBadge text="function" type="info" outline />
+
+Возвращает таблицу Popup, для которых текущая сборка создала HTML. Подходит для списка вариантов и проверки имени перед переключением.
+
+```ts file="../../../../code/entrypoints/popup/api/get-popups.ts" title="getPopups"
+```
+
+**Параметры:** отсутствуют. **Результат:** [`PopupMap`](#popupmap), синхронно. Ключ — имя варианта, значение — [`PopupMapEntry`](#popupmapentry) с путём HTML и заданными опциями кнопки.
+
+Таблица включает варианты с [`apply: false`](#popupconfig-apply), если они вошли в сборку. Файлы, исключённые фильтрами или выбором единственного Popup, не входят в неё. При отсутствии Popup результат — пустой `Map`.
+
+Функция читает сгенерированные данные: не проверяет текущий Popup кнопки и не переводит `tooltip`. Для локализованной подсказки в записи остаётся исходный маркер, например `@popup.account`.
+
+Каждый вызов создаёт новый `Map`, но объекты его записей не копируются. Добавление и удаление ключей не меняет таблицу сборки; изменение полей полученного `PopupMapEntry` может повлиять на последующие вызовы в том же контексте. Задавайте эти поля в объявлении Popup, а для собственных изменений создавайте копию записи.
+
+При ошибке чтения таблицы функция выводит `Failed getting popups:` и возвращает уже заполненную часть `Map`, которая может быть пустой.
+
+## `PopupAliasRegistry`
+
+<PropertyBadge text="interface" type="info" outline />
+
+Расширяемый интерфейс, ключи которого задают имена для [`PopupAlias`](#popupalias).
+
+```ts file="../../../../code/entrypoints/popup/api/popup-alias-registry.ts" title="PopupAliasRegistry"
+```
+
+Addon Bone дополняет его в `.adnbn/popup.d.ts` по вариантам, включённым в сборку. Подключите сгенерированные декларации через `.adnbn/tsconfig.json`, как описано в [настройке TypeScript](/guide/configuration/typescript).
+
+Имя определяется по исходному файлу или [`as`](/api/adnbn/view#viewconfig-as):
+
+| Исходный файл или опция | Имя для `changePopup` | HTML при стандартном `htmlDir` |
+| --- | --- | --- |
+| `popup.ts` или `popup/index.ts` | `popup` | `popup.html` |
+| `account.popup.ts` или `account.popup/index.ts` | `account` | `account.popup.html` |
+| `as: "account"` | `account` | `account.popup.html` |
+
+Собственного поля `name` у Popup нет. При совпадении имён Addon Bone добавляет числовые суффиксы; для стабильных ссылок используйте разные имена файлов или `as`. У внешнего Popup из плагина ключом служит путь импорта модуля.
+
+Не редактируйте `.adnbn/popup.d.ts` вручную: сборка обновляет его. Значение `true` у ключа отмечает имя в типах. Ручное расширение интерфейса не создаёт HTML и не регистрирует вариант при выполнении.
+
+## `PopupAlias`
+
+<PropertyBadge text="type" type="info" outline />
+
+Имя Popup для [`changePopup`](#changepopup) и ключей [`PopupMap`](#popupmap).
+
+```ts file="../../../../code/entrypoints/popup/api/popup-alias.ts" title="PopupAlias"
+```
+
+Если [`PopupAliasRegistry`](#popupaliasregistry) пуст, тип допускает любую строку. После подключения сгенерированных деклараций он становится объединением строковых ключей реестра, например `"popup" | "account"`. Актуальную регистрацию имени при выполнении можно проверить через [`getPopups().has(alias)`](#getpopups).
+
+## `PopupMap`
+
+<PropertyBadge text="type" type="info" outline />
+
+Таблица вариантов, которую возвращает [`getPopups()`](#getpopups).
+
+```ts file="../../../../code/entrypoints/popup/api/popup-map.ts" title="PopupMap"
+```
+
+Ключ имеет тип [`PopupAlias`](#popupalias), значение — [`PopupMapEntry`](#popupmapentry). `map.get(alias)` может вернуть `undefined`, если записи нет. Наличие записи означает, что Popup собран, а не что он сейчас назначен кнопке или открыт.
+
+## `PopupMapEntry`
+
+<PropertyBadge text="interface" type="info" outline />
+
+Данные одного собранного Popup для переключения через [`changePopup`](#changepopup). Заголовок HTML-документа `title` и содержимое `render` сюда не входят.
+
+```ts file="../../../../code/entrypoints/popup/api/popup-map-entry.ts" title="PopupMapEntry"
+```
+
+<DocHeading level={3} id="popupmapentry-path" toc={true}>`path`</DocHeading>
+
+**Тип:** `string`. Путь к HTML относительно корня расширения, например `account.popup.html`. Генератор заполняет его для каждого собранного Popup с учётом [`htmlDir`](/api/adnbn/configuration#config-htmldir).
+
+В интерфейсе поле необязательно, но [`changePopup`](#changepopup) требует непустой путь: при отсутствии или `""` вызов отклоняется до обращения к браузеру.
+
+<DocHeading level={3} id="popupmapentry-icon" toc={true}>`icon`</DocHeading>
+
+**Тип:** `string`. Исходное имя группы из [`PopupConfig.icon`](#popupconfig-icon); при отсутствии опции поле не добавляется в сгенерированный модуль. Контракт записи использует `string`, а опция объявления — [`IconName`](/api/adnbn/icons#iconname).
+
+При переключении отсутствующее или пустое значение сохраняет текущую иконку кнопки. Непустое имя передаётся в [`changeActionIcon`](/api/adnbn/icons#changeactionicon); неизвестная группа вызывает ошибку.
+
+<DocHeading level={3} id="popupmapentry-tooltip" toc={true}>`tooltip`</DocHeading>
+
+**Тип:** `string`. Исходный текст или маркер локализации из [`PopupConfig.tooltip`](#popupconfig-tooltip). При отсутствии опции поле не добавляется в сгенерированный модуль; начальная подсказка из конфигурации или имени расширения сюда не подставляется.
+
+[`getPopups`](#getpopups) возвращает строку без перевода. [`changePopup`](#changepopup) переводит маркер при применении. Отсутствие поля сохраняет текущую подсказку, а `""` явно передаёт браузеру пустую строку.
+
+## `PopupDefinition`
+
+<PropertyBadge text="type" type="info" outline />
+
+Объявление, которое принимает и возвращает [`definePopup`](#definepopup). Внутренний тип: напрямую из `adnbn` не экспортируется.
+
+```ts file="../../../../code/entrypoints/popup/api/popup-definition.ts" title="PopupDefinition"
+```
+
+[`PopupEntrypointOptions`](#popupentrypointoptions) объединяет собственные опции Popup, разрешения, CSP и настройки страницы. [`ViewDefinition<PopupProps>`](/api/adnbn/view#viewdefinition) добавляет [`render`](/api/adnbn/view#viewrenderdefinition-render) и [`container`](/api/adnbn/view#viewrenderdefinition-container).
+
+`render` задаёт значение Vanilla, синхронную функцию или React-компонент в соответствии с типом исходного файла. `container` выбирает элемент для монтирования. Параметры обработчиков имеют тип [`PopupProps`](#popupprops). При отсутствии `render` Addon Bone сохраняет содержимое HTML-шаблона без отдельного контейнера результата отображения.
+
+Для аннотаций пользовательского кода получите тип из публичной функции. Ниже `PopupDefinition` и `PopupProps` — локальные алиасы вашего модуля; импортировать эти имена из `adnbn` в текущей версии нельзя:
+
+```ts file="../../../../code/entrypoints/popup/api/inferred-types.ts" title="src/popup-types.ts"
+```
+
+## `PopupProps`
+
+<PropertyBadge text="type" type="info" outline />
+
+Опции текущего Popup, которые Addon Bone передаёт в функцию `render`, React-компонент и функцию `container`. Внутренний тип: напрямую из `adnbn` не экспортируется; вариант аннотации показан у [`PopupDefinition`](#popupdefinition).
+
+```ts file="../../../../code/entrypoints/popup/api/popup-props.ts" title="PopupProps"
+```
+
+Состав совпадает с [`PopupEntrypointOptions`](#popupentrypointoptions). Объект содержит поля объявления без `render` и `container`. Вычисленные при сборке значения не подставляются: при отсутствии `apply` обработчик получает `undefined`, хотя при выборе начального Popup используется `true`. Подсказка и иконка из конфигурации проекта также не добавляются в props автоматически.
+
+[`title`](/api/adnbn/view#viewconfig-title) относится к HTML-документу, [`tooltip`](#popupconfig-tooltip) — к кнопке расширения. Примеры аннотаций [`ViewRenderHandler<PopupProps>`](/api/adnbn/view#viewrenderhandler) и [`ViewRenderReactComponent<PopupProps>`](/api/adnbn/view#viewrenderreactcomponent) приведены в [руководстве Popup](/guide/entrypoints/popup#popup-render-types).
+
+## `PopupConfig`
+
+<PropertyBadge text="interface" type="info" outline />
+
+Собственные опции Popup. Внутренний интерфейс: напрямую из `adnbn` не экспортируется. Входит в [`PopupDefinition`](#popupdefinition) и [`PopupProps`](#popupprops) через [`PopupEntrypointOptions`](#popupentrypointoptions).
+
+```ts file="../../../../code/entrypoints/popup/api/popup-config.ts" title="PopupConfig"
+```
+
+<DocHeading level={3} id="popupconfig-icon" toc={true}>`icon`</DocHeading>
+
+**Тип:** [`IconName`](/api/adnbn/icons#iconname). Имя группы иконок кнопки, например `"toolbar"`; путь к отдельному изображению не принимается. Пустая строка в объявлении останавливает сборку с ошибкой валидации.
+
+Для начального Popup собственный `icon` имеет приоритет над [`ActionOptions.icon`](/api/adnbn/configuration#actionoptions-icon), затем используется [`Config.icon`](/api/adnbn/configuration#config-icon). По выбранному имени сборщик находит размеры и пути группы. Если группа не найдена, генератор выбирает `default`, затем первую доступную группу; при отсутствии групп поле `default_icon` не добавляется.
+
+При [`changePopup`](#changepopup) отсутствие `icon` сохраняет текущую иконку. Заданное имя применяется через [`changeActionIcon`](/api/adnbn/icons#changeactionicon), где неизвестная группа уже вызывает ошибку. Для смены только иконки вызывайте эту функцию напрямую.
+
+<DocHeading level={3} id="popupconfig-apply" toc={true}>`apply`</DocHeading>
+
+**Тип:** `boolean`. **По умолчанию:** `true` при выборе начального Popup.
+
+Разрешает назначить этот вариант кнопке в манифесте:
+
+| Значение | Результат |
+| --- | --- |
+| Не задано или `true` | Popup может стать начальным; его путь, подсказка и иконка участвуют в настройке кнопки. |
+| `false` | Popup создаётся и доступен через [`changePopup`](#changepopup), если выбран для сборки, но не назначается начальным. |
+
+При [`multiplePopup: false`](/api/adnbn/configuration#config-multiplepopup) сначала выбирается один файл по приоритету, затем проверяется его `apply`. Значение `false` не возвращает сборщик к другим кандидатам. При `multiplePopup: true` начальным становится первый собранный Popup с `apply: true` или без этой опции. Порядок кандидатов описан в [руководстве Popup](/guide/entrypoints/popup#popup-apply).
+
+Если все собранные варианты имеют `apply: false`, Addon Bone не задаёт `default_popup`. Сам набор таких Popup не создаёт `action` / `browser_action`; кнопку может объявить конфигурация или команда выполнения action. Чтобы назначать Popup только из кода, задайте [`action: {}`](/api/adnbn/configuration#config-action) в конфигурации проекта.
+
+`apply: false` не исключает разрешения и CSP собранной страницы из общего манифеста.
+
+<DocHeading level={3} id="popupconfig-tooltip" toc={true}>`tooltip`</DocHeading>
+
+**Тип:** `string`. Текст подсказки при наведении на кнопку расширения: обычная строка или маркер локализации, например `"@popup.account"`. Заголовок HTML задаётся отдельно через [`title`](/api/adnbn/view#viewconfig-title).
+
+При начальном назначении Addon Bone записывает подсказку в `action.default_title` для Manifest V3 или `browser_action.default_title` для Manifest V2. Если поле отсутствует, используется [`ActionOptions.title`](/api/adnbn/configuration#actionoptions-title), затем имя расширения. Пустая строка сохраняется как `default_title: ""`.
+
+При переключении через [`changePopup`](#changepopup) действуют следующие правила:
+
+| Значение | Результат |
+| --- | --- |
+| Не задано | Текущая подсказка кнопки сохраняется. |
+| Обычный текст | Браузеру передаётся эта строка. |
+| Маркер `@popup.account` | Функция запрашивает у браузера перевод сообщения `popup_account` и передаёт его в `setActionTitle`. |
+| `""`, пустой или отсутствующий перевод | Браузеру передаётся пустая строка. |
+
+При сборке маркер `@popup.account` преобразуется в `__MSG_popup_account__` для манифеста. В [`PopupMapEntry.tooltip`](#popupmapentry-tooltip) сохраняется исходный маркер; перевод при переключении выполняет браузерный i18n API. Настройка локализации и пример сообщения приведены в [руководстве Popup](/guide/entrypoints/popup#popup-localization).
+
+Пустая строка не гарантирует скрытую подсказку: её отображение определяет браузер. Например, Firefox может показать имя расширения; см. [контракт `action.setTitle()`](https://developer.mozilla.org/en-US/docs/Mozilla/Add-ons/WebExtensions/API/action/setTitle).
+
+## `PopupEntrypointOptions`
+
+<PropertyBadge text="type" type="info" outline />
+
+Общие опции сборки Popup. Внутренний тип: напрямую из `adnbn` не экспортируется.
+
+```ts file="../../../../code/entrypoints/popup/api/popup-entrypoint-options.ts" title="PopupEntrypointOptions"
+```
+
+| Контракт | Что добавляет |
+| --- | --- |
+| [`PopupConfig`](#popupconfig) | `icon`, `apply` и `tooltip`: начальное назначение и свойства кнопки. |
+| [`PermissionsOptions`](/api/adnbn/permissions#permissionsoptions) | `permissions`, `optionalPermissions`, `hostPermissions` и `optionalHostPermissions`. |
+| [`CspOptions`](/api/adnbn/csp#cspoptions) | `csp`: разрешение WebAssembly и источники ресурсов для Content Security Policy. |
+| [`ViewOptions`](/api/adnbn/view#viewoptions) | `as`, `title`, `template`, статические настройки [`HtmlEntrypointOptions`](/api/adnbn/html#htmlentrypointoptions) и фильтры [`EntrypointOptions`](/api/adnbn/entrypoint-options#entrypointoptions). |
+
+Все поля можно опустить. [`multiplePopup`](/api/adnbn/configuration#config-multiplepopup) управляет количеством собранных Popup, а [`mergePopup`](/api/adnbn/configuration#config-mergepopup) — выбором между shared-слоем и приложением. Это настройки проекта, они не входят в объект `definePopup`.
+
+Разрешения и CSP всех собранных Popup добавляются в общий манифест, включая варианты с `apply: false`, даже если их никогда не открывают. Исключённые или не выбранные файлы не добавляют свои настройки.
+
+Начальный Popup формирует [`ManifestPopup`](/api/adnbn/manifest#manifestpopup): `path` содержит путь HTML, `icon` — группу иконок, а `title` — преобразованный `tooltip`. Для точки входа Popup вручную вызывать [`ManifestBuilder.setPopup()`](/api/adnbn/manifest#manifestbuilder-setpopup) не нужно.

@@ -1,0 +1,94 @@
+---
+description: "EntrypointOptions: общие фильтры точек входа Addon Bone по браузеру, приложению, режиму сборки, версии манифеста и debug."
+---
+
+# Общие опции точек входа
+
+import DocHeading from "@components/DocHeading";
+import PropertyBadge from "@components/PropertyBadge";
+
+API общих фильтров точек входа по браузеру, приложению, режиму сборки, версии манифеста и `debug`.
+
+| Тип | Вид | Назначение |
+| --- | --- | --- |
+| [`EntrypointOptions`](#entrypointoptions) | interface | Фильтры сборки. |
+
+## `EntrypointOptions`
+
+<PropertyBadge text="interface" type="info" outline />
+
+Базовый интерфейс, который входит в определения точек входа, в том числе [`BackgroundDefinition`](/api/adnbn/background#backgrounddefinition).
+Он не экспортируется непосредственно из `adnbn`; его поля доступны через определения конкретных точек входа.
+
+```ts file="../../../../code/entrypoints/common/api/entrypoint-options.ts" title="EntrypointOptions"
+```
+
+Все поля необязательны. Addon Bone сравнивает их с параметрами текущей сборки: точка входа проходит фильтрацию, только если все заданные условия выполняются одновременно. Эти поля не изменяют параметры сборки.
+
+<span id="entrypointoptions-fields" />
+
+<DocHeading level={3} id="entrypointoptions-includebrowser" toc={true}>`includeBrowser`</DocHeading>
+
+**Тип:** [`` `${Browser}`[] | Browser[] ``](/api/adnbn/environment#browser).
+
+Ограничивает включение точки входа перечисленными браузерами. Если поле отсутствует или список пуст, этот фильтр не ограничивает сборку.
+
+Принимает строки `"chrome"`, `"chromium"`, `"edge"`, `"firefox"`, `"opera"`, `"safari"` или значения перечисления [`Browser`](/api/adnbn/environment#browser), экспортируемого из `adnbn`, например `Browser.Firefox`. Значение должно точно совпадать с браузером сборки: `"chrome"` и `"chromium"` считаются разными браузерами.
+
+Если текущий браузер также указан в [`excludeBrowser`](#entrypointoptions-excludebrowser), точка входа исключается.
+
+<DocHeading level={3} id="entrypointoptions-excludebrowser" toc={true}>`excludeBrowser`</DocHeading>
+
+**Тип:** [`` `${Browser}`[] | Browser[] ``](/api/adnbn/environment#browser).
+
+Исключает точку входа из сборок для перечисленных браузеров. Если поле отсутствует или список пуст, этот фильтр ничего не исключает.
+
+Принимает те же значения, что и [`includeBrowser`](#entrypointoptions-includebrowser). Исключение имеет приоритет: браузер в обоих списках не проходит фильтрацию.
+
+<DocHeading level={3} id="entrypointoptions-excludeapp" toc={true}>`excludeApp`</DocHeading>
+
+**Тип:** `string[]`.
+
+Исключает точку входа из сборок перечисленных приложений. Если поле отсутствует или список пуст, этот фильтр ничего не исключает.
+
+Элементы списка сравниваются с параметром `app` текущей сборки по точному совпадению, с учётом регистра. Шаблоны вроде `"shop-*"` не поддерживаются. Исключение имеет приоритет перед [`includeApp`](#entrypointoptions-includeapp).
+
+<DocHeading level={3} id="entrypointoptions-includeapp" toc={true}>`includeApp`</DocHeading>
+
+**Тип:** `string[]`.
+
+Ограничивает включение точки входа перечисленными приложениями. Если поле отсутствует или список пуст, этот фильтр не ограничивает сборку.
+
+Элементы списка должны точно совпадать с параметром `app` текущей сборки, с учётом регистра; шаблоны не поддерживаются. Если приложение также указано в [`excludeApp`](#entrypointoptions-excludeapp), точка входа исключается.
+
+<DocHeading level={3} id="entrypointoptions-mode" toc={true}>`mode`</DocHeading>
+
+**Тип:** [`` `${Exclude<Mode, Mode.None>}` | Exclude<Mode, Mode.None> ``](/api/adnbn/environment#mode).
+
+Ограничивает включение точки входа указанным режимом сборки. Если поле отсутствует, этот фильтр не ограничивает сборку.
+
+Принимает `"development"` или `"production"`, а также соответствующие значения `Mode.Development` и `Mode.Production`. Перечисление [`Mode`](/api/adnbn/environment#mode) экспортируется из `adnbn`. Значение должно совпадать с параметром `mode` текущей сборки.
+
+**Проверка значения:** парсер сборки принимает также `"none"`, хотя TypeScript-тип этого поля исключает `Mode.None`. Используйте `"development"` или `"production"`, чтобы объявление соответствовало этому типу.
+
+<DocHeading level={3} id="entrypointoptions-manifestversion" toc={true}>`manifestVersion`</DocHeading>
+
+**Тип:** [`ManifestVersion`](/api/adnbn/manifest#manifestversion), то есть `2 | 3`.
+
+Ограничивает включение точки входа указанной версией манифеста. Если поле отсутствует, этот фильтр не ограничивает сборку.
+
+Значение должно совпадать с параметром `manifestVersion` текущей сборки. Например, `2` исключает точку входа из сборки для Manifest V3.
+
+<DocHeading level={3} id="entrypointoptions-debug" toc={true}>`debug`</DocHeading>
+
+**Тип:** `boolean`.
+
+Фильтрует точку входа по параметру `debug` текущей сборки.
+
+| Значение | Условие включения |
+| --- | --- |
+| `true` | Только при `debug: true` в параметрах сборки. |
+| `false` | Только при `debug: false` в параметрах сборки. |
+| Поле отсутствует | Этот фильтр не ограничивает сборку. |
+
+`debug: false` задаёт условие включения, поэтому отличается от отсутствующего поля. Если одновременно задан [`mode`](#entrypointoptions-mode), оба значения должны совпасть с параметрами сборки.

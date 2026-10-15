@@ -1,0 +1,1 @@
+type TypeString = "css" | "js";

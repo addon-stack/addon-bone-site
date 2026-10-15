@@ -1,0 +1,6 @@
+declare class ProxySandbox<
+	N extends TransportName,
+	T = RpcAsyncProxy<TransportDictionary[N]>,
+> extends ProxyTransport<N, T> {
+	constructor(name: N, parameters: SandboxParameters);
+}

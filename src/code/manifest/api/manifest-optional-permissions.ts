@@ -1,0 +1,1 @@
+export type ManifestOptionalPermissions = Set<ManifestOptionalPermission>;

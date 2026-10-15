@@ -1,0 +1,1 @@
+export type SandboxMap = Map<SandboxAlias, SandboxParameters>;

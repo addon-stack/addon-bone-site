@@ -1,0 +1,842 @@
+---
+description: "Sandbox API Addon Bone: объявление изолированного документа, вызов его API, тайм-ауты и настройки sandbox CSP с примерами манифеста."
+---
+
+# Sandbox API
+
+import DocHeading from "@components/DocHeading";
+import PropertyBadge from "@components/PropertyBadge";
+import {Tabs, Tab} from "@rspress/core/theme";
+
+Функции и типы для объявления изолированного HTML-документа и вызова его API через скрытый iframe. Все экспорты этой страницы доступны из `adnbn`. Использование, организация файлов и жизненный цикл относятся к [руководству Sandbox](/guide/entrypoints/sandbox).
+
+Классы регистрации и proxy описаны в [`adnbn/sandbox`](/api/sandbox/index). Общие контракты транспорта — в [`adnbn/transport`](/api/transport/index), содержимое документа и HTML-опции — в [API отображения страниц](/api/adnbn/view).
+
+| Экспорт | Вид | Назначение |
+| --- | --- | --- |
+| [`defineSandbox`](#definesandbox) | function | Принимает объявление точки входа Sandbox. |
+| [`getSandbox`](#getsandbox) | function | Возвращает асинхронный proxy для API Sandbox. |
+| [`getSandboxes`](#getsandboxes) | function | Читает таблицу Sandbox-документов текущей сборки. |
+| [`SandboxDefinition`](#sandboxdefinition) | interface | Объединяет фабрику API, опции Sandbox и содержимое документа. |
+| [`SandboxUnresolvedDefinition`](#sandboxunresolveddefinition) | type | Частичное объявление до нормализации и проверки. |
+| [`SandboxMainHandler`](#sandboxmainhandler) | type | Обработчик запуска зарегистрированного API. |
+| [`SandboxConfig`](#sandboxconfig) | interface | Имя API и параметры ожидания iframe и ответа. |
+| [`SandboxOptions`](#sandboxoptions) | type | Полный состав опций Sandbox. |
+| [`SandboxEntrypointOptions`](#sandboxentrypointoptions) | type | Опции, допустимые в объявлении Sandbox. |
+| [`SandboxCspOptions`](#sandboxcspoptions) | interface | Поле CSP в объявлении Sandbox. |
+| [`SandboxCspConfig`](#sandboxcspconfig) | interface | Настройки общей политики sandbox-документов. |
+| [`SandboxCspSources`](#sandboxcspsources) | interface | Источники ресурсов по видам CSP. |
+| [`SandboxAllow`](#sandboxallow) | enum | Дополнительные разрешения директивы sandbox. |
+| [`SandboxSource`](#sandboxsource) | enum | Поддерживаемые ключевые слова и схемы источников. |
+| [`SandboxAlias`](#sandboxalias) | type | Строковый ключ таблицы документов. |
+| [`SandboxMap`](#sandboxmap) | type | Карта имён Sandbox и параметров создания. |
+| [`SandboxParameters`](#sandboxparameters) | type | Параметры iframe и ожидания запросов. |
+| [`SandboxParametersMap`](#sandboxparametersmap) | type | Объект таблицы параметров сборки. |
+| [`SandboxRegistry`](/api/sandbox/index#sandboxregistry) | interface | Реестр исходных API. |
+| [`SandboxName`](/api/sandbox/index#sandboxname) | type | Имена из реестра. |
+| [`SandboxProxyTarget`](/api/sandbox/index#sandboxproxytarget) | type | Асинхронный контракт по имени. |
+| [`SandboxReadyMessage`](#sandboxreadymessage) | interface | Сообщение о готовности документа. |
+| [`SandboxRequestMessage`](#sandboxrequestmessage) | interface | Сообщение вызова метода или чтения свойства. |
+| [`SandboxResponseMessage`](#sandboxresponsemessage) | interface | Сообщение результата или ошибки вызова. |
+| [`SandboxEnvelope`](#sandboxenvelope) | type | Объединение сообщений запроса и ответа. |
+| [`SandboxPort`](#sandboxport) | interface | Контракт подключения, отправки и получения сообщений. |
+| [`SandboxGlobalKey`](#sandboxglobalkey) | const | Ключ общего реестра экземпляров в текущем контексте. |
+| [`SandboxGlobalAccess`](#sandboxglobalaccess) | const | Ключ runtime-маркера Sandbox-контекста. |
+| [`SandboxNamespace`](#sandboxnamespace) | const | Префикс каналов и маркеров сообщений. |
+| [`SandboxReadyMessageType`](#sandboxreadymessagetype) | const | Маркер сообщения готовности. |
+| [`SandboxRequestMessageType`](#sandboxrequestmessagetype) | const | Маркер сообщения запроса. |
+| [`SandboxResponseMessageType`](#sandboxresponsemessagetype) | const | Маркер сообщения ответа. |
+
+## `defineSandbox`
+
+<PropertyBadge text="function" type="info" outline />
+
+Принимает объявление точки входа Sandbox.
+
+```ts file="../../../../code/entrypoints/sandbox/api/define-sandbox.ts" title="defineSandbox"
+```
+
+**Параметр:** `options` — [`SandboxDefinition<T>`](#sandboxdefinition). **Обязательный параметр.** В объекте нужен `init`; остальные поля можно опустить.
+
+**Параметр типа:** `T extends TransportType` — API, который создаёт фабрика. [`TransportType`](/api/transport/index#transporttype) допускает объект, экземпляр класса или функцию. Обычно `T` выводится по результату `init`.
+
+**Результат:** тот же объект `SandboxDefinition<T>` без копирования и подстановки значений по умолчанию. Функция не создаёт iframe и не вызывает обработчики.
+
+## `getSandbox`
+
+<PropertyBadge text="function" type="info" outline />
+
+Возвращает асинхронный proxy для API Sandbox.
+
+```ts file="../../../../code/entrypoints/sandbox/api/get-sandbox.ts" title="getSandbox"
+```
+
+**Параметр:** `name` — [`SandboxName`](/api/sandbox/index#sandboxname). **Обязательный параметр.** Имя включённого в сборку Sandbox. `N` выбирает его контракт из реестра.
+
+**Результат:** [`SandboxProxyTarget<N>`](/api/sandbox/index#sandboxproxytarget). Само получение proxy синхронное. При первом вызове через него Addon Bone создаёт скрытый iframe и ждёт сигнала готовности после `init`, `main` и отрисовки документа.
+
+Повторные вызовы одного имени в текущей странице используют тот же iframe и экземпляр API. Параллельные первые вызовы ожидают общее создание. У разных страниц расширения свои iframe и состояние. После удаления iframe следующий вызов создаёт документ заново.
+
+Вызывайте API из страницы расширения с готовым `document.body`, например popup, Page или Offscreen. В service worker нет DOM: получение proxy возможно, но вызов отклонится с `A frame can be created only from a page with DOM access.`. Для фоновой работы можно обращаться к Sandbox из [Offscreen](/api/adnbn/offscreen).
+
+**Ошибки:** неизвестное имя синхронно вызывает `Unable to get sandbox: …`. Ошибка загрузки iframe, истечение [`readyTimeout`](#sandboxconfig-readytimeout) или [`requestTimeout`](#sandboxconfig-requesttimeout), а также исключение удалённого метода отклоняют promise вызова. Ошибка метода передаётся с именем, сообщением и доступным стеком. Обрабатывайте вызов через `try` / `catch`.
+
+<DocHeading level={3} id="getsandbox-data" toc={false}>Данные и граница изоляции</DocHeading>
+
+Методы и чтение простых свойств используют `await`, как описано в [`RpcAsyncProxy`](/api/transport/index#rpcasyncproxy). Здесь сообщения проходят через `window.postMessage`: аргументы и результаты должны поддерживать [структурированное клонирование](https://developer.mozilla.org/en-US/docs/Web/API/Window/postMessage#parameters). Функции и DOM-узлы передавать нельзя; методы и прототипы экземпляров классов не становятся удалёнными объектами. Для обычных контрактов удобно возвращать данные из методов.
+
+Sandbox-страница в Chrome не получает extension API и прямой доступ к другим страницам расширения. Обмен с владельцем iframe идёт через сообщения; это [модель sandbox в Chrome](https://developer.chrome.com/docs/extensions/reference/manifest/sandbox).
+
+:::warning Ограничение текущей сборки для Firefox
+Addon Bone не записывает `sandbox.pages` и sandbox CSP в манифест Firefox. Создаваемый runtime iframe не получает отдельный атрибут `sandbox`, поэтому его нельзя считать изолированной sandbox-страницей. Исключайте такую точку входа через [`excludeBrowser`](/api/adnbn/entrypoint-options#entrypointoptions-excludebrowser) для `"firefox"`, если задача требует этой изоляции или sandbox CSP.
+:::
+
+## `getSandboxes`
+
+<PropertyBadge text="function" type="info" outline />
+
+Читает таблицу Sandbox-документов текущей сборки.
+
+```ts file="../../../../code/entrypoints/sandbox/api/get-sandboxes.ts" title="getSandboxes"
+```
+
+**Параметры:** отсутствуют. **Результат:** [`SandboxMap`](#sandboxmap) с итоговыми именами и [`SandboxParameters`](#sandboxparameters).
+
+В карту входят документы, прошедшие фильтры сборки, независимо от того, созданы ли их iframe. Функция не проверяет загрузку и готовность документов.
+
+Каждый вызов возвращает новый `Map`, но вложенные объекты параметров не копируются. Изменение состава карты не меняет таблицу сборки. Настройки документа задавайте в объявлении, а не изменением общего объекта параметров.
+
+Если чтение таблицы завершается ошибкой, функция пишет `Failed getting sandboxes:` в консоль и возвращает уже заполненную часть карты, возможно пустую.
+
+## `SandboxDefinition`
+
+<PropertyBadge text="interface" type="info" outline />
+
+Объединяет фабрику API, опции Sandbox и содержимое документа.
+
+```ts file="../../../../code/entrypoints/sandbox/api/sandbox-definition.ts" title="SandboxDefinition"
+```
+
+[`TransportDefinition`](/api/transport/index#transportdefinition) задаёт `init` и общий `main`; [`SandboxEntrypointOptions`](#sandboxentrypointoptions) — настройки документа; [`ViewRenderDefinition`](/api/adnbn/view#viewrenderdefinition) — `render` и `container`. Собственное поле интерфейса уточняет тип `main`.
+
+<DocHeading level={3} id="sandboxdefinition-init" toc={true}>`init`</DocHeading>
+
+**Тип:** [`TransportInitGetter<SandboxOptions, T>`](/api/transport/index#transportinitgetter). **Обязательное поле.** Унаследовано от `TransportDefinition`.
+
+Синхронно создаёт API типа `T` внутри iframe. Получает [`SandboxOptions`](#sandboxoptions) с итоговым `name`, без `init`, `main`, `render` и `container`. Прочие опции сохраняют заданные значения: runtime-значения тайм-аутов по умолчанию в аргумент не подставляются.
+
+Addon Bone регистрирует результат до вызова `main`. Не делайте фабрику `async`: её promise не ожидается. Асинхронную подготовку выполняйте в `main` или методах API. Если `init` выбрасывает исключение, регистрация и отрисовка не выполняются, сигнал готовности не отправляется; в консоли документа появляется `Failed to build sandbox:`.
+
+<DocHeading level={3} id="sandboxdefinition-main" toc={true}>`main`</DocHeading>
+
+**Тип:** [`SandboxMainHandler<T>`](#sandboxmainhandler). При отсутствии обработчик не вызывается.
+
+Получает зарегистрированный API и тот же объект опций, что и `init`. Вызовы экземпляра здесь прямые; синхронные методы не превращаются в promise. Addon Bone ожидает завершения `main`, затем отображает документ и отправляет владельцу iframe сигнал готовности.
+
+Если `main` выбрасывает исключение или возвращает отклонённый promise, отрисовка и сигнал готовности не выполняются. Ошибка выводится с `Failed to build sandbox:`; ожидающий iframe вызов может завершиться по `readyTimeout`. Регистрация к этому моменту уже существует.
+
+<DocHeading level={3} id="sandboxdefinition-view" toc={false}>Содержимое документа</DocHeading>
+
+[`render`](/api/adnbn/view#viewrenderdefinition-render) и [`container`](/api/adnbn/view#viewrenderdefinition-container) получают опции отображения без `init`, `main` и имени API `name`. Отрисовка начинается после завершения `main`, поэтому её DOM ещё недоступен в `init` и `main`. Для объявления транспорта обязателен `init`, даже когда задан `render`.
+
+## `SandboxUnresolvedDefinition`
+
+<PropertyBadge text="type" type="info" outline />
+
+Частичное объявление до нормализации и проверки.
+
+```ts file="../../../../code/entrypoints/sandbox/api/sandbox-unresolved-definition.ts" title="SandboxUnresolvedDefinition"
+```
+
+`Partial` делает необязательными все поля верхнего уровня [`SandboxDefinition`](#sandboxdefinition), включая `init`. Тип подходит для промежуточного объекта; он не позволяет запустить Sandbox без фабрики. `defineSandbox` принимает полный контракт.
+
+## `SandboxMainHandler`
+
+<PropertyBadge text="type" type="info" outline />
+
+Обработчик запуска зарегистрированного API.
+
+```ts file="../../../../code/entrypoints/sandbox/api/sandbox-main-handler.ts" title="SandboxMainHandler"
+```
+
+**Параметры:** `sandbox` — экземпляр `T extends` [`TransportType`](/api/transport/index#transporttype); `options` — [`SandboxEntrypointOptions`](#sandboxentrypointoptions).
+
+**Результат:** `Awaiter<void>`, то есть `void | Promise<void>`. `Awaiter<T>` — внутренний вспомогательный алиас, не отдельный экспорт `adnbn`. Условия вызова и ошибки описаны у [`main`](#sandboxdefinition-main).
+
+## `SandboxConfig`
+
+<PropertyBadge text="interface" type="info" outline />
+
+Имя API и параметры ожидания iframe и ответа.
+
+```ts file="../../../../code/entrypoints/sandbox/api/sandbox-config.ts" title="SandboxConfig"
+```
+
+Наследует `name` из внутреннего [`TransportConfig`](/api/transport/index#transportconfig). При использовании самого `SandboxConfig` имя обязательно; [`SandboxEntrypointOptions`](#sandboxentrypointoptions) делает его необязательным в объявлении.
+
+<DocHeading level={3} id="sandboxconfig-name" toc={true}>`name`</DocHeading>
+
+**Тип:** `string`. **Обязательное поле в `SandboxConfig`.** В `SandboxDefinition` можно опустить: сборщик выводит имя из пути файла.
+
+Явное имя после удаления пробелов по краям должно содержать от 1 до 100 символов. Первый символ — буква Unicode, `_` или `$`; далее допустимы также цифры. Сборщик разрешает совпадения локальных имён добавлением числового суффикса. Используйте итоговые имена из [`SandboxRegistry`](/api/sandbox/index#sandboxregistry) или [`getSandboxes`](#getsandboxes).
+
+Имя API не задаёт имя HTML-файла: для него есть [`as`](/api/adnbn/view#viewconfig-as).
+
+<DocHeading level={3} id="sandboxconfig-readytimeout" toc={true}>`readyTimeout`</DocHeading>
+
+**Тип:** `number`. **По умолчанию:** `10000` миллисекунд. В объявлении допустимо положительное число.
+
+Сколько ждать сигнал готовности при создании iframe. Отсчёт включает загрузку, `init`, ожидание `main` и отрисовку. События `load` недостаточно. При превышении времени запрос отклоняется, неготовый iframe удаляется; следующий вызов может создать новый.
+
+<DocHeading level={3} id="sandboxconfig-requesttimeout" toc={true}>`requestTimeout`</DocHeading>
+
+**Тип:** `number`. **По умолчанию:** `30000` миллисекунд. В объявлении допустимо положительное число.
+
+Сколько ждать ответ на отдельный запрос после готовности iframe. Ожидание загрузки сюда не входит. По истечении времени promise отклоняется с `Sandbox "…" request "…" timed out.`. Поздний ответ игнорируется. Сам таймер не отменяет выполнение метода внутри документа.
+
+<DocHeading level={3} id="sandboxconfig-removeonrequesttimeout" toc={true}>`removeOnRequestTimeout`</DocHeading>
+
+**Тип:** `boolean`. **По умолчанию:** iframe сохраняется.
+
+При `true` тайм-аут запроса удаляет iframe и его канал, только если у этого Sandbox больше нет ожидающих ответов. Следующий вызов создаёт новый документ, поэтому его состояние будет потеряно. При `false` или отсутствии поля тайм-аут не удаляет готовый iframe.
+
+Проверка выполняется именно при тайм-ауте: если в этот момент ещё есть запросы, последующее успешное завершение остальных само по себе не удалит документ.
+
+## `SandboxOptions`
+
+<PropertyBadge text="type" type="info" outline />
+
+Полный состав опций Sandbox.
+
+```ts file="../../../../code/entrypoints/sandbox/api/sandbox-options.ts" title="SandboxOptions"
+```
+
+| Контракт | Что добавляет |
+| --- | --- |
+| [`SandboxConfig`](#sandboxconfig) | Имя и тайм-ауты транспорта. |
+| [`SandboxCspOptions`](#sandboxcspoptions) | Отдельную Content Security Policy для sandbox-страниц. |
+| [`ViewOptions`](/api/adnbn/view#viewoptions) | Имя HTML-файла, заголовок, шаблон, HTML-настройки и [фильтры сборки](/api/adnbn/entrypoint-options#entrypointoptions). |
+
+`render` и `container` в этот алиас не входят: объявление добавляет их через `ViewRenderDefinition`. `PermissionsOptions` не входит в контракт Sandbox; разрешения расширения не дают изолированной странице доступ к extension API.
+
+## `SandboxEntrypointOptions`
+
+<PropertyBadge text="type" type="info" outline />
+
+Опции, допустимые в объявлении Sandbox.
+
+```ts file="../../../../code/entrypoints/sandbox/api/sandbox-entrypoint-options.ts" title="SandboxEntrypointOptions"
+```
+
+Делает поля [`SandboxOptions`](#sandboxoptions) необязательными на верхнем уровне, включая `name`. Это не меняет вложенные типы и не делает необязательным `init` у [`SandboxDefinition`](#sandboxdefinition).
+
+## `SandboxCspOptions`
+
+<PropertyBadge text="interface" type="info" outline />
+
+Поле CSP в объявлении Sandbox.
+
+```ts file="../../../../code/entrypoints/sandbox/api/sandbox-csp-options.ts" title="SandboxCspOptions"
+```
+
+
+
+<DocHeading level={3} id="sandboxcspoptions-csp" toc={true}>`csp`</DocHeading>
+
+**Тип:** [`SandboxCspConfig`](#sandboxcspconfig).
+
+Добавляет настройки в общую политику sandbox-страниц расширения. Она применяется ко всем путям `sandbox.pages`, а не только к документу, который задал объект. Политика обычных страниц из [`CspOptions`](/api/adnbn/csp#cspoptions) собирается отдельно.
+
+Если поле отсутствует, объявление не добавляет свою CSP. Если других настроек sandbox CSP нет, соответствующее поле манифеста отсутствует и браузер использует свою политику по умолчанию. Пустой объект `{}` включает генерацию с настройками Addon Bone: `eval: true`, `inline: false`, без дополнительных `allow`, с `child-src 'self'`.
+
+Во всех примерах ниже `src/sandbox.ts` объявляет точку входа через [`defineSandbox`](#definesandbox). При стандартном [`htmlDir`](/api/adnbn/configuration#config-htmldir) Addon Bone создаёт `sandbox.html`, добавляет его в `sandbox.pages` и собирает политику из поля `csp`. Обязательная фабрика `init` возвращает пустой API: примеры показывают только настройку CSP.
+
+Каждый пример используется отдельно, без других Sandbox-объявлений. Во вкладках результата показаны относящиеся к Sandbox фрагменты манифеста Chromium. Для Firefox эти поля генератор опускает.
+
+<Tabs>
+    <Tab label="Код Sandbox">
+        ```ts file="../../../../code/entrypoints/sandbox/api/csp/base.ts" title="src/sandbox.ts"
+        ```
+    </Tab>
+    <Tab label="Сгенерированный Manifest V3">
+        ```json file="../../../../code/entrypoints/sandbox/api/csp/base.manifest-v3.json" title="manifest.json"
+        ```
+    </Tab>
+    <Tab label="Сгенерированный Manifest V2">
+        ```json file="../../../../code/entrypoints/sandbox/api/csp/base.manifest-v2.json" title="manifest.json"
+        ```
+    </Tab>
+</Tabs>
+
+## `SandboxCspConfig`
+
+<PropertyBadge text="interface" type="info" outline />
+
+Настройки общей политики sandbox-документов.
+
+```ts file="../../../../code/entrypoints/sandbox/api/sandbox-csp-config.ts" title="SandboxCspConfig"
+```
+
+Addon Bone всегда добавляет `sandbox allow-scripts`, `script-src 'self'` и источник `'self'` для `child-src`. `allow-same-origin` не поддерживается: [контракт Chrome](https://developer.chrome.com/docs/extensions/reference/manifest/sandbox) запрещает его для sandbox-страниц.
+
+Настройки включённых объявлений объединяются. `eval` и `inline` включаются, если хотя бы один объект разрешает их; последующий `false` не отменяет `true`. Значения `allow` и списки источников объединяются без повторов.
+
+В Manifest V3 результат находится в `content_security_policy.sandbox`, в V2 — в `sandbox.content_security_policy`. Можно передать этот же объект в [`ManifestBuilder.addSandboxCsp`](/api/adnbn/manifest#manifestbuilder-addsandboxcsp). Структурированная sandbox-политика имеет приоритет над сырым значением sandbox CSP; строка всего `content_security_policy` в V3 несовместима с её структурированной генерацией.
+
+<DocHeading level={3} id="sandboxcspconfig-eval" toc={true}>`eval`</DocHeading>
+
+**Тип:** `boolean`. **По умолчанию в переданном объекте CSP:** `true`.
+
+Добавляет `'unsafe-eval'` в `script-src`, разрешая выполнение строкового JavaScript, например через `eval()` и `new Function()`. Чтобы убрать это разрешение из собранной политики, задайте `eval: false` во всех объектах sandbox CSP. Объект `{inline: true}` без `eval` снова разрешает его по умолчанию.
+
+В следующем объявлении `csp: {eval: false}` даёт политику без `'unsafe-eval'`:
+
+<Tabs>
+    <Tab label="Код Sandbox">
+        ```ts file="../../../../code/entrypoints/sandbox/api/csp/eval.ts" title="src/sandbox.ts"
+        ```
+    </Tab>
+    <Tab label="Сгенерированный Manifest V3">
+        ```json file="../../../../code/entrypoints/sandbox/api/csp/eval.manifest-v3.json" title="manifest.json"
+        ```
+    </Tab>
+    <Tab label="Сгенерированный Manifest V2">
+        ```json file="../../../../code/entrypoints/sandbox/api/csp/eval.manifest-v2.json" title="manifest.json"
+        ```
+    </Tab>
+</Tabs>
+
+<DocHeading level={3} id="sandboxcspconfig-inline" toc={true}>`inline`</DocHeading>
+
+**Тип:** `boolean`. **По умолчанию в переданном объекте CSP:** `false`.
+
+При `true` добавляет `'unsafe-inline'` в `script-src`. Это разрешение для встроенных скриптов sandbox-документа. Оно не настраивает встроенные стили: за них отвечает [`sources.style`](#sandboxcspsources-style).
+
+<Tabs>
+    <Tab label="Код Sandbox">
+        ```ts file="../../../../code/entrypoints/sandbox/api/csp/inline.ts" title="src/sandbox.ts"
+        ```
+    </Tab>
+    <Tab label="Сгенерированный Manifest V3">
+        ```json file="../../../../code/entrypoints/sandbox/api/csp/inline.manifest-v3.json" title="manifest.json"
+        ```
+    </Tab>
+    <Tab label="Сгенерированный Manifest V2">
+        ```json file="../../../../code/entrypoints/sandbox/api/csp/inline.manifest-v2.json" title="manifest.json"
+        ```
+    </Tab>
+</Tabs>
+
+<DocHeading level={3} id="sandboxcspconfig-allow" toc={true}>`allow`</DocHeading>
+
+**Тип:** ``Array<SandboxAllow | `${SandboxAllow}`>``, значения [`SandboxAllow`](#sandboxallow). При отсутствии или `[]` дополнительных разрешений нет.
+
+Каждое значение получает префикс `allow-` и входит в директиву `sandbox`. `allow-scripts` уже добавлен фреймворком. Например, `Forms` разрешает отправку форм; это не разрешение WebExtension из `manifest.permissions`.
+
+<Tabs>
+    <Tab label="Код Sandbox">
+        ```ts file="../../../../code/entrypoints/sandbox/api/csp/allow.ts" title="src/sandbox.ts"
+        ```
+    </Tab>
+    <Tab label="Сгенерированный Manifest V3">
+        ```json file="../../../../code/entrypoints/sandbox/api/csp/allow.manifest-v3.json" title="manifest.json"
+        ```
+    </Tab>
+    <Tab label="Сгенерированный Manifest V2">
+        ```json file="../../../../code/entrypoints/sandbox/api/csp/allow.manifest-v2.json" title="manifest.json"
+        ```
+    </Tab>
+</Tabs>
+
+<DocHeading level={3} id="sandboxcspconfig-sources" toc={true}>`sources`</DocHeading>
+
+**Тип:** [`SandboxCspSources`](#sandboxcspsources). При отсутствии или `{}` дополнительных источников нет; `child-src 'self'` сохраняется.
+
+Списки одного вида из разных объявлений объединяются без повторов. Пустой массив создаёт директиву без источников, например `img-src;`. Исключение — `child`: источник `'self'` добавляется всегда. Для остальных видов `'self'` нужно указать явно, если он нужен.
+
+Ниже поле `csp.sources.image` разрешает изображения из файлов расширения и `data:`. Остальные директивы сохраняют базовые настройки:
+
+<Tabs>
+    <Tab label="Код Sandbox">
+        ```ts file="../../../../code/entrypoints/sandbox/api/csp/sources.ts" title="src/sandbox.ts"
+        ```
+    </Tab>
+    <Tab label="Сгенерированный Manifest V3">
+        ```json file="../../../../code/entrypoints/sandbox/api/csp/sources.manifest-v3.json" title="manifest.json"
+        ```
+    </Tab>
+    <Tab label="Сгенерированный Manifest V2">
+        ```json file="../../../../code/entrypoints/sandbox/api/csp/sources.manifest-v2.json" title="manifest.json"
+        ```
+    </Tab>
+</Tabs>
+
+## `SandboxCspSources`
+
+<PropertyBadge text="interface" type="info" outline />
+
+Источники ресурсов по видам CSP.
+
+```ts file="../../../../code/entrypoints/sandbox/api/sandbox-csp-sources.ts" title="SandboxCspSources"
+```
+
+Все поля принимают ``Array<SandboxSource | `${SandboxSource}`>``, где [`SandboxSource`](#sandboxsource) задаёт поддерживаемые строки. Произвольные домены, URL и схемы этот контракт и проверка объявления при сборке не принимают. Это отличается от [`CspSources`](/api/adnbn/csp#cspsources) обычных страниц.
+
+При отсутствии поля соответствующая директива не добавляется; у `child` сохраняется `'self'`. В примерах ниже каждое объявление Sandbox используется отдельно. Преобразование имён полей показано прямо в сгенерированном JSON.
+
+<DocHeading level={3} id="sandboxcspsources-connect" toc={true}>`connect`</DocHeading>
+
+**Тип:** ``Array<SandboxSource | `${SandboxSource}`>``, значения [`SandboxSource`](#sandboxsource).
+
+Соединения из документа, например `fetch` и WebSocket. Преобразуется в `connect-src`. Если поле отсутствует, директива не добавляется; `[]` создаёт её без источников.
+
+<Tabs>
+    <Tab label="Код Sandbox">
+        ```ts file="../../../../code/entrypoints/sandbox/api/csp/connect.ts" title="src/sandbox.ts"
+        ```
+    </Tab>
+    <Tab label="Сгенерированный Manifest V3">
+        ```json file="../../../../code/entrypoints/sandbox/api/csp/connect.manifest-v3.json" title="manifest.json"
+        ```
+    </Tab>
+    <Tab label="Сгенерированный Manifest V2">
+        ```json file="../../../../code/entrypoints/sandbox/api/csp/connect.manifest-v2.json" title="manifest.json"
+        ```
+    </Tab>
+</Tabs>
+
+<DocHeading level={3} id="sandboxcspsources-image" toc={true}>`image`</DocHeading>
+
+**Тип:** ``Array<SandboxSource | `${SandboxSource}`>``, значения [`SandboxSource`](#sandboxsource).
+
+Источники изображений. Преобразуется в `img-src`. Если поле отсутствует, директива не добавляется; `[]` создаёт её без источников.
+
+<Tabs>
+    <Tab label="Код Sandbox">
+        ```ts file="../../../../code/entrypoints/sandbox/api/csp/image.ts" title="src/sandbox.ts"
+        ```
+    </Tab>
+    <Tab label="Сгенерированный Manifest V3">
+        ```json file="../../../../code/entrypoints/sandbox/api/csp/image.manifest-v3.json" title="manifest.json"
+        ```
+    </Tab>
+    <Tab label="Сгенерированный Manifest V2">
+        ```json file="../../../../code/entrypoints/sandbox/api/csp/image.manifest-v2.json" title="manifest.json"
+        ```
+    </Tab>
+</Tabs>
+
+<DocHeading level={3} id="sandboxcspsources-style" toc={true}>`style`</DocHeading>
+
+**Тип:** ``Array<SandboxSource | `${SandboxSource}`>``, значения [`SandboxSource`](#sandboxsource).
+
+Таблицы стилей и встроенные стили. Преобразуется в `style-src`. Если поле отсутствует, директива не добавляется; `[]` создаёт её без источников.
+
+<Tabs>
+    <Tab label="Код Sandbox">
+        ```ts file="../../../../code/entrypoints/sandbox/api/csp/style.ts" title="src/sandbox.ts"
+        ```
+    </Tab>
+    <Tab label="Сгенерированный Manifest V3">
+        ```json file="../../../../code/entrypoints/sandbox/api/csp/style.manifest-v3.json" title="manifest.json"
+        ```
+    </Tab>
+    <Tab label="Сгенерированный Manifest V2">
+        ```json file="../../../../code/entrypoints/sandbox/api/csp/style.manifest-v2.json" title="manifest.json"
+        ```
+    </Tab>
+</Tabs>
+
+<DocHeading level={3} id="sandboxcspsources-font" toc={true}>`font`</DocHeading>
+
+**Тип:** ``Array<SandboxSource | `${SandboxSource}`>``, значения [`SandboxSource`](#sandboxsource).
+
+Источники загружаемых шрифтов. Преобразуется в `font-src`. Если поле отсутствует, директива не добавляется; `[]` создаёт её без источников.
+
+<Tabs>
+    <Tab label="Код Sandbox">
+        ```ts file="../../../../code/entrypoints/sandbox/api/csp/font.ts" title="src/sandbox.ts"
+        ```
+    </Tab>
+    <Tab label="Сгенерированный Manifest V3">
+        ```json file="../../../../code/entrypoints/sandbox/api/csp/font.manifest-v3.json" title="manifest.json"
+        ```
+    </Tab>
+    <Tab label="Сгенерированный Manifest V2">
+        ```json file="../../../../code/entrypoints/sandbox/api/csp/font.manifest-v2.json" title="manifest.json"
+        ```
+    </Tab>
+</Tabs>
+
+<DocHeading level={3} id="sandboxcspsources-media" toc={true}>`media`</DocHeading>
+
+**Тип:** ``Array<SandboxSource | `${SandboxSource}`>``, значения [`SandboxSource`](#sandboxsource).
+
+Источники аудио и видео. Преобразуется в `media-src`. Если поле отсутствует, директива не добавляется; `[]` создаёт её без источников.
+
+<Tabs>
+    <Tab label="Код Sandbox">
+        ```ts file="../../../../code/entrypoints/sandbox/api/csp/media.ts" title="src/sandbox.ts"
+        ```
+    </Tab>
+    <Tab label="Сгенерированный Manifest V3">
+        ```json file="../../../../code/entrypoints/sandbox/api/csp/media.manifest-v3.json" title="manifest.json"
+        ```
+    </Tab>
+    <Tab label="Сгенерированный Manifest V2">
+        ```json file="../../../../code/entrypoints/sandbox/api/csp/media.manifest-v2.json" title="manifest.json"
+        ```
+    </Tab>
+</Tabs>
+
+<DocHeading level={3} id="sandboxcspsources-worker" toc={true}>`worker`</DocHeading>
+
+**Тип:** ``Array<SandboxSource | `${SandboxSource}`>``, значения [`SandboxSource`](#sandboxsource).
+
+Источники Worker-скриптов. Преобразуется в `worker-src`. Если поле отсутствует, директива не добавляется; `[]` создаёт её без источников.
+
+<Tabs>
+    <Tab label="Код Sandbox">
+        ```ts file="../../../../code/entrypoints/sandbox/api/csp/worker.ts" title="src/sandbox.ts"
+        ```
+    </Tab>
+    <Tab label="Сгенерированный Manifest V3">
+        ```json file="../../../../code/entrypoints/sandbox/api/csp/worker.manifest-v3.json" title="manifest.json"
+        ```
+    </Tab>
+    <Tab label="Сгенерированный Manifest V2">
+        ```json file="../../../../code/entrypoints/sandbox/api/csp/worker.manifest-v2.json" title="manifest.json"
+        ```
+    </Tab>
+</Tabs>
+
+<DocHeading level={3} id="sandboxcspsources-child" toc={true}>`child`</DocHeading>
+
+**Тип:** ``Array<SandboxSource | `${SandboxSource}`>``, значения [`SandboxSource`](#sandboxsource).
+
+Источники вложенных контекстов; участвует также в fallback для других директив CSP. Преобразуется в `child-src`. Для `child` `'self'` сохраняется даже при `[]` или списке только с `Blob`.
+
+<Tabs>
+    <Tab label="Код Sandbox">
+        ```ts file="../../../../code/entrypoints/sandbox/api/csp/child.ts" title="src/sandbox.ts"
+        ```
+    </Tab>
+    <Tab label="Сгенерированный Manifest V3">
+        ```json file="../../../../code/entrypoints/sandbox/api/csp/child.manifest-v3.json" title="manifest.json"
+        ```
+    </Tab>
+    <Tab label="Сгенерированный Manifest V2">
+        ```json file="../../../../code/entrypoints/sandbox/api/csp/child.manifest-v2.json" title="manifest.json"
+        ```
+    </Tab>
+</Tabs>
+
+## `SandboxAllow`
+
+<PropertyBadge text="enum" type="info" outline />
+
+Дополнительные разрешения директивы sandbox.
+
+```ts file="../../../../code/entrypoints/sandbox/api/sandbox-allow.ts" title="SandboxAllow"
+```
+
+Используется в [`SandboxCspConfig.allow`](#sandboxcspconfig-allow). Принимаются члены enum или точные строковые значения без `allow-`; префикс добавляет генератор.
+
+| Член | Результат в CSP | Назначение |
+| --- | --- | --- |
+| `Forms` | `allow-forms` | Отправка форм. |
+| `Popups` | `allow-popups` | Открытие новых окон. |
+| `Modals` | `allow-modals` | Модальные вызовы, например `alert` и `confirm`. |
+| `Downloads` | `allow-downloads` | Загрузка файлов. |
+| `PointerLock` | `allow-pointer-lock` | Захват указателя через Pointer Lock API. |
+| `TopNavigationByUserActivation` | `allow-top-navigation-by-user-activation` | Навигация верхнего контекста после действия пользователя. |
+
+Флаги снимают соответствующие ограничения sandbox, но не отменяют другие правила браузера. Подробные условия — в [директиве `sandbox` на MDN](https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Content-Security-Policy/sandbox).
+
+## `SandboxSource`
+
+<PropertyBadge text="enum" type="info" outline />
+
+Поддерживаемые ключевые слова и схемы источников.
+
+```ts file="../../../../code/entrypoints/sandbox/api/sandbox-source.ts" title="SandboxSource"
+```
+
+Используется в [`SandboxCspSources`](#sandboxcspsources).
+
+| Член | Значение | Назначение |
+| --- | --- | --- |
+| `Self` | `"'self'"` | Собственные ресурсы, разрешённые этой CSP. |
+| `None` | `"'none'"` | Запрет источников для директивы. |
+| `Data` | `"data:"` | Ресурсы `data:`. |
+| `Blob` | `"blob:"` | Ресурсы `blob:`. |
+| `UnsafeInline` | `"'unsafe-inline'"` | Встроенные стили в `sources.style`. |
+
+Для строковых ключевых слов сохраняйте внутренние одинарные кавычки: `"'self'"`, а не `"self"`. Для встроенных скриптов используйте [`inline`](#sandboxcspconfig-inline). `None` задавайте отдельно: добавление других источников не означает их запрет. Для `child` учитывайте безусловное добавление `'self'` фреймворком.
+
+## `SandboxAlias`
+
+<PropertyBadge text="type" type="info" outline />
+
+Строковый ключ таблицы документов.
+
+```ts file="../../../../code/entrypoints/sandbox/api/sandbox-alias.ts" title="SandboxAlias"
+```
+
+Любая строка. В отличие от [`SandboxName`](/api/sandbox/index#sandboxname), не ограничивается ключами сгенерированного реестра.
+
+## `SandboxMap`
+
+<PropertyBadge text="type" type="info" outline />
+
+Карта имён Sandbox и параметров создания.
+
+```ts file="../../../../code/entrypoints/sandbox/api/sandbox-map.ts" title="SandboxMap"
+```
+
+Ключ — [`SandboxAlias`](#sandboxalias), значение — [`SandboxParameters`](#sandboxparameters). Возвращается из [`getSandboxes`](#getsandboxes); карта не хранит экземпляры API или DOM-элементы.
+
+## `SandboxParameters`
+
+<PropertyBadge text="type" type="info" outline />
+
+Параметры iframe и ожидания запросов.
+
+```ts file="../../../../code/entrypoints/sandbox/api/sandbox-parameters.ts" title="SandboxParameters"
+```
+
+Объединяет URL с тремя настройками из [`SandboxConfig`](#sandboxconfig). Эти значения передаются в [`ProxySandbox`](/api/sandbox/index#proxysandbox).
+
+<DocHeading level={3} id="sandboxparameters-url" toc={true}>`url`</DocHeading>
+
+**Тип:** `string`. **Обязательное поле.** В таблице сборки — путь сгенерированного HTML-документа относительно корня расширения. Runtime присваивает его `iframe.src` без преобразования в абсолютный URL; учитывайте адрес вызывающей страницы при ручном создании proxy.
+
+<DocHeading level={3} id="sandboxparameters-readytimeout" toc={true}>`readyTimeout`</DocHeading>
+
+**Тип:** `number`. Значение и поведение при отсутствии совпадают с [`SandboxConfig.readyTimeout`](#sandboxconfig-readytimeout). В таблице сборки опущенное значение остаётся `undefined`; значение по умолчанию применяет runtime.
+
+<DocHeading level={3} id="sandboxparameters-requesttimeout" toc={true}>`requestTimeout`</DocHeading>
+
+**Тип:** `number`. Значение и поведение при отсутствии совпадают с [`SandboxConfig.requestTimeout`](#sandboxconfig-requesttimeout). В таблице сборки опущенное значение остаётся `undefined`; значение по умолчанию применяет runtime.
+
+<DocHeading level={3} id="sandboxparameters-removeonrequesttimeout" toc={true}>`removeOnRequestTimeout`</DocHeading>
+
+**Тип:** `boolean`. Значение и поведение при отсутствии совпадают с [`SandboxConfig.removeOnRequestTimeout`](#sandboxconfig-removeonrequesttimeout). В таблице сборки опущенное значение остаётся `undefined`; значение по умолчанию применяет runtime.
+
+## `SandboxParametersMap`
+
+<PropertyBadge text="type" type="info" outline />
+
+Объект таблицы параметров сборки.
+
+```ts file="../../../../code/entrypoints/sandbox/api/sandbox-parameters-map.ts" title="SandboxParametersMap"
+```
+
+Сопоставляет строковые имена с [`SandboxParameters`](#sandboxparameters). В отличие от [`SandboxMap`](#sandboxmap), это обычный объект `Record`, который сборщик помещает в виртуальный модуль. [`getSandboxes`](#getsandboxes) преобразует его в `Map`.
+
+Реестр [`SandboxRegistry`](/api/sandbox/index#sandboxregistry), имена [`SandboxName`](/api/sandbox/index#sandboxname) и [`SandboxProxyTarget`](/api/sandbox/index#sandboxproxytarget) также экспортируются из `adnbn`. Их общий контракт описан на странице `adnbn/sandbox`, которую дополняют сгенерированные декларации.
+
+Следующие сообщения, порт и константы экспортируются из `adnbn`, но обслуживают низкоуровневый протокол. Для обычного объявления и вызова Sandbox их не нужно создавать вручную. Классы самого канала и iframe напрямую из публичных модулей не экспортируются.
+
+## `SandboxReadyMessage`
+
+<PropertyBadge text="interface" type="info" outline />
+
+Сообщение о готовности документа.
+
+```ts file="../../../../code/entrypoints/sandbox/api/sandbox-ready-message.ts" title="SandboxReadyMessage"
+```
+
+Addon Bone отправляет его владельцу iframe после запуска API и отображения документа. Это отдельное сообщение; в [`SandboxEnvelope`](#sandboxenvelope) оно не входит.
+
+<DocHeading level={3} id="sandboxreadymessage-type" toc={true}>`type`</DocHeading>
+
+**Тип:** `typeof SandboxReadyMessageType`. **Обязательное поле.** Маркер [`SandboxReadyMessageType`](#sandboxreadymessagetype).
+
+<DocHeading level={3} id="sandboxreadymessage-channel" toc={true}>`channel`</DocHeading>
+
+**Тип:** `string`. **Обязательное поле.** Канал `adnbn:sandbox:<name>`.
+
+<DocHeading level={3} id="sandboxreadymessage-name" toc={true}>`name`</DocHeading>
+
+**Тип:** `string`. **Обязательное поле.** Итоговое имя Sandbox.
+
+## `SandboxRequestMessage`
+
+<PropertyBadge text="interface" type="info" outline />
+
+Сообщение вызова метода или чтения свойства.
+
+```ts file="../../../../code/entrypoints/sandbox/api/sandbox-request-message.ts" title="SandboxRequestMessage"
+```
+
+Путь и аргументы создаёт proxy. Владелец iframe сопоставляет ответ с запросом по `requestId`.
+
+<DocHeading level={3} id="sandboxrequestmessage-type" toc={true}>`type`</DocHeading>
+
+**Тип:** `typeof SandboxRequestMessageType`. **Обязательное поле.** Маркер [`SandboxRequestMessageType`](#sandboxrequestmessagetype).
+
+<DocHeading level={3} id="sandboxrequestmessage-channel" toc={true}>`channel`</DocHeading>
+
+**Тип:** `string`. **Обязательное поле.** Канал `adnbn:sandbox:<name>`.
+
+<DocHeading level={3} id="sandboxrequestmessage-name" toc={true}>`name`</DocHeading>
+
+**Тип:** `string`. **Обязательное поле.** Имя вызываемого Sandbox.
+
+<DocHeading level={3} id="sandboxrequestmessage-requestid" toc={true}>`requestId`</DocHeading>
+
+**Тип:** `string`. **Обязательное поле.** Идентификатор отдельного запроса.
+
+<DocHeading level={3} id="sandboxrequestmessage-path" toc={true}>`path`</DocHeading>
+
+**Тип:** `string`. Путь членов через точку, например `parser.parse`. При отсутствии выбирается корневой объект или функция.
+
+<DocHeading level={3} id="sandboxrequestmessage-args" toc={true}>`args`</DocHeading>
+
+**Тип:** `any[]`. **Обязательное поле.** Аргументы вызова. Для чтения свойства proxy передаёт пустой массив.
+
+## `SandboxResponseMessage`
+
+<PropertyBadge text="interface" type="info" outline />
+
+Сообщение результата или ошибки вызова.
+
+```ts file="../../../../code/entrypoints/sandbox/api/sandbox-response-message.ts" title="SandboxResponseMessage"
+```
+
+Контракт задаёт `ok: boolean` и два необязательных поля. TypeScript не связывает их через discriminated union; runtime заполняет `payload` при успехе или `error` при ошибке.
+
+<DocHeading level={3} id="sandboxresponsemessage-type" toc={true}>`type`</DocHeading>
+
+**Тип:** `typeof SandboxResponseMessageType`. **Обязательное поле.** Маркер [`SandboxResponseMessageType`](#sandboxresponsemessagetype).
+
+<DocHeading level={3} id="sandboxresponsemessage-channel" toc={true}>`channel`</DocHeading>
+
+**Тип:** `string`. **Обязательное поле.** Канал исходного запроса.
+
+<DocHeading level={3} id="sandboxresponsemessage-name" toc={true}>`name`</DocHeading>
+
+**Тип:** `string`. **Обязательное поле.** Имя Sandbox.
+
+<DocHeading level={3} id="sandboxresponsemessage-requestid" toc={true}>`requestId`</DocHeading>
+
+**Тип:** `string`. **Обязательное поле.** Идентификатор исходного запроса.
+
+<DocHeading level={3} id="sandboxresponsemessage-ok" toc={true}>`ok`</DocHeading>
+
+**Тип:** `boolean`. **Обязательное поле.** `true` для результата, `false` для ошибки.
+
+<DocHeading level={3} id="sandboxresponsemessage-payload" toc={true}>`payload`</DocHeading>
+
+**Тип:** `any`. Результат при `ok: true`; может быть `undefined`.
+
+<DocHeading level={3} id="sandboxresponsemessage-error" toc={true}>`error`</DocHeading>
+
+**Тип:** `MessageError`. Объект `{name: string; message: string; stack?: string}` при `ok: false`. Это вспомогательный контракт сообщений; в импорт `adnbn/sandbox` он не входит.
+
+## `SandboxEnvelope`
+
+<PropertyBadge text="type" type="info" outline />
+
+Объединение сообщений запроса и ответа.
+
+```ts file="../../../../code/entrypoints/sandbox/api/sandbox-envelope.ts" title="SandboxEnvelope"
+```
+
+Включает [`SandboxRequestMessage`](#sandboxrequestmessage) и [`SandboxResponseMessage`](#sandboxresponsemessage). Сигнал [`SandboxReadyMessage`](#sandboxreadymessage) обрабатывается отдельно при создании iframe.
+
+## `SandboxPort`
+
+<PropertyBadge text="interface" type="info" outline />
+
+Контракт подключения, отправки и получения сообщений.
+
+```ts file="../../../../code/entrypoints/sandbox/api/sandbox-port.ts" title="SandboxPort"
+```
+
+Расположен под протоколом запросов и ответов. Встроенные реализации работают с родительской страницей и iframe. `ProxySandbox` и `RegisterSandbox` выбирают их самостоятельно и не принимают пользовательский порт в конструкторе.
+
+<DocHeading level={3} id="sandboxport-connect" toc={true}>`connect`</DocHeading>
+
+**Сигнатура:** `connect(): Promise<void>`. **Обязательный метод.** Подготавливает канал. На стороне владельца создаёт iframe и ожидает готовности; повторные и параллельные подключения используют общее создание. Внутри Sandbox разрешается сразу.
+
+<DocHeading level={3} id="sandboxport-post" toc={true}>`post`</DocHeading>
+
+**Сигнатура:** `post(message: SandboxEnvelope): void`. **Обязательный метод.** Передаёт готовый [`SandboxEnvelope`](#sandboxenvelope) другой стороне. Сам метод не ждёт ответа; корреляцию и тайм-ауты выполняет слой над портом.
+
+<DocHeading level={3} id="sandboxport-subscribe" toc={true}>`subscribe`</DocHeading>
+
+**Сигнатура:** `subscribe(onMessage: (message: SandboxEnvelope, sender: MessageSender) => void): () => void`. **Обязательный метод.** Подписывает обработчик и возвращает функцию снятия подписки.
+
+`message` — [`SandboxEnvelope`](#sandboxenvelope). `MessageSender` — алиас `chrome.runtime.MessageSender`. Здесь runtime формирует только `url` и `origin` текущего документа на принимающей стороне; это не полный sender браузерного `runtime.onMessage` и не сведения о вкладке отправителя.
+
+<DocHeading level={3} id="sandboxport-dispose" toc={true}>`dispose`</DocHeading>
+
+**Сигнатура:** `dispose(): void`. **Обязательный метод.** Освобождает канал: снимает слушатель, а порт владельца также удаляет iframe. Этот контракт не является публичным методом уничтожения у `ProxySandbox`.
+
+## `SandboxGlobalKey`
+
+<PropertyBadge text="const" type="info" outline />
+
+Ключ общего реестра экземпляров в текущем контексте.
+
+```ts file="../../../../code/entrypoints/sandbox/api/sandbox-global-key.ts" title="SandboxGlobalKey"
+```
+
+Используется внутренним менеджером для хранения реестра в `globalThis`. Не изменяйте его вручную; регистрацию выполняет `RegisterSandbox`.
+
+## `SandboxGlobalAccess`
+
+<PropertyBadge text="const" type="info" outline />
+
+Ключ runtime-маркера Sandbox-контекста.
+
+```ts file="../../../../code/entrypoints/sandbox/api/sandbox-global-access.ts" title="SandboxGlobalAccess"
+```
+
+Builder устанавливает значение `globalThis[SandboxGlobalAccess]` в `true` перед запуском API. Маркер используется при получении локального экземпляра; он не создаёт браузерную изоляцию.
+
+## `SandboxNamespace`
+
+<PropertyBadge text="const" type="info" outline />
+
+Префикс каналов и маркеров сообщений.
+
+```ts file="../../../../code/entrypoints/sandbox/api/sandbox-namespace.ts" title="SandboxNamespace"
+```
+
+Канал конкретного Sandbox имеет вид `adnbn:sandbox:<name>`. Значение используется протоколом автоматически.
+
+## `SandboxReadyMessageType`
+
+<PropertyBadge text="const" type="info" outline />
+
+Маркер сообщения готовности.
+
+```ts file="../../../../code/entrypoints/sandbox/api/sandbox-ready-message-type.ts" title="SandboxReadyMessageType"
+```
+
+Значение `"adnbn:sandbox:ready"` для [`SandboxReadyMessage`](#sandboxreadymessage).
+
+## `SandboxRequestMessageType`
+
+<PropertyBadge text="const" type="info" outline />
+
+Маркер сообщения запроса.
+
+```ts file="../../../../code/entrypoints/sandbox/api/sandbox-request-message-type.ts" title="SandboxRequestMessageType"
+```
+
+Значение `"adnbn:sandbox:request"` для [`SandboxRequestMessage`](#sandboxrequestmessage).
+
+## `SandboxResponseMessageType`
+
+<PropertyBadge text="const" type="info" outline />
+
+Маркер сообщения ответа.
+
+```ts file="../../../../code/entrypoints/sandbox/api/sandbox-response-message-type.ts" title="SandboxResponseMessageType"
+```
+
+Значение `"adnbn:sandbox:response"` для [`SandboxResponseMessage`](#sandboxresponsemessage).

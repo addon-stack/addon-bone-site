@@ -1,0 +1,1 @@
+export type TransportName = Extract<keyof TransportDictionary, string>;

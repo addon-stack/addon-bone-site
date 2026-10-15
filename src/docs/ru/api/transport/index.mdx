@@ -1,0 +1,238 @@
+---
+description: "Общие типы adnbn/transport: объявления транспорта, опции, обработчики инициализации, исходные контракты и асинхронные proxy."
+---
+
+# adnbn/transport
+
+import DocHeading from "@components/DocHeading";
+import PropertyBadge from "@components/PropertyBadge";
+
+Общие контракты объявления и типизации API, вызываемого между контекстами расширения. Все экспорты этой страницы доступны через `import type` из `adnbn/transport`. Модуль содержит только типы: он не регистрирует экземпляры и не отправляет сообщения.
+
+Например, [`ServiceDefinition`](/api/adnbn/service#servicedefinition) использует общий контракт инициализации, а [`ServiceProxyTarget`](/api/service/index#serviceproxytarget) — преобразование API в асинхронный proxy.
+
+<span id="типы-и-интерфейсы" />
+
+| Экспорт | Вид | Назначение |
+| --- | --- | --- |
+| [`TransportType`](#transporttype) | type | Общее ограничение типа создаваемого API. |
+| [`TransportOptions`](#transportoptions) | type | Имя и фильтры точки входа. |
+| [`TransportDefinition`](#transportdefinition) | type | Объявление с фабрикой `init` и обработчиком `main`. |
+| [`TransportUnresolvedDefinition`](#transportunresolveddefinition) | type | Частичное объявление до проверки. |
+| [`TransportResolvedDefinition`](#transportresolveddefinition) | type | Объявление с обязательными `name` и `init`. |
+| [`TransportTarget`](#transporttarget) | type | Исходный контракт по ключу реестра. |
+| [`TransportProxyTarget`](#transportproxytarget) | type | Асинхронный контракт по ключу реестра. |
+| [`RpcAsyncProxy`](#rpcasyncproxy) | type | Преобразование методов и свойств в proxy. |
+| [`RpcAsyncProxyObject`](#rpcasyncproxyobject) | type | Контракт вложенного объекта proxy. |
+
+В сигнатурах также используются внутренние типы: [`TransportConfig`](#transportconfig), [`TransportEntrypointOptions`](#transportentrypointoptions), [`TransportInitGetter`](#transportinitgetter), [`TransportMainHandler`](#transportmainhandler), [`TransportDictionary`](#transportdictionary) и [`TransportName`](#transportname). Они описаны в конце страницы, но не экспортируются из `adnbn/transport`.
+
+## `TransportType`
+
+<PropertyBadge text="type" type="info" outline />
+
+Общее ограничение типа API, который возвращает фабрика точки входа.
+
+```ts file="../../../../code/transport/api/transport-type.ts" title="TransportType"
+```
+
+Объектная ветка допускает методы, свойства и вложенные объекты, в том числе экземпляры классов. Функциональная ветка явно описывает функцию с результатом `Promise<any>`.
+
+Тип не проверяет сериализуемость данных и не определяет, какие члены войдут в сгенерированный контракт. Например, экземпляр класса может работать внутри сервиса, но данные его удалённых вызовов должны соответствовать [ограничениям сообщений](#rpcasyncproxy-serialization).
+
+## `TransportOptions`
+
+<PropertyBadge text="type" type="info" outline />
+
+Имя транспорта вместе с общими фильтрами точки входа.
+
+```ts file="../../../../code/transport/api/transport-options.ts" title="TransportOptions"
+```
+
+[`TransportConfig`](#transportconfig) задаёт обязательный `name`. [`EntrypointOptions`](/api/adnbn/entrypoint-options#entrypointoptions) добавляет фильтры браузера, приложения, режима, версии манифеста и debug-сборки. Тип не добавляет значения по умолчанию и сам не выполняет фильтрацию.
+
+## `TransportDefinition`
+
+<PropertyBadge text="type" type="info" outline />
+
+Общий контракт фабрики API и обработчика запуска.
+
+```ts file="../../../../code/transport/api/transport-definition.ts" title="TransportDefinition"
+```
+
+**Параметры типов:** `O extends TransportOptions` — опции, передаваемые обработчикам; `T extends TransportType` — создаваемый API. Например, у сервиса `O` равен [`ServiceOptions`](/api/adnbn/service#serviceoptions).
+
+[`TransportEntrypointOptions`](#transportentrypointoptions) добавляет необязательные имя и общие фильтры. Параметр `O` задаёт тип аргументов обработчиков, но не добавляет все собственные поля `O` в объект объявления: конкретная точка входа присоединяет свои опции отдельно.
+
+<DocHeading level={3} id="transportdefinition-init" toc={true}>`init`</DocHeading>
+
+**Тип:** [`TransportInitGetter<O, T>`](#transportinitgetter). **Обязательное поле.** Синхронная фабрика, которая получает опции и возвращает API типа `T`.
+
+<DocHeading level={3} id="transportdefinition-main" toc={true}>`main`</DocHeading>
+
+**Тип:** [`TransportMainHandler<O, T>`](#transportmainhandler). Обработчик запуска с созданным экземпляром и опциями. При отсутствии отдельного обработчика нет.
+
+Сам тип не выполняет эти функции. Порядок регистрации, готовность экземпляра и обработка ошибок зависят от точки входа; поведение сервиса описано в [`ServiceDefinition`](/api/adnbn/service#servicedefinition).
+
+## `TransportUnresolvedDefinition`
+
+<PropertyBadge text="type" type="info" outline />
+
+Частичное объявление до проверки обязательных полей.
+
+```ts file="../../../../code/transport/api/transport-unresolved-definition.ts" title="TransportUnresolvedDefinition"
+```
+
+Делает необязательными все поля верхнего уровня [`TransportDefinition`](#transportdefinition), включая `init`. Не меняет вложенные типы и не означает, что точку входа можно запустить без фабрики. Используется там, где объявление ещё предстоит нормализовать и проверить.
+
+## `TransportResolvedDefinition`
+
+<PropertyBadge text="type" type="info" outline />
+
+Объявление после определения имени и проверки фабрики.
+
+```ts file="../../../../code/transport/api/transport-resolved-definition.ts" title="TransportResolvedDefinition"
+```
+
+Сохраняет [`TransportDefinition`](#transportdefinition), но требует `name` и `init`. `main` и фильтры остаются необязательными. Здесь `Required<T, K>` — тип из `utility-types`, делающий обязательными только перечисленные ключи, а не стандартный `Required<T>` TypeScript.
+
+Тип описывает результат проверки; приведение через `as` само по себе не создаёт имя, фабрику или зарегистрированный экземпляр.
+
+## `TransportTarget`
+
+<PropertyBadge text="type" type="info" outline />
+
+Выбирает исходный контракт из реестра по ключу.
+
+```ts file="../../../../code/transport/api/transport-target.ts" title="TransportTarget"
+```
+
+`T` — объект-реестр, `K` — один из его ключей. Результат `T[K]` не меняет методы и свойства: синхронный метод остаётся синхронным. Например, [`ServiceTarget`](/api/service/index#servicetarget) применяет этот принцип к реестру сервисов.
+
+## `TransportProxyTarget`
+
+<PropertyBadge text="type" type="info" outline />
+
+Выбирает контракт из реестра и преобразует его для асинхронных вызовов.
+
+```ts file="../../../../code/transport/api/transport-proxy-target.ts" title="TransportProxyTarget"
+```
+
+Параметры `T` и `K` имеют тот же смысл, что у [`TransportTarget`](#transporttarget). Преобразование выполняет [`RpcAsyncProxy`](#rpcasyncproxy). Тип не создаёт runtime-proxy — его возвращает соответствующий API, например [`getService` из `adnbn`](/api/adnbn/service#getservice).
+
+## `RpcAsyncProxy`
+
+<PropertyBadge text="type" type="info" outline />
+
+Преобразует свойства исходного контракта `T` в асинхронный API.
+
+```ts file="../../../../code/transport/api/rpc-async-proxy.ts" title="RpcAsyncProxy"
+```
+
+| Член исходного типа | Член proxy |
+| --- | --- |
+| Метод `(value: string) => number` | Метод `(value: string) => Promise<number>`. |
+| Асинхронный метод `() => Promise<string>` | Метод `() => Promise<string>`; `Awaited` раскрывает исходный promise. |
+| Простое свойство `version: string` | Функция `version(): Promise<string>`. |
+| Объектное свойство `nested` | [`RpcAsyncProxyObject`](#rpcasyncproxyobject) с вложенными членами. |
+
+Параметры методов берутся через `Parameters`, результаты — через `ReturnType` и `Awaited`. Преобразование работает по ключам `T`; само по себе оно не добавляет корневую сигнатуру вызова, если `T` — функция. Объектная ветка применяется также к массивам и другим объектным типам, а не только к словарям данных.
+
+<DocHeading level={3} id="rpcasyncproxy-serialization" toc={false}>Данные при удалённом вызове</DocHeading>
+
+Этот тип не проверяет возможность передачи аргументов и результатов. Для транспорта через `chrome.runtime`, например Service и Offscreen в Chrome, используйте JSON-совместимые строки, числа, логические значения, `null`, массивы и обычные объекты. `Blob`, `ArrayBuffer`, DOM-узлы, функции и экземпляры классов не передаются с сохранением их поведения. Подробнее — [сериализация сообщений в Chrome](https://developer.chrome.com/docs/extensions/develop/concepts/messaging#serialization).
+
+[Sandbox](/api/adnbn/sandbox#getsandbox-data) использует `window.postMessage` и структурированное клонирование. Ограничение JSON-сериализации `chrome.runtime` к этому каналу не относится.
+
+Если нужно получить массив или объект данных целиком, объявите метод, возвращающий эти данные. Тогда его результат попадёт в функциональную ветку `RpcAsyncProxy` и сохранит тип данных внутри `Promise`.
+
+## `RpcAsyncProxyObject`
+
+<PropertyBadge text="type" type="info" outline />
+
+Тип объектного свойства в [`RpcAsyncProxy`](#rpcasyncproxy).
+
+```ts file="../../../../code/transport/api/rpc-async-proxy-object.ts" title="RpcAsyncProxyObject"
+```
+
+Объединяет вложенный доступ, например `await service.nested.value()`, с возможностью вызвать сам объект как `service.nested()`.
+
+:::warning Ошибка типа результата при чтении объекта целиком
+В текущем фреймворке сигнатура `service.nested()` обещает `Promise<RpcAsyncProxy<T>>`, но runtime возвращает сериализованные данные исходного объекта. Например, для `{value: 42}` результат содержит число `value`, а не функцию `value()`.
+
+Для доступа через proxy вызывайте `await service.nested.value()` без предварительного получения `nested()`. Для чтения объекта целиком объявите метод, возвращающий объект данных с явным типом результата. Это обходит расхождение между декларацией и выполнением.
+:::
+
+## `TransportConfig`
+
+<PropertyBadge text="interface" type="info" outline />
+
+Внутренний общий контракт имени. Напрямую из `adnbn/transport` не экспортируется.
+
+```ts file="../../../../code/transport/api/transport-config.ts" title="TransportConfig"
+```
+
+<DocHeading level={3} id="transportconfig-name" toc={true}>`name`</DocHeading>
+
+**Тип:** `string`. **Обязательное поле.** Ключ, по которому соответствующий транспорт находит экземпляр.
+
+Интерфейс не задаёт правила генерации имени или обработки совпадений. Они относятся к конкретной точке входа; например, правила сервиса описаны в [`ServiceConfig.name`](/api/adnbn/service#serviceconfig-name).
+
+## `TransportEntrypointOptions`
+
+<PropertyBadge text="type" type="info" outline />
+
+Внутренний вариант общих опций для объявления точки входа. Не экспортируется из `adnbn/transport`.
+
+```ts file="../../../../code/transport/api/transport-entrypoint-options.ts" title="TransportEntrypointOptions"
+```
+
+Делает все поля [`TransportOptions`](#transportoptions) необязательными, включая `name`. Обязательность полей обработчиков задаётся отдельно в [`TransportDefinition`](#transportdefinition).
+
+## `TransportInitGetter`
+
+<PropertyBadge text="type" type="info" outline />
+
+Внутренний тип фабрики API; не экспортируется из `adnbn/transport`.
+
+```ts file="../../../../code/transport/api/transport-init-getter.ts" title="TransportInitGetter"
+```
+
+**Параметр:** `options` — `O`, конкретный тип опций, совместимый с [`TransportEntrypointOptions`](#transportentrypointoptions).
+
+**Результат:** `T extends TransportType` — создаваемый API. Фабрика синхронная; асинхронные операции размещают в методах API или обработчике `main`. Для сервиса значения аргумента и условия вызова описаны в [`ServiceDefinition.init`](/api/adnbn/service#servicedefinition-init).
+
+## `TransportMainHandler`
+
+<PropertyBadge text="type" type="info" outline />
+
+Внутренний тип обработчика запуска; не экспортируется из `adnbn/transport`.
+
+```ts file="../../../../code/transport/api/transport-main-handler.ts" title="TransportMainHandler"
+```
+
+**Параметры:** `instance` — созданный API типа `T extends TransportType`; `options` — опции типа `O extends TransportEntrypointOptions`.
+
+**Результат:** `Awaiter<void>`, то есть `void | Promise<void>`. `Awaiter<T>` — внутренний алиас `T | Promise<T>`, не экспортируемый из `adnbn/transport`. Возможность вернуть promise не задаёт порядок готовности других точек входа; конкретные условия вызова зависят от их runtime.
+
+## `TransportDictionary`
+
+<PropertyBadge text="interface" type="info" outline />
+
+Внутренний общий словарь экземпляров. Не экспортируется из `adnbn/transport`.
+
+```ts file="../../../../code/transport/api/transport-dictionary.ts" title="TransportDictionary"
+```
+
+Допускает произвольные строковые ключи со значениями `any`. Используется в общих параметрах классов, в том числе [`ProxyService`](/api/service/index#proxyservice) и [`RegisterService`](/api/service/index#registerservice). Это не сгенерированный реестр сервисов приложения; его контракт принадлежит [`ServiceRegistry`](/api/service/index#serviceregistry).
+
+## `TransportName`
+
+<PropertyBadge text="type" type="info" outline />
+
+Внутренний тип ключа общего словаря. Не экспортируется из `adnbn/transport`.
+
+```ts file="../../../../code/transport/api/transport-name.ts" title="TransportName"
+```
+
+Для [`TransportDictionary`](#transportdictionary) результат — `string`. В отличие от [`ServiceName`](/api/service/index#servicename), этот тип не ограничивает строку именами сервисов, найденных при сборке.

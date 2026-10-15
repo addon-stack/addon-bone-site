@@ -1,0 +1,1 @@
+export type ManifestPermission = chrome.runtime.ManifestPermission;

@@ -1,0 +1,1 @@
+declare function isBrowser(browser: Browser): browser is Browser;

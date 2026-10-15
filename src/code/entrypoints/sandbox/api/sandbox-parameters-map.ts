@@ -1,0 +1,1 @@
+export type SandboxParametersMap = Record<string, SandboxParameters>;

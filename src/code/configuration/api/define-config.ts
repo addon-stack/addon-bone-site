@@ -1,0 +1,1 @@
+declare function defineConfig(config: ConfigDefinition): ConfigDefinition;

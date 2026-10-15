@@ -79,6 +79,7 @@
             "noUnusedVariables": "off"
           },
           "suspicious": {
+            "noEmptyInterface": "off",
             "noExplicitAny": "off",
             "noConfusingVoidType": "off"
           },

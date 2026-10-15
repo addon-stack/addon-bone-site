@@ -1,0 +1,1 @@
+declare function defineHistory(options: HistoryDefinition): HistoryDefinition;

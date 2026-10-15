@@ -1,0 +1,1 @@
+export type OffscreenName = Extract<keyof OffscreenRegistry, string>;

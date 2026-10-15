@@ -1,0 +1,238 @@
+---
+description: "API отображения страниц Addon Bone: ViewDefinition, ViewOptions, типы render, контейнера и props, параметры имени HTML-файла, заголовка и шаблона."
+---
+
+<span id="view-api" />
+<span id="api-представлений" />
+
+# API отображения страниц
+
+import DocHeading from "@components/DocHeading";
+import PropertyBadge from "@components/PropertyBadge";
+
+Общие контракты отображения страниц (View) для настройки HTML-документов и вывода их содержимого. Публичные типы доступны из `adnbn`.
+
+Эти контракты используют [Page](/guide/entrypoints/page), [Popup](/guide/entrypoints/popup), [Sidebar](/guide/entrypoints/sidebar), [Options](/guide/entrypoints/options), [New Tab](/guide/entrypoints/newtab), [Bookmarks](/guide/entrypoints/bookmarks), [History](/guide/entrypoints/history), [Offscreen](/guide/entrypoints/offscreen) и [Sandbox](/guide/entrypoints/sandbox). Примеры использования и жизненный цикл описаны в соответствующих руководствах.
+
+| Экспорт | Вид | Назначение |
+| --- | --- | --- |
+| [`ViewDefinition`](#viewdefinition) | interface | Опции документа и его отображения. |
+| [`ViewOptions`](#viewoptions) | type | Настройки HTML и фильтры сборки. |
+| [`ViewRenderHandler`](#viewrenderhandler) | type | Синхронная функция отображения. |
+| [`ViewRenderValue`](#viewrendervalue) | type | Объединение значений Vanilla и React. |
+| [`ViewVanillaRenderValue`](#viewvanillarendervalue) | type | Значения Vanilla. |
+| [`ViewReactRenderValue`](#viewreactrendervalue) | type | React-значение или компонент. |
+| [`ViewRenderReactComponent`](#viewrenderreactcomponent) | type | Синхронный React-компонент с опциями страницы. |
+
+В сигнатурах используются внутренние контракты [`ViewConfig`](#viewconfig), [`ViewRenderDefinition`](#viewrenderdefinition), [`ViewContainerTag`](#viewcontainertag), [`ViewContainerOptions`](#viewcontaineroptions) и [`ViewContainerFactory`](#viewcontainerfactory). Они описаны ниже, но напрямую из `adnbn` не экспортируются.
+
+## `ViewDefinition`
+
+<PropertyBadge text="interface" type="info" outline />
+
+Объявление HTML-документа с опциями сборки и отображения.
+
+```ts file="../../../../code/view/api/view-definition.ts" title="ViewDefinition"
+```
+
+**Параметр типа:** `T extends ViewConfig` — опции, которые получают обработчики отображения. Ограничение [`ViewConfig`](#viewconfig) задаёт `as`, `title` и `template`; конкретная точка входа может добавлять другие поля. Например, Page использует [`PageProps`](/api/adnbn/page#pageprops), Popup — [`PopupProps`](/api/adnbn/popup#popupprops), Sidebar — [`SidebarProps`](/api/adnbn/sidebar#sidebarprops), Options — [`OptionsProps`](/api/adnbn/options#optionsprops), а переопределения — [`NewtabProps`](/api/adnbn/override#newtabprops), [`BookmarksProps`](/api/adnbn/override#bookmarksprops) и [`HistoryProps`](/api/adnbn/override#historyprops).
+
+Собственных полей нет. [`ViewOptions`](#viewoptions) добавляет настройки HTML и фильтры включения в сборку, [`ViewRenderDefinition<T>`](#viewrenderdefinition) — `render` и `container`. Все поля можно опустить: HTML-документ может использовать собственную разметку шаблона без отдельного результата отрисовки.
+
+Сам тип не создаёт точку входа. Используйте функцию её объявления, например [`definePage`](/api/adnbn/page#definepage) или [`defineNewtab`](/api/adnbn/override#definenewtab), либо поддерживаемые именованные экспорты.
+
+## `ViewOptions`
+
+<PropertyBadge text="type" type="info" outline />
+
+Статические настройки документа, которые Addon Bone читает при сборке.
+
+```ts file="../../../../code/view/api/view-options.ts" title="ViewOptions"
+```
+
+| Контракт | Что добавляет |
+| --- | --- |
+| [`ViewConfig`](#viewconfig) | Имя выходного файла `as`, заголовок `title` и HTML-шаблон `template`. |
+| [`EntrypointOptions`](/api/adnbn/entrypoint-options#entrypointoptions) | Фильтры по браузеру, приложению, режиму, версии манифеста и debug-сборке. |
+| [`HtmlEntrypointOptions`](/api/adnbn/html#htmlentrypointoptions) | Статические настройки тегов и ресурсов HTML, включая `tags`, `links`, `scripts` и `metas`. |
+
+[`HtmlEntrypointOptions`](/api/adnbn/html#htmlentrypointoptions) не разрешает `files`: выходной документ выбирает сама точка входа. Функциональные значения `hash`, `publicPath`, `addHash` и `addPublicPath` также нельзя передавать в файл точки входа; для них используйте [`config.html`](/api/adnbn/configuration#config-html). Поле [`metas`](/api/adnbn/html#htmloptions-metas) принимает [`HtmlMetaTagOptions`](/api/adnbn/html#htmlmetatagoptions) с непустым `attributes` либо массив таких объектов.
+
+`render` и `container` находятся в [`ViewRenderDefinition`](#viewrenderdefinition). Разрешения и CSP тоже не входят в `ViewOptions`: поддерживающие их точки входа отдельно добавляют [`PermissionsOptions`](/api/adnbn/permissions#permissionsoptions) и [`CspOptions`](/api/adnbn/csp#cspoptions).
+
+## `ViewRenderHandler`
+
+<PropertyBadge text="type" type="info" outline />
+
+Функция поля [`render`](#viewrenderdefinition-render).
+
+```ts file="../../../../code/view/api/view-render-handler.ts" title="ViewRenderHandler"
+```
+
+**Параметр:** `props` — `T`, опции текущего документа. В обычном View это объект объявления без `render` и `container`. Вычисленные при сборке значения, например итоговый HTML-путь или автоматически выбранный заголовок, в props не подставляются. Транспортные точки входа дополнительно отделяют опции своего API от опций отображения.
+
+**Результат:** `void` или [`ViewRenderValue<T>`](#viewrendervalue). Функция синхронная; `Promise` не входит в контракт.
+
+В Vanilla Addon Bone вызывает функцию напрямую с props. В React файле функция в `render` рассматривается как компонент: её вызывает React, и в ней доступны hooks. Для отдельной аннотации такого компонента используйте [`ViewRenderReactComponent<T>`](#viewrenderreactcomponent).
+
+## `ViewRenderValue`
+
+<PropertyBadge text="type" type="info" outline />
+
+Объединяет значения, поддерживаемые адаптерами отображения.
+
+```ts file="../../../../code/view/api/view-render-value.ts" title="ViewRenderValue"
+```
+
+Параметр `T extends ViewConfig` задаёт props для React-компонента. Ветви объединения — [`ViewVanillaRenderValue`](#viewvanillarendervalue) и [`ViewReactRenderValue<T>`](#viewreactrendervalue).
+
+Этот общий тип не выбирает адаптер. По текущему соответствию расширений `.ts` и `.js` выбирают Vanilla, `.tsx` и `.jsx` — React. Наличие JSX или React-компонента в значении не переключает Vanilla на React автоматически.
+
+## `ViewVanillaRenderValue`
+
+<PropertyBadge text="type" type="info" outline />
+
+Результат Vanilla-отрисовки или готовое значение поля `render`.
+
+```ts file="../../../../code/view/api/view-vanilla-render-value.ts" title="ViewVanillaRenderValue"
+```
+
+| Значение | Поведение Vanilla |
+| --- | --- |
+| `Element` | Добавляется в контейнер как DOM-элемент. Если элемент уже находится в документе, он перемещается, а не копируется. |
+| Непустая `string` | Записывается в `textContent`; HTML-разметка в строке не исполняется. |
+| `number` | Преобразуется в строку, включая `0`, и записывается в `textContent`. |
+| `""`, `boolean`, `null`, `undefined` или результат `void` | Не создаёт отображаемого содержимого; контейнер результата не создаётся. |
+
+Массивы DOM-элементов, `DocumentFragment` и произвольные объекты не входят в этот контракт. Для нескольких элементов верните общий родительский `Element`. Асинхронные данные загружайте отдельно и обновляйте созданный интерфейс.
+
+## `ViewReactRenderValue`
+
+<PropertyBadge text="type" type="info" outline />
+
+React-узел или компонент, который получает props страницы.
+
+```ts file="../../../../code/view/api/view-react-render-value.ts" title="ViewReactRenderValue"
+```
+
+`ReactNode` — тип, импортируемый из пакета `react`. Из него исключён `Promise`, поэтому контракт допускает синхронные значения: JSX-элементы, фрагменты, порталы, текст, числа и коллекции React-узлов. Функциональная ветвь — [`ViewRenderReactComponent<T>`](#viewrenderreactcomponent).
+
+Если `render` задан компонентом, Addon Bone создаёт React-элемент и передаёт компоненту props. React управляет его вызовами и обновлениями. Прямое пустое значение `render`, например `null`, не запускает создание React-корня; компонент, который возвращает `null`, остаётся обычным смонтированным React-компонентом.
+
+React-адаптер доступен во всех перечисленных точках входа с представлением. Его выбирают расширения `.tsx` и `.jsx`; в проекте должны быть установлены `react` и `react-dom`.
+
+## `ViewRenderReactComponent`
+
+<PropertyBadge text="type" type="info" outline />
+
+Синхронный клиентский React-компонент для поля `render`.
+
+```ts file="../../../../code/view/api/view-render-react-component.ts" title="ViewRenderReactComponent"
+```
+
+**Параметр:** `props` — `T extends ViewConfig`, опции текущей страницы. **Результат:** `ReactNode` без `Promise`.
+
+Передавайте существующий компонент напрямую: `render: Dashboard`. Дополнительная функция нужна, только если она передаёт другие props или объединяет несколько компонентов. Компонент с обязательными props должен получать их из контракта конкретной точки входа либо из такой обёртки.
+
+## `ViewConfig`
+
+<PropertyBadge text="interface" type="info" outline />
+
+Общие настройки выходного документа. Внутренний интерфейс: напрямую из `adnbn` не экспортируется, но входит в публичный [`ViewOptions`](#viewoptions).
+
+```ts file="../../../../code/view/api/view-config.ts" title="ViewConfig"
+```
+
+<DocHeading level={3} id="viewconfig-as" toc={true}>`as`</DocHeading>
+
+**Тип:** `string`. При отсутствии Addon Bone выводит имя из файла или каталога точки входа. Пустая строка не проходит проверку опций.
+
+Задаёт основу имени выходного HTML-файла; расширение `.html` добавляет фреймворк. Правила суффиксов зависят от точки входа: для обычной Page `as: "settings"` даёт `settings.html`, для New Tab `as: "dashboard"` — `dashboard.newtab.html`. Файл размещается в [`htmlDir`](/api/adnbn/configuration#config-htmldir). При совпадении имён генератор добавляет числовой суффикс; зарезервированные имена также учитываются.
+
+`as` не меняет вид точки входа и не заменяет её API-имя: например, имя Offscreen для `getOffscreen` задаётся отдельно через [`name`](/api/adnbn/offscreen#offscreenconfig-name).
+
+<DocHeading level={3} id="viewconfig-title" toc={true}>`title`</DocHeading>
+
+**Тип:** `string`. Для стандартного HTML по умолчанию используется имя текущего приложения, преобразованное в слова с заглавными буквами: `my-app` → `My App`. Пустая строка не проходит проверку опций.
+
+Задаёт заголовок HTML-документа. Явно указанное значение также присваивается `document.title` при запуске View. При отсутствии опции рантайм не меняет заголовок, поэтому собственный HTML-шаблон может задать свой `<title>`.
+
+Подпись боковой панели в интерфейсе браузера задаётся отдельно через [`SidebarConfig.label`](/api/adnbn/sidebar#sidebarconfig-label). `title` не используется для обновления этой подписи при [`changeSidebar()`](/api/adnbn/sidebar#changesidebar).
+
+<DocHeading level={3} id="viewconfig-template" toc={true}>`template`</DocHeading>
+
+**Тип:** `string`. При отсутствии Addon Bone генерирует стандартный HTML-документ. Пустая строка не проходит проверку опций.
+
+Путь к HTML-шаблону относительно файла точки входа. Например, `template: "./template.html"` выбирает файл рядом с `index.ts` или `index.tsx`. Шаблон должен существовать при сборке; ошибка его чтения останавливает генерацию HTML.
+
+Шаблон задаёт разметку документа, но не выбирает контейнер для `render`. Если нужен определённый элемент внутри шаблона, верните его из [`ViewContainerFactory`](#viewcontainerfactory). Addon Bone подключает скрипты точки входа в `body`.
+
+## `ViewRenderDefinition`
+
+<PropertyBadge text="interface" type="info" outline />
+
+Общий контракт содержимого и контейнера. Внутренний интерфейс: напрямую из `adnbn` не экспортируется. Включён в [`ViewDefinition`](#viewdefinition), а также используется объявлениями [`OffscreenDefinition`](/api/adnbn/offscreen#offscreendefinition) и [`SandboxDefinition`](/api/adnbn/sandbox#sandboxdefinition).
+
+```ts file="../../../../code/view/api/view-render-definition.ts" title="ViewRenderDefinition"
+```
+
+<DocHeading level={3} id="viewrenderdefinition-render" toc={true}>`render`</DocHeading>
+
+**Тип:** [`ViewRenderValue<T>`](#viewrendervalue) или [`ViewRenderHandler<T>`](#viewrenderhandler). При отсутствии поля Addon Bone не запускает отрисовку и не создаёт её контейнер.
+
+Определяет содержимое документа. В Vanilla функция выполняется синхронно; фреймворк получает её результат, затем подготавливает контейнер и вставляет в него содержимое. В React подготовка React-элемента предшествует созданию контейнера, а компонент вызывается React при монтировании. Контейнер уже подключён к DOM перед монтированием результата.
+
+Если Vanilla-функция выбрасывает исключение, отрисовка прерывается. Возвращённый вопреки типу promise или thenable игнорируется с предупреждением `Vanilla view render must be synchronous…`. Фреймворк не ждёт его как способа подготовки UI.
+
+<DocHeading level={3} id="viewrenderdefinition-container" toc={true}>`container`</DocHeading>
+
+**Тип:** [`ViewContainerTag`](#viewcontainertag), [`ViewContainerOptions`](#viewcontaineroptions) или [`ViewContainerFactory<T>`](#viewcontainerfactory). **По умолчанию:** новый `div`.
+
+Задаёт контейнер для результата `render`. Строка выбирает HTML-тег; объект — тег и DOM-свойства; функция может создать или найти элемент и вернуть его асинхронно. Готовый `Element` возвращайте из функции: отдельной ветви `Element` у самого поля нет.
+
+Контейнер добавляется в начало `document.body`. Если функция вернула существующий элемент шаблона, Addon Bone перемещает его в начало `body`; при вызове очистки View удаляет этот контейнер. Для Vanilla-результатов, которые не создают содержимое, функция контейнера не вызывается.
+
+Неподходящий результат контейнера приводит к ошибке `The view container must be a valid element`. Ошибка или отклонённый promise прерывает сборку View в рантайме; стандартный запуск выводит ошибку с префиксом `Failed to build entrypoint:`.
+
+## `ViewContainerTag`
+
+<PropertyBadge text="type" type="info" outline />
+
+Имя HTML-тега для создания контейнера. Внутренний тип: не экспортируется из `adnbn`.
+
+```ts file="../../../../code/view/api/view-container-tag.ts" title="ViewContainerTag"
+```
+
+Принимает имена из стандартного `HTMLElementTagNameMap`, кроме `html` и `body`, например `"div"`, `"main"` или `"section"`. Произвольный селектор и имя пользовательского элемента в этот тип не входят. Для собственного элемента используйте [`ViewContainerFactory`](#viewcontainerfactory).
+
+## `ViewContainerOptions`
+
+<PropertyBadge text="type" type="info" outline />
+
+Тег контейнера и свойства соответствующего DOM-элемента. Внутренний тип: не экспортируется из `adnbn`.
+
+```ts file="../../../../code/view/api/view-container-options.ts" title="ViewContainerOptions"
+```
+
+<DocHeading level={3} id="viewcontaineroptions-tagname" toc={true}>`tagName`</DocHeading>
+
+**Тип:** [`ViewContainerTag`](#viewcontainertag). **Обязательное поле.** Определяет создаваемый элемент и доступные в объекте свойства. Например, `"button"` позволяет задать `type` и `disabled`.
+
+Остальные свойства необязательны и зависят от выбранного тега. Это DOM-свойства, поэтому используются `className`, `textContent` и `id`, а не HTML-атрибут `class`. Рантайм создаёт элемент через `document.createElement` и применяет свойства через `Object.assign`.
+
+`Optional` — утилита из `utility-types`, которая делает свойства необязательными; `PickNonFunctionProperties` — внутренняя утилита отбора свойств, не являющихся функциями. Это вспомогательные типы объявления, а не отдельные настройки контейнера. Для установки обработчиков событий и другой логики создания используйте [`ViewContainerFactory`](#viewcontainerfactory).
+
+## `ViewContainerFactory`
+
+<PropertyBadge text="type" type="info" outline />
+
+Функция подготовки контейнера. Внутренний тип: не экспортируется из `adnbn`.
+
+```ts file="../../../../code/view/api/view-container-factory.ts" title="ViewContainerFactory"
+```
+
+**Параметр:** `props` — `T extends ViewConfig`, тот же объект опций, который передаётся в отображение текущего документа.
+
+**Результат:** `Element`, [`ViewContainerTag`](#viewcontainertag) или [`ViewContainerOptions`](#viewcontaineroptions), сразу либо через `Promise`. Внутренний `Awaiter<V>` означает `V | Promise<V>` и не экспортируется из `adnbn`.
+
+Addon Bone ожидает результат перед подключением контейнера и монтированием UI. Функция не предназначена для подготовки данных до Vanilla `render`: к этому моменту его результат уже вычислен. Порядок вызовов и ошибки описаны у поля [`container`](#viewrenderdefinition-container).

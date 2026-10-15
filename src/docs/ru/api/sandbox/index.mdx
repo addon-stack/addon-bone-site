@@ -1,0 +1,133 @@
+---
+description: "API adnbn/sandbox: реестр контрактов Sandbox, типы асинхронного proxy и классы ProxySandbox и RegisterSandbox."
+---
+
+# adnbn/sandbox
+
+import DocHeading from "@components/DocHeading";
+import PropertyBadge from "@components/PropertyBadge";
+
+Типы реестра Sandbox и классы для ручного создания proxy и регистрации API. Все экспорты этой страницы доступны из `adnbn/sandbox`. Объявление документа, настройки CSP и обычный доступ по имени описаны в [Sandbox API](/api/adnbn/sandbox); использование и жизненный цикл относятся к [руководству Sandbox](/guide/entrypoints/sandbox).
+
+В этом модуле нет отдельной функции `getSandbox`. [`getSandbox` из `adnbn`](/api/adnbn/sandbox#getsandbox) возвращает удалённый proxy. Внутри самого Sandbox используйте экземпляр, переданный в [`main`](/api/adnbn/sandbox#sandboxdefinition-main), либо результат своей регистрации.
+
+<span id="типы-и-интерфейсы" />
+
+| Экспорт | Вид | Назначение |
+| --- | --- | --- |
+| [`SandboxRegistry`](#sandboxregistry) | interface | Имена и исходные контракты API. |
+| [`SandboxName`](#sandboxname) | type | Строковые ключи реестра. |
+| [`SandboxProxyTarget`](#sandboxproxytarget) | type | Асинхронный контракт API по имени. |
+| [`ProxySandbox`](#proxysandbox) | class | Proxy с явно заданными параметрами iframe. |
+| [`RegisterSandbox`](#registersandbox) | class | Ручная регистрация API внутри документа. |
+
+## `SandboxRegistry`
+
+<PropertyBadge text="interface" type="info" outline />
+
+Связывает имена Sandbox с исходными типами их API.
+
+```ts file="../../../../code/sandbox/api/sandbox-registry.ts" title="SandboxRegistry"
+```
+
+В пакете интерфейс пуст. При подготовке проекта Addon Bone создаёт `.adnbn/sandbox.d.ts`, который дополняет `adnbn/sandbox` контрактами включённых точек входа. Подключите сгенерированные декларации к TypeScript-проекту. Тип также реэкспортируется из `adnbn`.
+
+Каждый ключ — итоговое имя Sandbox, значение — контракт результата `init` до преобразования в proxy. Реестр описывает типы; наличие ключа не означает, что iframe уже создан или экземпляр зарегистрирован в текущем документе.
+
+## `SandboxName`
+
+<PropertyBadge text="type" type="info" outline />
+
+Имена, доступные в типизированном API.
+
+```ts file="../../../../code/sandbox/api/sandbox-name.ts" title="SandboxName"
+```
+
+Выбирает строковые ключи [`SandboxRegistry`](#sandboxregistry). Без деклараций приложения результат — `never`; произвольная строка не становится допустимым именем. Тип также доступен из `adnbn` и используется параметром [`getSandbox`](/api/adnbn/sandbox#getsandbox).
+
+## `SandboxProxyTarget`
+
+<PropertyBadge text="type" type="info" outline />
+
+Контракт удалённого доступа к API по ключу реестра.
+
+```ts file="../../../../code/sandbox/api/sandbox-proxy-target.ts" title="SandboxProxyTarget"
+```
+
+`N` — ключ [`SandboxRegistry`](#sandboxregistry). [`RpcAsyncProxy`](/api/transport/index#rpcasyncproxy) превращает методы в асинхронные вызовы, простые свойства — в функции чтения, а объектные свойства — во вложенные proxy. Тип также экспортируется из `adnbn`.
+
+Это результат [`getSandbox`](/api/adnbn/sandbox#getsandbox), а не тип локального экземпляра. Для исходного контракта используйте `SandboxRegistry[N]`. Отдельный тип `SandboxTarget` не экспортируется.
+
+Правила передачи данных зависят от Sandbox [`postMessage`](/api/adnbn/sandbox#getsandbox-data). Общая особенность [`RpcAsyncProxyObject`](/api/transport/index#rpcasyncproxyobject) при чтении объекта целиком сохраняется: если нужны данные, объявите метод, который их возвращает.
+
+<span id="классы" />
+
+## `ProxySandbox`
+
+<PropertyBadge text="class" type="info" outline />
+
+Создаёт proxy с явно заданными именем и параметрами iframe. Для обычного обращения используйте [`getSandbox` из `adnbn`](/api/adnbn/sandbox#getsandbox): он берёт параметры из таблицы сборки.
+
+```ts file="../../../../code/sandbox/api/proxy-sandbox.ts" title="ProxySandbox"
+```
+
+Показана собственная публичная часть класса. `ProxyTransport` — внутренний базовый класс. Параметр `N extends` [`TransportName`](/api/transport/index#transportname) допускает строковое имя и сам не ограничивается реестром приложения. `T` задаёт тип возвращаемого proxy; по умолчанию это [`RpcAsyncProxy`](/api/transport/index#rpcasyncproxy) от внутреннего [`TransportDictionary`](/api/transport/index#transportdictionary). Для имени приложения задавайте `T` как [`SandboxProxyTarget<N>`](#sandboxproxytarget).
+
+<DocHeading level={3} id="proxysandbox-constructor" toc={true}>`constructor`</DocHeading>
+
+**Сигнатура:** `new ProxySandbox(name: N, parameters: SandboxParameters)`.
+
+Оба параметра **обязательны**. `name` выбирает API и канал; [`SandboxParameters`](/api/adnbn/sandbox#sandboxparameters) содержит `url` и параметры ожидания. Конструктор сохраняет объект без копирования, но не создаёт iframe и не проверяет готовность документа.
+
+Канал в текущей странице кешируется по имени при первом вызове. Повторный `ProxySandbox` с тем же именем не переключает уже созданный канал на другой URL или другие тайм-ауты. Используйте одно имя для одного набора параметров.
+
+<DocHeading level={3} id="proxysandbox-get" toc={true}>`get`</DocHeading>
+
+**Сигнатура:** `get(): T`. Унаследован от `ProxyTransport`.
+
+Синхронно возвращает новый proxy. Создание iframe и ожидание готовности начинаются при вызове через него, по [правилам Sandbox](/api/adnbn/sandbox#getsandbox). Метод не проверяет таблицу сборки: ошибочный URL проявится при загрузке iframe.
+
+<DocHeading level={3} id="proxysandbox-destroy" toc={true}>`destroy`</DocHeading>
+
+**Сигнатура:** `destroy(): void`. Унаследован от внутреннего `BaseTransport`.
+
+Удаляет запись с этим именем из локального реестра текущего контекста. Не удаляет iframe, не освобождает кешированный канал сообщений и не отключает выданные proxy. Это не метод закрытия Sandbox; у данного класса отдельного публичного метода закрытия iframe нет.
+
+## `RegisterSandbox`
+
+<PropertyBadge text="class" type="info" outline />
+
+Регистрирует API и обработчик сообщений внутри Sandbox вручную. В обычной точке входа Addon Bone делает это после [`init`](/api/adnbn/sandbox#sandboxdefinition-init).
+
+```ts file="../../../../code/sandbox/api/register-sandbox.ts" title="RegisterSandbox"
+```
+
+Показана собственная публичная часть класса. Внутренний `RegisterTransport` предоставляет `register` и `destroy`. Параметры типов: `N extends` [`TransportName`](/api/transport/index#transportname) — имя; `T extends object` — экземпляр; `A extends any[]` — кортеж аргументов фабрики, по умолчанию `[]`. Значение `T` по умолчанию берётся из [`TransportDictionary`](/api/transport/index#transportdictionary).
+
+<DocHeading level={3} id="registersandbox-constructor" toc={true}>`constructor`</DocHeading>
+
+**Сигнатура:** `new RegisterSandbox(name: N, init: (...args: A) => T)`.
+
+Оба параметра **обязательны**. Конструктор сохраняет имя и фабрику; сам её не вызывает, слушатель не подключает и браузерную изоляцию не создаёт.
+
+<DocHeading level={3} id="registersandbox-register" toc={true}>`register`</DocHeading>
+
+**Сигнатура:** `register(...args: A): T`. Унаследован от `RegisterTransport`.
+
+Передаёт аргументы синхронной фабрике, сохраняет результат, подключает обработчик сообщений от родительского окна и возвращает тот же экземпляр. Promise фабрики не ожидается. Метод не выполняет `main` или `render`, не отправляет сигнал готовности документа и не меняет манифест. Для полного запуска точки входа используйте [`defineSandbox`](/api/adnbn/sandbox#definesandbox).
+
+Если имя уже зарегистрировано, до вызова фабрики выбрасывается `A instance with name "…" already exists. The name must be unique.`. Числовые суффиксы на этом уровне не добавляются. Если фабрика выбрасывает исключение, экземпляр и обработчик не регистрируются.
+
+<DocHeading level={3} id="registersandbox-get" toc={true}>`get`</DocHeading>
+
+**Сигнатура:** `get(): T`.
+
+Возвращает исходный экземпляр из локального реестра, без proxy и преобразования методов. Вне контекста, помеченного Sandbox builder, синхронно выбрасывает `Sandbox "…" can be getting only from sandbox context.`.
+
+Если контекст подходит, но экземпляр ещё не зарегистрирован или уже удалён, выбрасывает `Transport instance "…" is not registered in the current context.`. Возврата `undefined` при отсутствии регистрации нет.
+
+<DocHeading level={3} id="registersandbox-destroy" toc={true}>`destroy`</DocHeading>
+
+**Сигнатура:** `destroy(): void`. Унаследован от `RegisterTransport`.
+
+Снимает обработчик сообщений этой регистрации и удаляет экземпляр из реестра. Сам документ остаётся открытым; таймеры, подписки и другие ресурсы API нужно освобождать отдельно. После удаления повторный `register()` создаст новый экземпляр.
